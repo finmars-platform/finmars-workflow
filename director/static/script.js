@@ -1,3 +1,12 @@
+
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+
+
 const router = new VueRouter({
   mode: HISTORY_MODE ? "history" : "hash",
   routes: [
@@ -30,7 +39,14 @@ const store = new Vuex.Store({
   },
   actions: {
     listWorkflows({ commit }) {
-      axios.get(API_URL + "/workflows?with_payload=false").then((response) => {
+
+      const headers = {
+        'Authorization': 'Token ' + getCookie('access_token'),
+        'Accept': 'application/json',
+        'Content-type': 'application/json'
+      };
+
+      axios({method: 'get', url: API_URL + "/workflows?with_payload=false", headers: headers}).then((response) => {
         commit("updateWorkflows", response.data);
         commit("changeLoadingState", false);
       });
@@ -38,13 +54,27 @@ const store = new Vuex.Store({
     listDefinitions({
       commit
     }) {
-      axios.get(API_URL + "/definitions").then((response) => {
+
+      const headers = {
+        'Authorization': 'Token ' + getCookie('access_token'),
+        'Accept': 'application/json',
+        'Content-type': 'application/json'
+      };
+
+      axios({method: 'get', url: API_URL + "/definitions", headers: headers}).then((response) => {
         commit('updateDefinitions', response.data)
         commit('changeLoadingState', false)
       })
     },
     getWorkflow({ commit }, workflow_id) {
-      axios.get(API_URL + "/workflows/" + workflow_id).then((response) => {
+
+      const headers = {
+        'Authorization': 'Token ' + getCookie('access_token'),
+        'Accept': 'application/json',
+        'Content-type': 'application/json'
+      };
+
+      axios({method: 'get', url: API_URL + "/workflows/" + workflow_id, headers: headers}).then((response) => {
         commit("updateSelectedWorkflow", response.data);
         commit("refreshNetwork", response.data.tasks);
         commit("changeLoadingState", false);
@@ -54,24 +84,44 @@ const store = new Vuex.Store({
       commit("updateSelectedTask", task);
     },
     refreshStorage({ commit, dispatch }) {
-      axios
-          .get(API_URL + "/refresh-storage")
+
+      const headers = {
+        'Authorization': 'Token ' + getCookie('access_token'),
+        'Accept': 'application/json',
+        'Content-type': 'application/json'
+      };
+
+      axios({method: 'get', url: API_URL + "/refresh-storage", headers: headers})
           .then((response) => {
             dispatch("listWorkflows");
             dispatch("listDefinitions");
           });
     },
     relaunchWorkflow({ commit, dispatch }, workflow_id) {
+
+      const headers = {
+        'Authorization': 'Token ' + getCookie('access_token'),
+        'Accept': 'application/json',
+        'Content-type': 'application/json'
+      };
+
       axios
-        .post(API_URL + "/workflows/" + workflow_id + "/relaunch")
+        .post(API_URL + "/workflows/" + workflow_id + "/relaunch", headers)
         .then((response) => {
           dispatch("listWorkflows");
           dispatch("getWorkflow", response.data.id);
         });
     },
     cancelWorkflow({ commit, dispatch }, workflow_id) {
+
+      const headers = {
+        'Authorization': 'Token ' + getCookie('access_token'),
+        'Accept': 'application/json',
+        'Content-type': 'application/json'
+      };
+
       axios
-        .post(API_URL + "/workflows/" + workflow_id + "/cancel")
+        .post(API_URL + "/workflows/" + workflow_id + "/cancel", headers)
         .then((response) => {
           dispatch("listWorkflows");
           dispatch("getWorkflow", response.data.id);
@@ -394,7 +444,11 @@ new Vue({
         payload: payloadValueTrim ? payloadValueParsed : {},
       };
 
-      const headers = { "content-type": "application/json" };
+      const headers = {
+          'Authorization': 'Token ' + getCookie('access_token'),
+          'Accept': 'application/json',
+          'Content-type': 'application/json'
+      };
       const urlWorkflow = API_URL + "/workflows";
       axios
         .post(urlWorkflow, data, { headers: headers })
