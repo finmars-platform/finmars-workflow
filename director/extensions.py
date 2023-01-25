@@ -84,7 +84,7 @@ class CeleryWorkflow:
         try:
             return self.get_by_name(name)["queue"]
         except KeyError:
-            return "celery"
+            return "workflow"
 
     def load_user_tasks_from_storage_to_local_filesystem(self):
 
@@ -170,6 +170,8 @@ class FlaskCelery(Celery):
 
     def init_app(self, app):
         self.app = app
+
+        print('FlaskCelery.app %s' % app)
 
         self.conf.update(app.config.get("CELERY_CONF", {}))
 

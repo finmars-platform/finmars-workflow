@@ -111,7 +111,7 @@ def list_workflows():
         "per_page", type=int, default=settings.WORKFLOWS_PER_PAGE
     )
     workflows = Workflow.query.order_by(Workflow.created_at.desc()).paginate(
-        page, per_page
+        page=page, per_page=per_page
     )
     return jsonify([w.to_dict(with_payload=with_payload) for w in workflows.items])
 

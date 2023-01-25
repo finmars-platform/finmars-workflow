@@ -54,7 +54,7 @@ HIDDEN_CONFIG = [
 print("==== Director init Config ====")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DIRECTOR_LOCAL_DIR = BASE_DIR + '/director/local'
+DIRECTOR_LOCAL_DIR = BASE_DIR + '/app-data'
 
 BASE_API_URL = ENV_STR('BASE_API_URL', 'space00000')
 

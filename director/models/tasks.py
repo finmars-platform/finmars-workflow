@@ -3,6 +3,7 @@ import json
 from sqlalchemy_utils import UUIDType
 from sqlalchemy.types import PickleType
 
+from director.exceptions import TaskNotFound
 from director.extensions import db
 from director.models import BaseModel, StatusType
 from director.models.utils import JSONBType
@@ -44,3 +45,10 @@ class Task(BaseModel):
             }
         )
         return d
+
+    @classmethod
+    def get_or_raise(cls, task_id):
+        task = cls.query.filter_by(id=task_id).first()
+        if not task:
+            raise TaskNotFound(f"Task {task_id} not found")
+        return task

@@ -21,6 +21,12 @@ def beat(dev_mode, beat_args):
         "-A",
         "director._auto:cel",
         "beat",
+        "-n"
+        "workflow-worker-beat",
+        "-Q",
+        "workflow",
+        "--loglevel",
+        "DEBUG",
     ]
     if dev_mode:
         args += [
@@ -41,6 +47,10 @@ def worker(dev_mode, worker_args):
         "-A",
         "director._auto:cel",
         "worker",
+        "-n",
+        "workflow-worker",
+        "-Q",
+        "workflow",
     ]
     if dev_mode:
         args += [

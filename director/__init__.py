@@ -4,7 +4,7 @@ from functools import partial
 from pathlib import Path
 
 from celery.schedules import crontab
-from flask import Flask, Blueprint, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template
 from werkzeug.exceptions import HTTPException
 
 from director import settings
@@ -34,9 +34,7 @@ class DirectorFlask(Flask):
 
 
 # Create the application using a factory
-def create_app(
-
-):
+def create_app():
     app = DirectorFlask(__name__)
 
     app.config.from_object(settings)
