@@ -6,4 +6,7 @@ DB_PASSWORD=postgres \
 DB_HOST=localhost \
 DB_PORT=5441 \
 SECRET_KEY=mv83o5mq \
+AWS_STORAGE_BUCKET_NAME=finmars-client00000local \
+AWS_S3_ACCESS_KEY_ID=AKIAZFI7MO4TROTNDZWN \
+AWS_S3_SECRET_ACCESS_KEY=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 \
 python manage.py makemigrations

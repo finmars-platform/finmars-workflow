@@ -141,7 +141,7 @@
                                                             :color="item.status | statusColor"
                                                     ></v-avatar>
                                                 </td>
-                                                <td>{{ item.fullname }}</td>
+                                                <td>{{ item.project }}.{{ item.name }}</td>
                                                 <td>
                                                     <v-ship>{{ item.created | formatDate }}</v-ship>
                                                 </td>
@@ -350,7 +350,7 @@
                                             </tr>
                                             <tr>
                                                 <td><strong>Key</strong></td>
-                                                <td>{{ selectedTask.key }}</td>
+                                                <td>{{ selectedTask.name }}</td>
                                             </tr>
                                             <tr>
                                                 <td><strong>Task Status</strong></td>
@@ -695,6 +695,7 @@
     const HISTORY_MODE = false;
     const API_URL = "/workflow/api";
     const REFRESH_INTERVAL = 30000;
+    const FLOWER_URL = '{{ FLOWER_URL }}';
 </script>
 <script
         src="https://cdn.jsdelivr.net/npm/vue@2.6.11/dist/vue.min.js"

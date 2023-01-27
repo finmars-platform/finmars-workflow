@@ -1,3 +1,4 @@
+import json
 import traceback
 
 from workflow.celery_workflow import celery_workflow
@@ -13,13 +14,17 @@ from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.authentication import get_authorization_header
 from rest_framework import status
+from rest_framework.decorators import action
 
 import logging
+
+from workflow.workflows import execute_workflow
+
 _l = logging.getLogger('workflow')
 
 class WorkflowViewSet(ModelViewSet):
     queryset = Workflow.objects.select_related(
-        'user'
+        'owner'
     )
     serializer_class = WorkflowSerializer
     permission_classes = ModelViewSet.permission_classes + [
@@ -27,6 +32,28 @@ class WorkflowViewSet(ModelViewSet):
     ]
     filter_backends = ModelViewSet.filter_backends + [
     ]
+
+    @action(detail=False, methods=('POST',), url_path='run-workflow')
+    def run_workflow(self, request, pk=None):
+
+        project, name, payload = (
+            request.data["project"],
+            request.data["name"],
+            request.data["payload"],
+        )
+        data, _ = execute_workflow(request.user.username, project, name, payload)
+
+        _l.info('data %s' % data)
+
+        return Response(data)
+
+    @action(detail=True, methods=('POST',), url_path='relaunch')
+    def relaunch(self, request, pk=None):
+
+        obj = Workflow.objects.get(id=pk)
+        data, _ = execute_workflow(request.user.username, obj.project, obj.name, obj.payload)
+
+        return Response(data)
 
 
 class TaskViewSet(ModelViewSet):

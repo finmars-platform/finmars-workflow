@@ -1,27 +1,32 @@
 from celery import chain, group
 from celery.utils import uuid
 
+from workflow.celery_workflow import celery_workflow
 from workflow.exceptions import WorkflowSyntaxError
-from workflow.deprecated.extensions import cel, cel_workflows
 from workflow.models import Workflow, Task
 from workflow.tasks.workflows import start, end, failure_hooks_launcher
+from workflow_app import celery_app
 
+
+
+import logging
+_l = logging.getLogger('workflow')
 
 class WorkflowBuilder(object):
     def __init__(self, workflow_id):
         self.workflow_id = workflow_id
         self._workflow = None
 
-        self.queue = cel_workflows.get_queue(str(self.workflow))
+        self.queue = celery_workflow.get_queue(str(self.workflow))
         self.custom_queues = {}
 
-        self.tasks = cel_workflows.get_tasks(str(self.workflow))
+        self.tasks = celery_workflow.get_tasks(str(self.workflow))
         self.canvas = []
 
-        self.failure_hook = cel_workflows.get_failure_hook_task(str(self.workflow))
+        self.failure_hook = celery_workflow.get_failure_hook_task(str(self.workflow))
         self.failure_hook_canvas = []
 
-        self.success_hook = cel_workflows.get_success_hook_task(str(self.workflow))
+        self.success_hook = celery_workflow.get_success_hook_task(str(self.workflow))
         self.success_hook_canvas = []
 
         # Pointer to the previous task(s)
@@ -39,7 +44,12 @@ class WorkflowBuilder(object):
         queue = self.custom_queues.get(task_name, self.queue)
 
         # We create the Celery task specifying its UID
-        signature = cel.tasks.get(task_name).subtask(
+
+        _l.info('WorkflowBuilder.celery_app.task_name %s' % task_name)
+        # _l.info('celery_app.tasks %s' % celery_app.tasks)
+        _l.info('WorkflowBuilder.celery_app.backend %s' % celery_app.backend)
+
+        signature = celery_app.tasks.get(task_name).subtask(
             kwargs={"workflow_id": self.workflow_id, "payload": self.workflow.payload},
             queue=queue,
             task_id=task_id,
@@ -47,11 +57,11 @@ class WorkflowBuilder(object):
 
         # workflow task has the same UID
         task = Task(
-            id=task_id,
-            key=task_name,
+            celery_task_id=task_id,
+            name=task_name,
             previous=self.previous,
             workflow_id=self.workflow.id,
-            status=Task.STATUS_PENDING,
+            status=Task.STATUS_PROGRESS,
             is_hook=is_hook,
         )
         task.save()
@@ -119,6 +129,9 @@ class WorkflowBuilder(object):
         self.previous = initial_previous
 
     def run(self):
+
+        _l.info('celery_app %s' % celery_app.backend)
+
         if not self.canvas:
             self.build()
 
@@ -133,15 +146,16 @@ class WorkflowBuilder(object):
             )
 
         except Exception as e:
+            _l.error('run.e %s' % e)
             self.workflow.status = Workflow.STATUS_ERROR
             self.workflow.save()
             raise e
 
     def cancel(self):
-        status_to_cancel = set([Task.STATUS_PENDING])
+        status_to_cancel = set([Task.STATUS_PROGRESS])
         for task in self.workflow.tasks:
             if task.status in status_to_cancel:
-                cel.control.revoke(task.id, terminate=True)
+                celery_app.control.revoke(task.id, terminate=True)
                 task.status = Task.STATUS_CANCELED
                 task.save()
         self.workflow.status = Workflow.STATUS_CANCELED

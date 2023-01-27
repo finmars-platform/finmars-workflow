@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-. ../venv/bin/activate
+export DJANGO_SETTINGS_MODULE=workflow_app.settings
 DB_NAME=workflow \
 DB_USER=postgres \
 DB_PASSWORD=postgres \
@@ -28,5 +28,6 @@ SUPERSET_URL=https://superset.finmars.com/ \
 JWT_SECRET_KEY=09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3ab \
 ADMIN_USERNAME=admin \
 ADMIN_PASSWORD=d798nf0rgpp6g8qp \
-BASE_API_URL=client00000 \
+BASE_API_URL=space00000 \
+FLOWER_URL=http://0.0.0.0:5555 \
 BACKEND_ROLES="ALL" python manage.py runserver 8084

@@ -27,6 +27,7 @@ class CeleryWorkflow:
 
     def init_app(self):
 
+        _l.info('settings.BASE_API_URL %s' % settings.BASE_API_URL)
 
         workflow_path = settings.BASE_API_URL + '/workflows'
 
@@ -34,7 +35,7 @@ class CeleryWorkflow:
 
         self.workflows = {}
 
-        # print('files %s' % files)
+        # _l.info('files %s' % files)
 
         for file in files:
 
@@ -43,9 +44,9 @@ class CeleryWorkflow:
 
                 self.workflows.update(yaml.load(f, Loader=yaml.SafeLoader))
 
-        # print("Workflows are loaded")
+        # _l.info("Workflows are loaded")
 
-        # print('self.workflows %s' % self.workflows)
+        # _l.info('self.workflows %s' % self.workflows)
 
         if self.workflows:
             self.load_user_tasks_from_storage_to_local_filesystem()
@@ -91,7 +92,7 @@ class CeleryWorkflow:
 
             if '.py' in filename:
 
-                # print("Going to sync file %s " % filename)
+                # _l.info("Going to sync file %s " % filename)
 
                 with storage.open(workflow_path + '/' + filename) as f:
 
@@ -113,7 +114,7 @@ class CeleryWorkflow:
 
         tasks = Path(folder / "tasks").glob("**/*.py")
 
-        # print('tasks %s' % tasks)
+        # _l.info('tasks %s' % tasks)
 
         with self.plugin_source:
             for task in tasks:
@@ -131,9 +132,9 @@ class CeleryWorkflow:
                         ["__name__"],
                         )
                 except Exception as e:
-                    print("Could not load user script %s. Error %s" % (task, e))
+                    _l.info("Could not load user script %s. Error %s" % (task, e))
 
-        print("Tasks are loaded")
+        _l.info("Tasks are loaded")
 
     def read_schemas(self):
         folder = Path(settings.BASE_API_URL + '/workflows/').resolve()
@@ -153,7 +154,11 @@ class CeleryWorkflow:
 
                 self.workflows[name]["schema"] = schema
 
-_l.info("==== Init Celery Workflow ====")
+
+
+
+_l.info("==== Load Tasks & Workflow ====")
 
 celery_workflow = CeleryWorkflow()
 celery_workflow.init_app()
+

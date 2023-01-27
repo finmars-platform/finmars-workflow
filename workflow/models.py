@@ -77,7 +77,8 @@ class Workflow(TimeStampedModel):
 
     STATUS_INIT = 'init'
     STATUS_PENDING = 'pending'
-    STATUS_DONE = 'done'
+    STATUS_PROGRESS = 'progress'
+    STATUS_SUCCESS = 'success'
     STATUS_ERROR = 'error'
     STATUS_TIMEOUT = 'timeout'
     STATUS_CANCELED = 'canceled'
@@ -85,7 +86,8 @@ class Workflow(TimeStampedModel):
     STATUS_CHOICES = (
         (STATUS_INIT, 'INIT'),
         (STATUS_PENDING, 'PENDING'),
-        (STATUS_DONE, 'DONE'),
+        (STATUS_PROGRESS, 'PROGRESS'),
+        (STATUS_SUCCESS, 'SUCCESS'),
         (STATUS_ERROR, 'ERROR'),
         (STATUS_TIMEOUT, 'TIMEOUT'),
         (STATUS_CANCELED, 'CANCELED')
@@ -112,9 +114,9 @@ class Workflow(TimeStampedModel):
             try:
                 return json.loads(self.payload_data)
             except (ValueError, TypeError):
-                return None
+                return {}
         else:
-            return None
+            return {}
 
     @payload.setter
     def payload(self, val):
@@ -130,13 +132,14 @@ class Workflow(TimeStampedModel):
         return f"<Workflow {self.project}.{self.name}>"
 
     def to_dict(self, with_payload=True):
-        d = super().to_dict()
+        d = {}
         d.update(
             {
+                "id": self.id,
                 "name": self.name,
                 "project": self.project,
                 "fullname": f"{self.project}.{self.name}",
-                "status": self.status.value,
+                "status": self.status,
                 "periodic": self.periodic,
             }
         )
@@ -148,7 +151,8 @@ class Workflow(TimeStampedModel):
 class Task(TimeStampedModel):
     STATUS_INIT = 'init'
     STATUS_PENDING = 'pending'
-    STATUS_DONE = 'done'
+    STATUS_PROGRESS = 'progress'
+    STATUS_SUCCESS = 'success'
     STATUS_ERROR = 'error'
     STATUS_TIMEOUT = 'timeout'
     STATUS_CANCELED = 'canceled'
@@ -156,7 +160,8 @@ class Task(TimeStampedModel):
     STATUS_CHOICES = (
         (STATUS_INIT, 'INIT'),
         (STATUS_PENDING, 'PENDING'),
-        (STATUS_DONE, 'DONE'),
+        (STATUS_PROGRESS, 'PROGRESS'),
+        (STATUS_SUCCESS, 'SUCCESS'),
         (STATUS_ERROR, 'ERROR'),
         (STATUS_TIMEOUT, 'TIMEOUT'),
         (STATUS_CANCELED, 'CANCELED'),
@@ -166,6 +171,7 @@ class Task(TimeStampedModel):
                                     on_delete=models.CASCADE, related_name="tasks")
 
     celery_task_id = models.CharField(null=True, max_length=255)
+    name = models.CharField(null=True, max_length=255)
     source_code = models.CharField(null=True, max_length=255)
     status = models.CharField(null=True, max_length=255, default=STATUS_INIT, choices=STATUS_CHOICES,
                               verbose_name='status')
@@ -181,6 +187,10 @@ class Task(TimeStampedModel):
 
     verbose_name = models.CharField(null=True, max_length=255)
     verbose_result = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('verbose result'))
+
+    previous_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('previous data'))
+
+    is_hook = models.BooleanField(default=False, verbose_name=gettext_lazy('is hook'))
 
     class Meta:
         ordering = ['-created']
@@ -199,7 +209,7 @@ class Task(TimeStampedModel):
         if value is None:
             self.payload_data = None
         else:
-            self.payload_data = json.dumps(value, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            self.payload_data = json.dumps(value, sort_keys=True, indent=1)
 
     @property
     def result(self):
@@ -212,7 +222,7 @@ class Task(TimeStampedModel):
         if value is None:
             self.result_data = None
         else:
-            self.result_data = json.dumps(value, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            self.result_data = json.dumps(value, sort_keys=True, indent=1)
 
     @property
     def progress(self):
@@ -225,7 +235,20 @@ class Task(TimeStampedModel):
         if value is None:
             self.progress_data = None
         else:
-            self.progress_data = json.dumps(value, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            self.progress_data = json.dumps(value,  sort_keys=True, indent=1)
+
+    @property
+    def previous(self):
+        if self.previous_data is None:
+            return None
+        return json.loads(self.previous_data)
+
+    @previous.setter
+    def previous(self, value):
+        if value is None:
+            self.previous_data = None
+        else:
+            self.previous_data = json.dumps(value,  sort_keys=True, indent=1)
 
     # def add_attachment(self, file_report_id):
     #

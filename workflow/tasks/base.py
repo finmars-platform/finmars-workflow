@@ -2,7 +2,7 @@ from celery import Task as _Task
 from celery.signals import task_prerun, task_postrun
 from celery.utils.log import get_task_logger
 
-from workflow.deprecated.extensions import cel, db
+from workflow_app import celery_app
 from workflow.models import Task, Workflow
 
 logger = get_task_logger(__name__)
@@ -16,23 +16,23 @@ def workflow_prerun(task_id, task, *args, **kwargs):
     if task.name.startswith(ignored_tasks):
         return
 
-    with cel.app.app_context():
+    with celery_app.app.app_context():
 
         print('task_id %s' % task_id)
 
         task = Task.objects.get(celery_task_id=task_id)
-        task.status = Task.STATUS_PENDING
+        task.status = Task.STATUS_PROGRESS
         task.save()
         logger.info(f"Task {task_id} is now in progress")
 
 
-@task_postrun.connect
-def close_session(*args, **kwargs):
-    # Flask SQLAlchemy will automatically create new sessions for you from
-    # a scoped session factory, given that we are maintaining the same app
-    # context, this ensures tasks have a fresh session (e.g. session errors
-    # won't propagate across tasks)
-    db.session.remove()
+# @task_postrun.connect
+# def close_session(*args, **kwargs):
+#     # Flask SQLAlchemy will automatically create new sessions for you from
+#     # a scoped session factory, given that we are maintaining the same app
+#     # context, this ensures tasks have a fresh session (e.g. session errors
+#     # won't propagate across tasks)
+#     db.session.remove()
 
 
 class BaseTask(_Task):
@@ -48,9 +48,9 @@ class BaseTask(_Task):
 
     def on_success(self, retval, task_id, args, kwargs):
         task = Task.objects.get(celery_task_id=task_id)
-        task.status = Task.STATUS_DONE
+        task.status = Task.STATUS_SUCCESS
         task.result = retval
         task.save()
 
-        logger.info(f"Task {task_id} is now in success")
+        logger.info(f"Task {task_id} is now in success. Retval {retval}")
         super(BaseTask, self).on_success(retval, task_id, args, kwargs)

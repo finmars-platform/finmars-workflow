@@ -19,6 +19,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DJANGO_LOG_LEVEL = ENV_STR('DJANGO_LOG_LEVEL', 'INFO')
 BASE_API_URL = ENV_STR('BASE_API_URL', 'space00000')
 AUTHORIZER_URL = ENV_STR('AUTHORIZER_URL', None)
+FLOWER_URL = ENV_STR('FLOWER_URL', BASE_API_URL + '/flower')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = ENV_BOOL('DEBUG', False)
 USE_FILESYSTEM_STORAGE = ENV_BOOL('USE_FILESYSTEM_STORAGE', False)
@@ -67,12 +68,9 @@ INSTALLED_APPS = [
     'healthcheck',
 
     'workflow',
-
     'rest_framework',
     # 'rest_framework.authtoken'
 
-    'django_celery_results',
-    'django_celery_beat',
     'finmars_standardized_errors',
 ]
 
@@ -105,6 +103,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'workflow.context_processors.workflow',
             ],
         },
     },
@@ -333,6 +332,19 @@ if SEND_LOGS_TO_FINMARS:
     LOGGING['loggers']['django']['handlers'].append('logstash')
     LOGGING['loggers']['workflow']['handlers'].append('logstash')
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    },
+    'throttling': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    },
+    'http_session': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
+
 
 # =================
 # = SMTP Settings =
@@ -356,6 +368,14 @@ RABBITMQ_PASSWORD = ENV_STR('RABBITMQ_PASSWORD', 'guest')
 RABBITMQ_VHOST = ENV_STR('RABBITMQ_VHOST', '')
 
 CELERY_BROKER_URL = 'amqp://%s:%s@%s:%s/%s' % (RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_HOST, RABBITMQ_PORT, RABBITMQ_VHOST)
+# CELERY_RESULT_BACKEND = 'rpc://'
+# CELERY_RESULT_BACKEND = 'django-db'
+# CELERY_RESULT_BACKEND = 'memcache'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ENABLE_UTC = True
+CELERY_TIMEZONE = 'UTC'
+
+DJANGO_CELERY_RESULTS_TASK_ID_MAX_LENGTH=191
 
 # ==============
 # = WEBSOCKETS =
@@ -403,14 +423,3 @@ KEYCLOAK_SERVER_URL = os.environ.get('KEYCLOAK_SERVER_URL', 'https://eu-central.
 KEYCLOAK_REALM = os.environ.get('KEYCLOAK_REALM', 'finmars')
 KEYCLOAK_CLIENT_ID = os.environ.get('KEYCLOAK_CLIENT_ID', 'finmars-workflow')
 KEYCLOAK_CLIENT_SECRET_KEY = os.environ.get('KEYCLOAK_CLIENT_SECRET_KEY', None)  # not required anymore, api works in Bearer-only mod
-
-# ========================
-# = TELEGRAM INTEGRATION =
-# ========================
-
-TELEGRAM_TOKEN = ENV_STR('TELEGRAM_TOKEN', None)
-TELEGRAM_CHAT_ID = ENV_STR('TELEGRAM_CHAT_ID', None)
-TELEGRAM_NEW_USERS_CHAT_ID = ENV_STR('TELEGRAM_NEW_USERS_CHAT_ID', None)
-
-
-FINMARS_VERIFY_LICENSE = ENV_BOOL('FINMARS_VERIFY_LICENSE', True)
