@@ -9,18 +9,18 @@ COPY requirements.txt /var/app/requirements.txt
 RUN pip install -r /var/app/requirements.txt
 
 COPY docker/finmars-run.sh /var/app/docker/finmars-run.sh
-COPY data/ /var/app/data/
-COPY poms/ /var/app/poms/
+#COPY data/ /var/app/data/
+COPY workflow/ /var/app/workflow/
+COPY workflow_app/ /var/app/workflow_app/
 COPY healthcheck/ /var/app/healthcheck/
 COPY finmars_standardized_errors/ /var/app/finmars_standardized_errors/
 COPY logstash/ /var/app/logstash/
-COPY poms_app/ /var/app/poms_app/
 COPY manage.py /var/app/manage.py
 
-RUN mkdir -p /var/app-data/
-RUN mkdir -p /var/app-data/media/
-RUN mkdir -p /var/app-data/import/configs/
-RUN mkdir -p /var/app-data/import/files/
+RUN mkdir -p /var/app/app-data/
+RUN mkdir -p /var/app/app-data/media/
+RUN mkdir -p /var/app/app-data/import/configs/
+RUN mkdir -p /var/app/app-data/import/files/
 RUN mkdir -p /var/log/finmars
 #RUN chown -R www-data:www-data /var/log/finmars/
 #RUN chown -R www-data:www-data /var/app

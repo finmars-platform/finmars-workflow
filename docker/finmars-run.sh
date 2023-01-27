@@ -41,11 +41,11 @@ fi
 #
 #/var/app-venv/bin/python /var/app/manage.py createcachetable
 
-echo "Clear sessions"
+#echo "Clear sessions"
 
-python /var/app/manage.py clearsessions
+#python /var/app/manage.py clearsessions
 
-echo "Collect static"
+#echo "Collect static"
 
 python /var/app/manage.py collectstatic -c --noinput
 
@@ -54,7 +54,7 @@ then
 
     echo "Start celery"
 
-    export DJANGO_SETTINGS_MODULE=poms_app.settings
+    export DJANGO_SETTINGS_MODULE=workflow_app.settings
     export C_FORCE_ROOT='true'
 
     supervisord
@@ -69,16 +69,17 @@ then
 
     echo "Run Flower"
 
-    cd /var/app && nohup celery --app poms_app --broker=amqp://guest:guest@$RABBITMQ_HOST:5672// flower --concurrency=2 --auto_refresh=False --broker_api=http://guest:guest@$RABBITMQ_HOST:15672/api/  --url-prefix=$BASE_API_URL/flower --port=5566 &
+    cd /var/app && nohup celery --app workflow_app --broker=amqp://guest:guest@$RABBITMQ_HOST:5672// flower --concurrency=2 --auto_refresh=False --broker_api=http://guest:guest@$RABBITMQ_HOST:15672/api/  --url-prefix=$BASE_API_URL/flower --port=5566 &
 
 fi
 
-echo "Create admin user"
+#echo "Create admin user"
 
-python /var/app/manage.py generate_super_user
+#python /var/app/manage.py generate_super_user
 
-echo "Run uwsgi"
+echo "Run server"
 
-uwsgi /etc/uwsgi/apps-enabled/finmars.ini
+#uwsgi /etc/uwsgi/apps-enabled/finmars.ini
+python director.py webserver
 
 echo "Initialized"

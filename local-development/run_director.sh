@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-export DJANGO_SETTINGS_MODULE=director.settings
+export DJANGO_SETTINGS_MODULE=workflow_app.settings
 AWS_STORAGE_BUCKET_NAME=finmars-client00000local \
 AWS_S3_ACCESS_KEY_ID=AKIAZFI7MO4TROTNDZWN \
 AWS_S3_SECRET_ACCESS_KEY=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 \
