@@ -21,13 +21,14 @@ from django.views.generic import TemplateView
 
 from rest_framework import routers
 
-from workflow.views import WorkflowViewSet, TaskViewSet
-
+from workflow.views import WorkflowViewSet, TaskViewSet, PingViewSet, DefinitionViewSet
 
 router = routers.DefaultRouter()
 
 router.register(r'workflow', WorkflowViewSet, 'workflow')
 router.register(r'task', TaskViewSet, "task")
+router.register(r'ping', PingViewSet, "ping")
+router.register(r'definition', DefinitionViewSet, "ping")
 
 urlpatterns = [
 

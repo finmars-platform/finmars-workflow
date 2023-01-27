@@ -25,3 +25,11 @@ class TaskSerializer(serializers.ModelSerializer):
         fields = ['id',
                   'workflow', 'status', 'celery_task_id', 'source_code'
                   'payload', 'result', 'progress']
+
+
+class PingSerializer(serializers.Serializer):
+    message = serializers.CharField(read_only=True)
+    version = serializers.CharField(read_only=True)
+    is_authenticated = serializers.BooleanField(read_only=True)
+    is_anonymous = serializers.BooleanField(read_only=True)
+    now = serializers.DateTimeField(read_only=True)

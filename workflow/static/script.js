@@ -46,7 +46,7 @@ const store = new Vuex.Store({
         'Content-type': 'application/json'
       };
 
-      axios({method: 'get', url: API_URL + "/workflow?with_payload=false", headers: headers}).then((response) => {
+      axios({method: 'get', url: API_URL + "/workflow/?with_payload=false", headers: headers}).then((response) => {
         commit("updateWorkflows", response.data);
         commit("changeLoadingState", false);
       });
@@ -61,7 +61,7 @@ const store = new Vuex.Store({
         'Content-type': 'application/json'
       };
 
-      axios({method: 'get', url: API_URL + "/definitions", headers: headers}).then((response) => {
+      axios({method: 'get', url: API_URL + "/definition/", headers: headers}).then((response) => {
         commit('updateDefinitions', response.data)
         commit('changeLoadingState', false)
       })
