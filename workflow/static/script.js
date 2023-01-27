@@ -47,7 +47,7 @@ const store = new Vuex.Store({
       };
 
       axios({method: 'get', url: API_URL + "/workflow/?with_payload=false", headers: headers}).then((response) => {
-        commit("updateWorkflows", response.data);
+        commit("updateWorkflows", response.data.results);
         commit("changeLoadingState", false);
       });
     },
@@ -164,7 +164,7 @@ const store = new Vuex.Store({
 	  graph = graphHook;
 	  haveHook = true;
 	}
-	
+
         var className = tasks[i].status;
         var html = "<div class=pointer>";
         html += "<span class=status></span>";

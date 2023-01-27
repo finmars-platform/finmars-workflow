@@ -3,9 +3,7 @@ from celery.signals import task_prerun, task_postrun
 from celery.utils.log import get_task_logger
 
 from workflow.deprecated.extensions import cel, db
-from workflow.models import StatusType
-from workflow.models.tasks import Task
-
+from workflow.models import Task, Workflow
 
 logger = get_task_logger(__name__)
 
@@ -22,8 +20,8 @@ def workflow_prerun(task_id, task, *args, **kwargs):
 
         print('task_id %s' % task_id)
 
-        task = Task.get_or_raise(task_id)
-        task.status = StatusType.progress
+        task = Task.objects.get(celery_task_id=task_id)
+        task.status = Task.STATUS_PENDING
         task.save()
         logger.info(f"Task {task_id} is now in progress")
 
@@ -39,18 +37,18 @@ def close_session(*args, **kwargs):
 
 class BaseTask(_Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
-        task = Task.get_or_raise(task_id)
-        task.status = StatusType.error
+        task = Task.objects.get(celery_task_id=task_id)
+        task.status = Task.STATUS_ERROR
         task.result = {"exception": str(exc), "traceback": einfo.traceback}
-        task.workflow.status = StatusType.error
+        task.workflow.status = Workflow.STATUS_ERROR
         task.save()
 
         logger.info(f"Task {task_id} is now in error")
         super(BaseTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
     def on_success(self, retval, task_id, args, kwargs):
-        task = Task.get_or_raise(task_id)
-        task.status = StatusType.success
+        task = Task.objects.get(celery_task_id=task_id)
+        task.status = Task.STATUS_DONE
         task.result = retval
         task.save()
 

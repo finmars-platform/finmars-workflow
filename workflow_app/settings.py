@@ -22,7 +22,7 @@ AUTHORIZER_URL = ENV_STR('AUTHORIZER_URL', None)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = ENV_BOOL('DEBUG', False)
 USE_FILESYSTEM_STORAGE = ENV_BOOL('USE_FILESYSTEM_STORAGE', False)
-MEDIA_ROOT = os.path.join(BASE_DIR, 'finmars_data')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'app-data')
 
 # Very Important MasterUserConfigs encrypted by this key
 # Also Session (if enabled) are using it

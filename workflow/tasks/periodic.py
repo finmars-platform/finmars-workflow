@@ -4,7 +4,7 @@ from sqlalchemy.orm import load_only
 
 from workflow.builder import WorkflowBuilder
 from workflow.deprecated.extensions import cel, db
-from workflow.models.workflows import Workflow
+from workflow.models import Workflow
 
 logger = logging.getLogger()
 
@@ -54,7 +54,7 @@ def cleanup(retentions):
             logger.info(f"No need to clean {workflow_name}")
             continue
 
-        Workflow.query.filter(Workflow.id.in_(ids)).delete(synchronize_session=False)
+        Workflow.objects.filter(id__in=ids).delete(synchronize_session=False)
         db.session.commit()
         count += len(ids)
         logger.info(f"Deleted workflows: {len(ids)}")

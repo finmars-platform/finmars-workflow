@@ -6,9 +6,8 @@ from celery.utils import uuid
 
 
 from workflow.deprecated.extensions import cel
-from workflow.models import StatusType
-from workflow.models.workflows import Workflow
-from workflow.models.tasks import Task
+from workflow.models import Workflow
+from workflow.models import Task
 
 
 logger = get_task_logger(__name__)
@@ -24,9 +23,9 @@ def ping():
 @cel.task()
 def start(workflow_id):
     logger.info(f"Opening the workflow {workflow_id}")
-    workflow = Workflow.query.filter_by(id=workflow_id).first()
+    workflow = Workflow.objects.get(id=workflow_id)
 
-    workflow.status = StatusType.progress
+    workflow.status = Workflow.STATUS_PENDING
     workflow.save()
 
 
@@ -36,19 +35,19 @@ def end(workflow_id):
     time.sleep(0.5)
 
     logger.info(f"Closing the workflow {workflow_id}")
-    workflow = Workflow.query.filter_by(id=workflow_id).first()
+    workflow = Workflow.objects.get(id=workflow_id)
 
-    if workflow.status != StatusType.error:
-        workflow.status = StatusType.success
+    if workflow.status != Workflow.STATUS_ERROR:
+        workflow.status = Workflow.STATUS_DONE
         workflow.save()
 
 
 @cel.task()
 def mark_as_canceled_pending_tasks(workflow_id):
     logger.info(f"Mark as cancelled pending tasks of the workflow {workflow_id}")
-    tasks = Task.query.filter_by(workflow_id=workflow_id, status=StatusType.pending)
+    tasks = Task.objects.filter(workflow_id=workflow_id, status=Task.STATUS_PENDING)
     for task in tasks:
-        task.status = StatusType.canceled
+        task.status = Task.STATUS_CANCELED
         task.save()
 
 
@@ -70,7 +69,7 @@ def failure_hooks_launcher(workflow_id, queue, tasks_names, payload):
             id=task_id,
             key=task_name,
             workflow_id=workflow_id,
-            status=StatusType.pending,
+            status=Task.STATUS_PENDING,
             is_hook=True,
         )
         task.save()

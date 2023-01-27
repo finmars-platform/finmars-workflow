@@ -1,5 +1,6 @@
 import traceback
 
+from workflow.celery_workflow import celery_workflow
 from workflow.models import Workflow, Task
 
 from rest_framework.viewsets import ModelViewSet, ViewSet
@@ -75,7 +76,7 @@ class DefinitionViewSet(ViewSet):
 
         workflow_definitions = []
 
-        for fullname, definition in sorted(cel_workflows.workflows.items()):
+        for fullname, definition in sorted(celery_workflow.workflows.items()):
 
             project, name = fullname.split(".", 1)
 
