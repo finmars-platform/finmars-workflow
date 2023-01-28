@@ -15,13 +15,12 @@ Including another URLconf
 """
 
 from django.contrib import admin
-
 from django.urls import re_path, include
 from django.views.generic import TemplateView
-
 from rest_framework import routers
 
 from workflow.views import WorkflowViewSet, TaskViewSet, PingViewSet, DefinitionViewSet
+from workflow_app import settings
 
 router = routers.DefaultRouter()
 
@@ -32,11 +31,10 @@ router.register(r'definition', DefinitionViewSet, "ping")
 
 urlpatterns = [
 
-    re_path(r'^workflow/api/', include(router.urls)),
-    re_path(r'^workflow/admin/docs/', include('django.contrib.admindocs.urls')),
-    re_path(r'^workflow/admin/', admin.site.urls),
+    re_path(r'^' + settings.BASE_API_URL + '/workflow/api/', include(router.urls)),
+    re_path(r'^' + settings.BASE_API_URL + '/workflow/admin/docs/', include('django.contrib.admindocs.urls')),
+    re_path(r'^' + settings.BASE_API_URL + '/workflow/admin/', admin.site.urls),
 
-    re_path(r'^workflow/$', TemplateView.as_view(template_name='index.html')),
-
+    re_path(r'^' + settings.BASE_API_URL + '/workflow/$', TemplateView.as_view(template_name='index.html')),
 
 ]
