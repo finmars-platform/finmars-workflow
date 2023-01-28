@@ -167,8 +167,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # = Static Configuration =
 # ========================
 
-STATIC_URL = '/workflow/static/'
+STATIC_URL = '/' + BASE_API_URL + '/workflow/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+
 STATICFILES_DIR = (
     os.path.join(BASE_DIR, 'static'),
 )
