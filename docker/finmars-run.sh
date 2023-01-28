@@ -64,9 +64,9 @@ then
 
 fi
 
-#echo "Create admin user"
+echo "Create admin user"
 
-#python /var/app/manage.py generate_super_user
+python /var/app/manage.py generate_super_user
 
 echo "Run server"
 
