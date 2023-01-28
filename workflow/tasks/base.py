@@ -52,5 +52,6 @@ class BaseTask(_Task):
         task.result = retval
         task.save()
 
+
         logger.info(f"Task {task_id} is now in success. Retval {retval}")
         super(BaseTask, self).on_success(retval, task_id, args, kwargs)

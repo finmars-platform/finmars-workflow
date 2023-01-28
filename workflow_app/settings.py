@@ -32,7 +32,7 @@ PROVISION_MANAGER = ENV_STR('PROVISION_MANAGER', 'rancher')
 
 SERVER_TYPE = ENV_STR('SERVER_TYPE', 'local') # local, development, production
 HOST_LOCATION = ENV_STR('HOST_LOCATION', 'local')  # local, azure, aws, private cloud or custom, only for log purpose
-HOST_URL = ENV_STR('HOST_URL', 'localhost')
+HOST_URL = ENV_STR('HOST_URL', 'http://0.0.0.0:8000')
 ALLOWED_HOST = ENV_STR('ALLOWED_HOST', '*')
 DOMAIN_NAME = ENV_STR('DOMAIN_NAME', 'finmars.com')
 
@@ -235,6 +235,8 @@ REST_FRAMEWORK = {
         # 'rest_framework.authentication.BasicAuthentication',
         # 'rest_framework.authentication.TokenAuthentication',
         "workflow.authentication.KeycloakAuthentication",
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+
     ),
     # 'EXCEPTION_HANDLER': 'authorizer.utils.finmars_exception_handler',
     'EXCEPTION_HANDLER': 'finmars_standardized_errors.handler.exception_handler',
@@ -421,3 +423,10 @@ KEYCLOAK_SERVER_URL = os.environ.get('KEYCLOAK_SERVER_URL', 'https://eu-central.
 KEYCLOAK_REALM = os.environ.get('KEYCLOAK_REALM', 'finmars')
 KEYCLOAK_CLIENT_ID = os.environ.get('KEYCLOAK_CLIENT_ID', 'finmars-workflow')
 KEYCLOAK_CLIENT_SECRET_KEY = os.environ.get('KEYCLOAK_CLIENT_SECRET_KEY', None)  # not required anymore, api works in Bearer-only mod
+
+
+X_FRAME_OPTIONS = 'ALLOWALL'
+
+XS_SHARING_ALLOWED_METHODS = ['POST','GET','OPTIONS', 'PUT', 'DELETE']
+
+SIMPLE_JWT = {"SIGNING_KEY": os.getenv("SIGNING_KEY", SECRET_KEY), 'USER_ID_FIELD': 'username'}

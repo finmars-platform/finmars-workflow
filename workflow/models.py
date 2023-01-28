@@ -45,6 +45,8 @@ class User(AbstractUser):
 
     password = models.CharField(_("password"), max_length=256)
 
+    is_bot = models.BooleanField(default=False, verbose_name=gettext_lazy('is bot'))
+
     @property
     def data(self):
         if self.json_data:
