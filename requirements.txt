@@ -52,3 +52,6 @@ websockets==8.1
 zipp==3.6.0
 kubernetes==25.3.0
 PyYAML==6.0
+uWSGI==2.0.21
+azure-core==1.26.1
+azure-storage-blob==12.14.1
