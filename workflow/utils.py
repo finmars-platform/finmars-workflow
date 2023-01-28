@@ -1,4 +1,3 @@
-from flask_json_schema import JsonValidationError
 from jsonschema.validators import validator_for
 from celery.schedules import crontab
 
@@ -11,7 +10,7 @@ def validate(payload, schema):
     validator = validator_cls(schema=schema)
     errors = list(validator.iter_errors(payload))
     if errors:
-        raise JsonValidationError("Payload is not valid", errors)
+        raise Exception("Payload is not valid", errors)
 
 
 def format_schema_errors(e):
