@@ -79,7 +79,7 @@ fi
 
 echo "Run server"
 
-#uwsgi /etc/uwsgi/apps-enabled/finmars.ini
-python director.py webserver
+uwsgi /etc/uwsgi/apps-enabled/workflow.ini
+#python director.py webserver
 
 echo "Initialized"
