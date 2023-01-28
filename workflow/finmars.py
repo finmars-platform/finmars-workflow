@@ -83,3 +83,54 @@ def execute_pricing_procedure(payload):
     response = requests.post(url=url, data=json.dumps(data), headers=headers)
 
     return response.json()
+
+def execute_task(payload):
+
+    bot = User.objects.get(username="finmars_bot")
+
+    refresh = RefreshToken.for_user(bot)
+
+    # _l.info('refresh %s' % refresh.access_token)
+
+    headers = {'Content-type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer %s' % refresh.access_token}
+    data = payload
+
+    url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/tasks/execute/'
+
+    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+
+    return response.json()
+
+def execute_transaction_import(payload):
+
+    bot = User.objects.get(username="finmars_bot")
+
+    refresh = RefreshToken.for_user(bot)
+
+    # _l.info('refresh %s' % refresh.access_token)
+
+    headers = {'Content-type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer %s' % refresh.access_token}
+    data = payload
+
+    url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/import/transaction-import/execute/'
+
+    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+
+    return response.json()
+
+def execute_simple_import(payload):
+
+    bot = User.objects.get(username="finmars_bot")
+
+    refresh = RefreshToken.for_user(bot)
+
+    # _l.info('refresh %s' % refresh.access_token)
+
+    headers = {'Content-type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer %s' % refresh.access_token}
+    data = payload
+
+    url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/import/simple-import/execute/'
+
+    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+
+    return response.json()
