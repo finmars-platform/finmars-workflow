@@ -22,6 +22,7 @@ RUN mkdir -p /var/app/app-data/media/
 RUN mkdir -p /var/app/app-data/import/configs/
 RUN mkdir -p /var/app/app-data/import/files/
 RUN mkdir -p /var/log/finmars
+RUN mkdir -p /var/log/finmars/workflow/
 #RUN chown -R www-data:www-data /var/log/finmars/
 #RUN chown -R www-data:www-data /var/app
 #RUN chown -R www-data:www-data /var/app-data
