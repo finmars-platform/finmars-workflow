@@ -19,7 +19,7 @@ from django.urls import re_path, include
 from django.views.generic import TemplateView
 from rest_framework import routers
 
-from workflow.views import WorkflowViewSet, TaskViewSet, PingViewSet, DefinitionViewSet
+from workflow.views import WorkflowViewSet, TaskViewSet, PingViewSet, DefinitionViewSet, RefreshStorageViewSet
 from workflow_app import settings
 
 router = routers.DefaultRouter()
@@ -27,6 +27,7 @@ router = routers.DefaultRouter()
 router.register(r'workflow', WorkflowViewSet, 'workflow')
 router.register(r'task', TaskViewSet, "task")
 router.register(r'ping', PingViewSet, "ping")
+router.register(r'refresh-storage', RefreshStorageViewSet, "refresh-storage")
 router.register(r'definition', DefinitionViewSet, "ping")
 
 urlpatterns = [

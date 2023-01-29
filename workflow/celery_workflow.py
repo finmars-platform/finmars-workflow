@@ -26,8 +26,8 @@ class CeleryWorkflow:
 
 
     def init_app(self):
-
-        _l.info('settings.BASE_API_URL %s' % settings.BASE_API_URL)
+        _l.info('CeleryWorkflow.init_app')
+        # _l.info('settings.BASE_API_URL %s' % settings.BASE_API_URL)
 
         workflow_path = settings.BASE_API_URL + '/workflows'
 

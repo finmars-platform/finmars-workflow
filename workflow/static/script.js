@@ -97,7 +97,7 @@ const store = new Vuex.Store({
                 'Content-type': 'application/json'
             };
 
-            axios({method: 'get', url: API_URL + "/refresh-storage", headers: headers})
+            axios({method: 'get', url: API_URL + "/refresh-storage/", headers: headers})
                 .then((response) => {
                     dispatch("listWorkflows");
                     dispatch("listDefinitions");

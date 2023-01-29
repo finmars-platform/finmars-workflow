@@ -1,5 +1,6 @@
 import json
 import traceback
+import pexpect
 
 from workflow.celery_workflow import celery_workflow
 from workflow.models import Workflow, Task
@@ -95,6 +96,22 @@ class PingViewSet(ViewSet):
         })
 
         return Response(serializer.data, status=status_code)
+
+
+class RefreshStorageViewSet(ViewSet):
+
+    def list(self, request, *args, **kwargs):
+
+        try:
+            pexpect.spawn("supervisorctl restart celery", timeout=240)
+            pexpect.spawn("supervisorctl restart celerybeat", timeout=240)
+        except Exception as e:
+            _l.info("Could not restart celery")
+
+        celery_workflow.init_app()
+
+        return Response({'status': 'ok'})
+
 
 
 class DefinitionViewSet(ViewSet):
