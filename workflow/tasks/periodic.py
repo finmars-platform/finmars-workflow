@@ -1,7 +1,5 @@
 import logging
 
-from sqlalchemy.orm import load_only
-
 from workflow.builder import WorkflowBuilder
 from workflow.models import Workflow
 from workflow_app import celery_app
