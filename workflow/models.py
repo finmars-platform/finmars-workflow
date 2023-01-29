@@ -107,6 +107,10 @@ class Workflow(TimeStampedModel):
     owner = models.ForeignKey(User, verbose_name=gettext_lazy('owner'),
                               on_delete=models.CASCADE, related_name="workflows")
 
+    class Meta:
+        get_latest_by = 'modified'
+        ordering = ['-created', 'id']
+
     @property
     def payload(self):
         if self.payload_data:

@@ -26,22 +26,30 @@
             integrity="sha256-HCkcFMiRi/WMAXrgcUj/C5aoUrPtvHxpfbOIlwdsNtg="
             crossorigin="anonymous"
     />
+    <link href="
+https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
+" rel="stylesheet"></link>
     <link
             rel="stylesheet"
             href="{% static 'style.css' %}"
+    />
+    <link
+            rel="stylesheet"
+            href="{% static 'finmars-error.css' %}"
     />
 </head>
 
 <body>
 {% verbatim %}
-<div id="app" v-cloak>
+    <div id="app" v-cloak>
     <div id="app" v-cloak>
         <v-app id="inspire">
             <v-app-bar app clipped-right color="director" dark>
                 <v-app-bar-nav-icon @click="drawer = true, moveUp()"></v-app-bar-nav-icon>
                 <router-link to="/" tag="span" style="cursor: pointer">
                     <v-toolbar-title @click="isHome = true"
-                    >Celery Director</v-toolbar-title
+                    >Celery Director
+                    </v-toolbar-title
                     >
                 </router-link>
                 <v-spacer></v-spacer>
@@ -55,9 +63,28 @@
                                 style="margin-right: 8px;"
                                 v-on="on"
                                 v-bind="attrs"
+                                @click.stop="toggleAutoRefresh()"
+                        >
+                            <v-icon v-if="autoRefresh">mdi-sync</v-icon>
+                            <v-icon v-if="!autoRefresh">mdi-sync-off</v-icon>
+                        </v-btn>
+                    </template>
+                    <span v-if="autoRefresh">Disable Auto Refresh</span>
+                    <span v-if="!autoRefresh">Enable Auto Refresh</span>
+                </v-tooltip>
+
+                <v-tooltip bottom>
+                    <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                                tile
+                                outlined
+                                color="director"
+                                style="margin-right: 8px;"
+                                v-on="on"
+                                v-bind="attrs"
                                 @click.stop="refreshStorage()"
                         >
-                            <v-icon>mdi-refresh</v-icon>
+                            <v-icon >mdi-cloud-refresh</v-icon>
                         </v-btn>
                     </template>
                     <span>Refresh Storage</span>
@@ -113,9 +140,10 @@
                                             loading-text="Loading... Please wait"
                                             :headers="headers"
                                             :items="workflows"
-                                            :items-per-page="10"
+                                            :items-per-page="40"
                                             :sort-by="['created']"
                                             :sort-desc="[true]"
+                                            :server-items-length="workflowsCount"
                                             :search="search"
                                     >
                                         <template v-slot:item="{ item }">
@@ -124,13 +152,13 @@
                                                     @click="selectRow(item)"
                                                     :class="{'active': item.isSelected}"
                                             >
-                                                <td style="display: none">{{ item.id }}</td>
                                                 <td>
                                                     <v-avatar
                                                             size="14"
                                                             :color="item.status | statusColor"
                                                     ></v-avatar>
                                                 </td>
+                                                <td>{{ item.id }}</td>
                                                 <td>{{ item.project }}.{{ item.name }}</td>
                                                 <td>
                                                     <v-ship>{{ item.created | formatDate }}</v-ship>
@@ -196,7 +224,7 @@
                         <v-col cols="12" md="12">
                             <div class="graph">
                                 <svg width="100%" height="600" class="svg-main">
-                                    <g />
+                                    <g/>
                                 </svg>
                             </div>
                         </v-col>
@@ -207,7 +235,7 @@
                                 <v-divider class="mt-2 mb-2"></v-divider>
                                 <v-subheader class="mb-2">Hooks triggered</v-subheader>
                                 <svg width="100%" height="200" class="svg-hooks">
-                                    <g />
+                                    <g/>
                                 </svg>
                             </div>
                         </v-col>
@@ -232,7 +260,8 @@
                                                 v-if="selectedWorkflow.periodic"
                                                 class="ma-2"
                                                 small
-                                        >periodic</v-chip
+                                        >periodic
+                                        </v-chip
                                         >
                                         <v-chip
                                                 small
@@ -251,8 +280,7 @@
                                         >
                                         / Error
                                         <strong
-                                        >{{ selectedWorkflow.tasks | countTasksByStatus('error')
-                                                }}</strong
+                                        >{{ selectedWorkflow.tasks | countTasksByStatus('error') }}</strong
                                         >
                                     </v-list-item-subtitle>
                                 </v-list-item-content>
@@ -384,7 +412,7 @@
                                         </v-row>
                                         <code
                                                 v-if="selectedTask.result && selectedTask.status != 'error'"
-                                        >{{selectedTask.result}}</code
+                                        >{{ selectedTask.result }}</code
                                         >
                                         <div
                                                 v-if="selectedTask.result && selectedTask.status == 'error'"
@@ -451,7 +479,8 @@
                             <v-spacer></v-spacer>
                             <div class="my-2 ma-2">
                                 <v-btn depressed @click.stop="cancelDialog = false"
-                                >Cancel</v-btn
+                                >Cancel
+                                </v-btn
                                 >
                             </div>
                             <div class="my-2">
@@ -459,7 +488,8 @@
                                         depressed
                                         color="primary"
                                         @click.stop="cancelWorkflow()"
-                                >Confirm</v-btn
+                                >Confirm
+                                </v-btn
                                 >
                             </div>
                         </v-card-actions>
@@ -493,7 +523,8 @@
                             <v-spacer></v-spacer>
                             <div class="my-2 ma-2">
                                 <v-btn depressed @click.stop="relaunchDialog = false"
-                                >Cancel</v-btn
+                                >Cancel
+                                </v-btn
                                 >
                             </div>
                             <div class="my-2">
@@ -501,7 +532,8 @@
                                         depressed
                                         color="primary"
                                         @click.stop="relaunchWorkflow()"
-                                >Confirm</v-btn
+                                >Confirm
+                                </v-btn
                                 >
                             </div>
                         </v-card-actions>
@@ -533,15 +565,13 @@
                         :timeout="-1"
                         outlined
                 >
-                    <router-link
+                    <a @click="selectRow({id: postWorkflowResponse.id})"
                             class="nav-link"
-                            :to="{ path: '/'+ postWorkflowResponse.id }"
                             style="cursor: pointer"
-                            target="_blank"
                     >
-                        Open workflow : {{postWorkflowResponse.name}}
-                        {{postWorkflowResponse.id}}
-                    </router-link>
+                        Open workflow : {{ postWorkflowResponse.name }}
+                        {{ postWorkflowResponse.id }}
+                    </a>
 
                     <template v-slot:action="{ attrs }">
                         <v-btn
@@ -555,28 +585,6 @@
                 </v-snackbar>
 
                 <!-- snackbar error -->
-                <v-snackbar
-                        v-model="snackbar"
-                        :multi-line="multiLine"
-                        v-if="dialogState == 'error'"
-                        top
-                        right
-                        :timeout="-1"
-                        color="red accent-2"
-                >
-                    {{postWorkflowResponse}}
-                    <p v-if="postWorkflowErrorJSON">{{ postWorkflowErrorJSON }}</p>
-
-                    <template v-slot:action="{ attrs }">
-                        <v-btn
-                                text
-                                v-bind="attrs"
-                                @click="snackbar = false, dialogState=''"
-                        >
-                            Close
-                        </v-btn>
-                    </template>
-                </v-snackbar>
                 <v-container>
                     <v-row>
                         <v-col cols="12" md="8">
@@ -602,9 +610,8 @@
                                                 <td>{{ item.name }}</td>
                                                 <td v-if="!item.periodic"></td>
                                                 <td v-if="item.periodic">
-                                                    {{ item.periodic.crontab }} {{
-                                                        item.periodic.interval }}
-                                                    <v-icon small> mdi-clock </v-icon>
+                                                    {{ item.periodic.crontab }} {{ item.periodic.interval }}
+                                                    <v-icon small> mdi-clock</v-icon>
                                                 </td>
                                                 <!-- run button begins here -->
                                                 <td>
@@ -615,7 +622,7 @@
                                                             v-on:click="runButton(item)"
                                                             :disabled="isWorkflowRun == true"
                                                     >
-                                                        <v-icon dense> mdi-play </v-icon>
+                                                        <v-icon dense> mdi-play</v-icon>
                                                     </v-btn>
                                                 </td>
                                                 <!-- run button ends here -->
@@ -638,8 +645,8 @@
                         <v-container>
                             <p v-if="selectedRunningWorkflow != null">
                                 You are about to run workflow
-                                <strong>{{selectedRunningWorkflow.name}}</strong> from project
-                                <strong>{{selectedRunningWorkflow.project}}</strong>.
+                                <strong>{{ selectedRunningWorkflow.name }}</strong> from project
+                                <strong>{{ selectedRunningWorkflow.project }}</strong>.
                             </p>
                             <v-row>
                                 <v-col cols="12" sm="12" md="12">
@@ -682,11 +689,12 @@
     </div>
 {% endverbatim %}
 <script type="text/javascript">
-    const HISTORY_MODE = false;
     const API_URL = "/{{ BASE_API_URL }}/workflow/api";
-    const REFRESH_INTERVAL = 30000;
     const FLOWER_URL = '{{ FLOWER_URL }}';
 </script>
+<script src="
+https://cdn.jsdelivr.net/npm/jquery@3.6.3/dist/jquery.min.js
+"></script>
 <script
         src="https://cdn.jsdelivr.net/npm/vue@2.6.11/dist/vue.min.js"
         integrity="sha256-ngFW3UnAN0Tnm76mDuu7uUtYEcG3G5H1+zioJw3t+68="
@@ -727,6 +735,10 @@
         integrity="sha256-dPm4TA8Y9PY5q5mmtWMkRGOCMHJDKy34ZrxdbBGA9cs="
         crossorigin="anonymous"
 ></script>
+<script src="
+https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
+"></script>
+
 <script src="{% static 'script.js' %}"></script>
 </body>
 </html>
