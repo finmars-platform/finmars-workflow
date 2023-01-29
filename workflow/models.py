@@ -1,9 +1,6 @@
 from __future__ import unicode_literals
 
-import binascii
 import json
-import os
-import uuid
 
 import pytz
 from django.conf import settings
