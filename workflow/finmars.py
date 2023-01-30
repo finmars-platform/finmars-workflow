@@ -97,7 +97,7 @@ def execute_pricing_procedure(payload):
     return response.json()
 
 
-def execute_task(payload):
+def execute_task(task_name, payload):
     bot = User.objects.get(username="finmars_bot")
 
     refresh = RefreshToken.for_user(bot)
@@ -106,7 +106,10 @@ def execute_task(payload):
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
                'Authorization': 'Bearer %s' % refresh.access_token}
-    data = payload
+    data = {
+        'task_name': task_name,
+        'payload': payload
+    }
 
     url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/tasks/task/execute/'
 
