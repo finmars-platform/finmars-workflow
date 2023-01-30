@@ -469,6 +469,9 @@ new Vue({
         refreshStorage: function () {
             this.$store.dispatch("refreshStorage");
         },
+        refreshTask: function () {
+            this.$store.dispatch("getWorkflow", this.selectedWorkflow.id);
+        },
         goToHashUrl: function (hashUrl) {
             window.location.hash = hashUrl
             window.location.reload() // TODO Make location change without app reload
