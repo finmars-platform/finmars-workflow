@@ -258,8 +258,10 @@ const store = new Vuex.Store({
                     class: className,
                 });
 
-                for (let j = 0; j < tasks[i].previous.length; j++) {
-                    graph.setEdge(tasks[i].previous[j], tasks[i].celery_task_id, {});
+                if (tasks[i].previous) {
+                    for (let j = 0; j < tasks[i].previous.length; j++) {
+                        graph.setEdge(tasks[i].previous[j], tasks[i].celery_task_id, {});
+                    }
                 }
             }
 

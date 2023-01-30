@@ -20,6 +20,7 @@ nav:
       'Raise Exception Task': 'tasks/raise-exception-task.md'
       'Retry Task': 'tasks/retry-task.md'
       'Complex Example': 'tasks/complex-example-task.md'
+      'Simple Task With Hooks': 'tasks/simple-task-with-hooks.md'
   - User Guides:
       - 'Write Tasks': 'guides/write-tasks.md'
       - 'Build Workflows': 'guides/build-workflows.md'
