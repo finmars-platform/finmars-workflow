@@ -1,27 +1,23 @@
-import json
-import traceback
+import logging
+
 import pexpect
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
+from rest_framework import status
+from rest_framework.authentication import get_authorization_header
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet, ViewSet
 
 from workflow.celery_workflow import celery_workflow
 from workflow.models import Workflow, Task
-
-from rest_framework.viewsets import ModelViewSet, ViewSet
-
 from workflow.serializers import WorkflowSerializer, TaskSerializer, PingSerializer
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import ensure_csrf_cookie
-from django.utils import timezone
-from rest_framework.response import Response
-from rest_framework.authentication import get_authorization_header
-from rest_framework import status
-from rest_framework.decorators import action
-
-import logging
-
 from workflow.workflows import execute_workflow
 
 _l = logging.getLogger('workflow')
+
 
 class WorkflowViewSet(ModelViewSet):
     queryset = Workflow.objects.select_related(
@@ -36,7 +32,6 @@ class WorkflowViewSet(ModelViewSet):
 
     @action(detail=False, methods=('POST',), url_path='run-workflow')
     def run_workflow(self, request, pk=None):
-
         project, name, payload = (
             request.data["project"],
             request.data["name"],
@@ -50,7 +45,6 @@ class WorkflowViewSet(ModelViewSet):
 
     @action(detail=True, methods=('POST',), url_path='relaunch')
     def relaunch(self, request, pk=None):
-
         obj = Workflow.objects.get(id=pk)
         data, _ = execute_workflow(request.user.username, obj.project, obj.name, obj.payload)
 
@@ -74,7 +68,6 @@ class PingViewSet(ViewSet):
     authentication_classes = []
 
     def get_bearer_token(self, request):
-
         auth = get_authorization_header(request).split()
 
         token = None
@@ -86,7 +79,6 @@ class PingViewSet(ViewSet):
 
     @method_decorator(ensure_csrf_cookie)
     def list(self, request, *args, **kwargs):
-
         status_code = status.HTTP_200_OK
 
         serializer = PingSerializer(instance={
@@ -103,8 +95,12 @@ class RefreshStorageViewSet(ViewSet):
     def list(self, request, *args, **kwargs):
 
         try:
-            pexpect.spawn("supervisorctl restart celery", timeout=240)
-            pexpect.spawn("supervisorctl restart celerybeat", timeout=240)
+            c = pexpect.spawn("supervisorctl restart celery", timeout=240)
+            result = c.read()
+            _l.info('RefreshStorageViewSet.result %s' % result)
+            c = pexpect.spawn("supervisorctl restart celerybeat", timeout=240)
+            result = c.read()
+            _l.info('RefreshStorageViewSet.result %s' % result)
         except Exception as e:
             _l.info("Could not restart celery")
 
@@ -113,15 +109,12 @@ class RefreshStorageViewSet(ViewSet):
         return Response({'status': 'ok'})
 
 
-
 class DefinitionViewSet(ViewSet):
 
     def list(self, request, *args, **kwargs):
-
         workflow_definitions = []
 
         for fullname, definition in sorted(celery_workflow.workflows.items()):
-
             project, name = fullname.split(".", 1)
 
             workflow_definitions.append(
@@ -129,4 +122,3 @@ class DefinitionViewSet(ViewSet):
             )
 
         return Response(workflow_definitions)
-
