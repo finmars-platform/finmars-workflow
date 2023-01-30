@@ -73,7 +73,7 @@
 
 .graph .node g div {
   width: 200px;
-  /*height: 50px;*/
+  min-height: 50px;
   height: 100%;
   color: #333;
 }
