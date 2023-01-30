@@ -61,3 +61,4 @@ djangorestframework-simplejwt==5.2.2
 pluginbase==1.0.1
 jsonschema==4.17.3
 sqlalchemy==1.4.46
+flower==1.2.0
