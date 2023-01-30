@@ -36,12 +36,23 @@ def workflow_prerun(task_id, task, *args, **kwargs):
 
 
 class BaseTask(_Task):
+
+    def before_start(self, task_id, args, kwargs):
+        task = Task.objects.get(celery_task_id=task_id)
+        task.status = Task.STATUS_PROGRESS
+        task.save()
+
+        logger.info(f"Task {task_id} is now in progress")
+        super(BaseTask, self).before_start(task_id, args, kwargs)
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_ERROR
         task.result = {"exception": str(exc), "traceback": einfo.traceback}
-        task.workflow.status = Workflow.STATUS_ERROR
         task.save()
+
+        workflow = Workflow.objects.get(id=task.workflow_id)
+        workflow.status = Workflow.STATUS_ERROR
+        workflow.save()
 
         logger.info(f"Task {task_id} is now in error")
         super(BaseTask, self).on_failure(exc, task_id, args, kwargs, einfo)

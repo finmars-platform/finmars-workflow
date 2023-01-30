@@ -63,6 +63,10 @@
   background-color: #787777;
 }
 
+.graph .init .status {
+  background-color: grey;
+}
+
 .graph .progress .status {
   background-color: #2196f3;
 }

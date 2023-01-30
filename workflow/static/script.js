@@ -324,6 +324,8 @@ Vue.filter("statusColor", function (status) {
         return "#4caf50";
     } else if (status == "error") {
         return "#f44336";
+    } else if (status == "init") {
+        return "#f8f8f8";
     } else if (status == "canceled") {
         return "#b71c1c";
     } else if (status == "progress") {
@@ -421,7 +423,7 @@ new Vue({
         cancelDialog: false,
         search: "",
         selectedStatus: [],
-        status: ["success", "error", "progress", "pending", "canceled"],
+        status: ['init', "success", "error", "progress", "pending", "canceled"],
         selectedWorkflowName: "All",
     }),
     mounted() {
@@ -438,6 +440,7 @@ new Vue({
                 canceled: "red darken-4",
                 warning: "orange",
                 progress: "blue",
+                init: "grey",
             }[status];
             return color;
         },
