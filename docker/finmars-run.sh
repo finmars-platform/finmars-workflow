@@ -54,15 +54,10 @@ supervisorctl start celery
 supervisorctl start celerybeat
 
 
+echo "Run Flower"
 
-if [ $USE_FLOWER == "True" ];
-then
+cd /var/app && nohup celery --app workflow_app --broker=amqp://guest:guest@$RABBITMQ_HOST:5672// flower --concurrency=2 --auto_refresh=False --broker_api=http://guest:guest@$RABBITMQ_HOST:15672/api/  --url-prefix=$BASE_API_URL/flower --port=5566 &
 
-    echo "Run Flower"
-
-    cd /var/app && nohup celery --app workflow_app --broker=amqp://guest:guest@$RABBITMQ_HOST:5672// flower --concurrency=2 --auto_refresh=False --broker_api=http://guest:guest@$RABBITMQ_HOST:15672/api/  --url-prefix=$BASE_API_URL/flower --port=5566 &
-
-fi
 
 echo "Create admin user"
 
