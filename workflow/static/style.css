@@ -37,7 +37,8 @@
 }
 
 .graph .status {
-  height: 50px;
+  /*height: 50px;*/
+  height: 100%;
   width: 10px;
   display: block;
   float: left;
@@ -72,7 +73,8 @@
 
 .graph .node g div {
   width: 200px;
-  height: 50px;
+  /*height: 50px;*/
+  height: 100%;
   color: #333;
 }
 
