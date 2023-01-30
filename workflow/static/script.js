@@ -403,6 +403,7 @@ new Vue({
         isHome: false,
         drawer: false,
         group: null,
+        docLink: DOCUMENTATION_LINK,
         // definitions
         multiLine: true,
         snackbar: false,

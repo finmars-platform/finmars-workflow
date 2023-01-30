@@ -122,6 +122,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                 </v-list-item>
                             </button>
                         </router-link>
+                        <a :href="docLink" class="text-decoration-none" target="_blank">
+                            <button style="margin-left: 1em">
+                                <v-list-item>
+                                    <v-list-item-icon>
+                                        <v-icon>mdi-book-open-variant</v-icon>
+                                    </v-list-item-icon>
+                                    <v-list-item-title>Documentation</v-list-item-title>
+                                </v-list-item>
+                            </button>
+                        </a>
+
                     </v-list-item-group>
                 </v-list>
             </v-navigation-drawer>
@@ -707,6 +718,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
 <script type="text/javascript">
     const API_URL = "/{{ BASE_API_URL }}/workflow/api";
     const FLOWER_URL = '{{ FLOWER_URL }}';
+    const DOCUMENTATION_LINK = '{{ DOCUMENTATION_LINK }}';
 </script>
 <script src="
 https://cdn.jsdelivr.net/npm/jquery@3.6.3/dist/jquery.min.js

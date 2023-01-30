@@ -39,6 +39,10 @@ python /var/app/manage.py migrate
 
 #echo "Collect static"
 
+echo "Build documentation"
+
+cd /var/app/docs && mkdocs build --site-dir ../workflow/static/documentation
+
 python /var/app/manage.py collectstatic -c --noinput
 
 
