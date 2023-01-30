@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 
 import requests
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -140,6 +141,32 @@ def get_task(id):
 
     return response.json()
 
+
+def _wait_task_to_complete_recursive(task_id=None, retries=5, retry_interval=60, counter=None):
+
+    if counter == retries:
+        raise Exception("Task exceeded retries %s count" % retries)
+
+    result = get_task(task_id)
+
+    counter = counter + 1
+
+    if result.status != 'progress' and result.status != 'P':
+        return result
+
+    time.sleep(retry_interval)
+
+    return _wait_task_to_complete_recursive(task_id=task_id, retries=retries, retry_interval=retry_interval, counter=counter)
+
+
+def wait_task_to_complete(task_id=None, retries=5, retry_interval=60):
+
+    counter = 0
+    result = None
+
+    result = _wait_task_to_complete_recursive(task_id=task_id, retries=retries, retry_interval=retry_interval, counter=counter)
+
+    return result
 
 def execute_transaction_import(payload):
     bot = User.objects.get(username="finmars_bot")
