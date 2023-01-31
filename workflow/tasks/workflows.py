@@ -1,19 +1,18 @@
 import time
+import traceback
 
-from celery.utils.log import get_task_logger
 from celery import chain
 from celery.utils import uuid
+from celery.utils.log import get_task_logger
 
-
-from workflow.models import Workflow
 from workflow.models import Task
-
+from workflow.models import Workflow, User
 from workflow_app import celery_app
 
 logger = get_task_logger(__name__)
 
 
-@celery_app.task(name="celery.ping")
+@celery_app.task()
 def ping():
     # type: () -> str
     """Simple task that just returns 'pong'."""
@@ -53,7 +52,6 @@ def mark_as_canceled_init_tasks(workflow_id):
 
 @celery_app.task()
 def failure_hooks_launcher(workflow_id, queue, tasks_names, payload):
-
     logger.info('failure_hooks_launcher %s' % workflow_id)
 
     canvas = []
@@ -107,3 +105,33 @@ def failure_hooks_launcher(workflow_id, queue, tasks_names, payload):
     logger.info('signature_mark_as_canceled %s' % signature_mark_as_canceled)
 
     signature_mark_as_canceled.apply_async()
+
+
+@celery_app.task()
+def execute(workflow, payload):
+    try:
+
+        logger.info("periodic.execute %s" % workflow)
+
+        finmars_bot = User.objects.get(username='finmars_bot')
+
+        project, name = workflow.split(".")
+        c_obj = Workflow(project=project, owner=finmars_bot, name=name, payload=payload, periodic=True)
+        c_obj.save()
+
+        # Build the workflow and execute it
+        from workflow.builder import WorkflowBuilder
+        workflow = WorkflowBuilder(c_obj.id)
+        workflow.run()
+
+        c_obj_dict = c_obj.to_dict()
+        #
+        # # Force commit before ending the function to ensure the ongoing transaction
+        # # does not end up in a "idle in transaction" state on PostgreSQL
+        # c_obj.commit()
+
+        return c_obj_dict
+
+    except Exception as e:
+        logger.error('execute e %s' % e)
+        logger.error('execute traceback %s' % traceback.format_exc())

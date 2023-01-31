@@ -62,6 +62,15 @@ def transform(*args, **kwargs):
 def load(*args, **kwargs):
     print("Loading data")
     time.sleep(10)
+
+
+@task(name="BEFORE_START")
+def before_start(*args, **kwargs):
+    # this would be a payload for workflow
+    return {
+        'test': 123
+    }
+
 ```
 
 And its YAML file
@@ -82,4 +91,7 @@ simple.ETL:
     - LOAD
   periodic:
     interval: 60
+    payload: '{"date": "2023-01-01"}'
+  hooks:
+    before_start: BEFORE_START
 ```

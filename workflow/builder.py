@@ -28,7 +28,10 @@ class WorkflowBuilder(object):
 
         self.success_hook = celery_workflow.get_success_hook_task(str(self.workflow))
 
+        self.before_start_hook = celery_workflow.get_before_start_hook_task(str(self.workflow))
+
         _l.info('self.success_hook %s' % self.success_hook)
+        _l.info('self.before_start_hook %s' % self.before_start_hook)
 
         self.success_hook_canvas = []
 
@@ -112,7 +115,19 @@ class WorkflowBuilder(object):
     def build(self):
         self.parse_queues()
         self.canvas = self.parse(self.tasks)
-        self.canvas.insert(0, start.si(self.workflow.id).set(queue=self.queue))
+        if self.before_start_hook:
+
+            initial_previous = self.previous
+            self.previous = None
+            self.before_start_hook_canvas = self.parse([self.before_start_hook], True)[0]
+
+            _l.info('self.before_start_hook_canvas %s' % self.before_start_hook_canvas)
+
+            self.canvas.insert(0, self.before_start_hook_canvas.set(queue=self.queue)) # insert before_start hook if exists
+
+            self.previous = initial_previous
+
+        self.canvas.insert(0, start.si(self.workflow.id).set(queue=self.queue)) # Workflow Start would be always first
         self.canvas.append(end.si(self.workflow.id).set(queue=self.queue))
 
     def build_hooks(self):

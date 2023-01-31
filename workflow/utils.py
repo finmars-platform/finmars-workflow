@@ -3,6 +3,8 @@ from celery.schedules import crontab
 
 from workflow.exceptions import WorkflowSyntaxError
 
+import logging
+_l = logging.getLogger('workflow')
 
 def validate(payload, schema):
     """Validate a payload according to a given schema"""
@@ -23,6 +25,8 @@ def format_schema_errors(e):
 
 def build_celery_schedule(workflow_name, data):
     """A celery schedule can accept seconds or crontab"""
+
+    _l.info('build_celery_schedule %s' % workflow_name)
 
     def _handle_schedule(schedule):
         try:
@@ -68,5 +72,7 @@ def build_celery_schedule(workflow_name, data):
     try:
         # Apply the function mapped to the schedule type
         return str(schedule_input), schedule_functions[schedule_key](schedule_input)
-    except Exception:
+    except Exception as e:
+        _l.error("build_celery_schedule.e %s" % e)
+
         raise WorkflowSyntaxError(workflow_name)

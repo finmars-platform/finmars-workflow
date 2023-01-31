@@ -27,7 +27,7 @@ class WorkflowSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Workflow
-        fields = ['id', 'name', 'project', 'owner', 'status', 'payload', 'created', 'modified', 'tasks']
+        fields = ['id', 'name', 'project', 'owner', 'status', 'payload', 'created', 'modified', 'tasks', 'periodic']
 
 
 class PingSerializer(serializers.Serializer):

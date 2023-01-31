@@ -22,6 +22,7 @@ nav:
       'Complex Example': 'tasks/complex-example-task.md'
       'Simple Task With Hooks': 'tasks/simple-task-with-hooks.md'
       'Scheduled Workflow': 'tasks/scheduled-workflow.md'
+      'Args VS Kwargs': 'tasks/args-vs-kwargs.md'
   - User Guides:
       - 'Write Tasks': 'guides/write-tasks.md'
       - 'Build Workflows': 'guides/build-workflows.md'
