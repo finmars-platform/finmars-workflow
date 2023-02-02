@@ -1,15 +1,20 @@
+import json
 import time
 import traceback
 
+import requests
 from celery import chain
 from celery.utils import uuid
 from celery.utils.log import get_task_logger
 
+
 from workflow.models import Task
 from workflow.models import Workflow, User
-from workflow_app import celery_app
+from workflow_app import celery_app, settings
 
 logger = get_task_logger(__name__)
+
+
 
 
 @celery_app.task()
@@ -39,6 +44,8 @@ def end(workflow_id):
     if workflow.status != Workflow.STATUS_ERROR:
         workflow.status = Workflow.STATUS_SUCCESS
         workflow.save()
+
+
 
 
 @celery_app.task()
