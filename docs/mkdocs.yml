@@ -1,0 +1,43 @@
+site_name: "Workflow"
+
+edit_uri: ""
+
+use_directory_urls: false
+
+theme:
+  name: 'material'
+  palette:
+    primary: 'teal'
+    accent: 'teal'
+
+nav:
+  - Introduction: 'index.md'
+  - Task Examples:
+      'Simple Task': 'tasks/simple-task.md'
+      'Grouped Task': 'tasks/grouped-task.md'
+      'Execute Import Task': 'tasks/execute-import-task.md'
+      'Execute Expression Task': 'tasks/execute-expression-task.md'
+      'Raise Exception Task': 'tasks/raise-exception-task.md'
+      'Retry Task': 'tasks/retry-task.md'
+      'Complex Example': 'tasks/complex-example-task.md'
+      'Simple Task With Hooks': 'tasks/simple-task-with-hooks.md'
+      'Scheduled Workflow': 'tasks/scheduled-workflow.md'
+      'Args VS Kwargs': 'tasks/args-vs-kwargs.md'
+  - User Guides:
+      - 'Write Tasks': 'guides/write-tasks.md'
+      - 'Build Workflows': 'guides/build-workflows.md'
+      - 'Run Workflows': 'guides/run-workflows.md'
+      - 'Use Payload': 'guides/use-payload.md'
+      - 'Error Tracking': 'guides/error-tracking.md'
+      - 'Use Flower': 'guides/use-flower.md'
+      - 'Trigger Hooks': 'guides/trigger-hooks.md'
+  - API: 'api.md'
+
+extra_css:
+  - "css/custom.css"
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences

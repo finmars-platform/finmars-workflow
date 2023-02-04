@@ -9,34 +9,26 @@ FAKE_MIGRATE="${FAKE_MIGRATE:-False}"
 echo "Finmars initialization"
 
 
-echo "set chmod 777 /var/log/finmars/"
+echo "set chmod 777 /var/log/finmars/workflow"
 
-chmod 777 /var/log/finmars/
+chmod 777 /var/log/finmars/workflow
 
-echo "Create django log file /var/log/finmars/django.log"
+echo "Create django log file /var/log/finmars/workflow/django.log"
 
-touch /var/log/finmars/django.log
+touch /var/log/finmars/workflow/django.log
 
-echo "set chmod 777 /var/log/finmars/django.log"
+echo "set chmod 777 /var/log/finmars/workflow/django.log"
 
-chmod 777 /var/log/finmars/django.log
+chmod 777 /var/log/finmars/workflow/django.log
 
-mkdir /var/app/finmars_data
-chmod 777 /var/app/finmars_data
+mkdir /var/app/app-data
+chmod 777 /var/app/app-data
 
 
 ############################################
 
-if [ $FAKE_MIGRATE == "True" ];
-then
-  echo "Fake Migrating"
-  python /var/app/manage.py drop_django_migrations
-  echo "Drop table django_migrations"
-  python /var/app/manage.py migrate --fake
-else
-  echo "Migrating"
-  python /var/app/manage.py migrate
-fi
+echo "Migrating"
+python /var/app/manage.py migrate
 #echo "Create cache table"
 #
 #/var/app-venv/bin/python /var/app/manage.py createcachetable
@@ -47,35 +39,33 @@ fi
 
 #echo "Collect static"
 
+echo "Build documentation"
+
+cd /var/app/docs && mkdocs build --site-dir ../workflow/static/documentation
+
 python /var/app/manage.py collectstatic -c --noinput
 
-if [ $USE_CELERY == "True" ];
-then
 
-    echo "Start celery"
 
-    export DJANGO_SETTINGS_MODULE=workflow_app.settings
-    export C_FORCE_ROOT='true'
+echo "Start celery"
 
-    supervisord
+export DJANGO_SETTINGS_MODULE=workflow_app.settings
+export C_FORCE_ROOT='true'
 
-    supervisorctl start celery
-    supervisorctl start celerybeat
+supervisord
 
-fi
+supervisorctl start celery
+supervisorctl start celerybeat
 
-if [ $USE_FLOWER == "True" ];
-then
 
-    echo "Run Flower"
+echo "Run Flower"
 
-    cd /var/app && nohup celery --app workflow_app --broker=amqp://guest:guest@$RABBITMQ_HOST:5672// flower --concurrency=2 --auto_refresh=False --broker_api=http://guest:guest@$RABBITMQ_HOST:15672/api/  --url-prefix=$BASE_API_URL/flower --port=5566 &
+cd /var/app && nohup celery --app workflow_app --broker=amqp://guest:guest@$RABBITMQ_HOST:5672// flower --concurrency=2 --auto_refresh=False --broker_api=http://guest:guest@$RABBITMQ_HOST:15672/api/  --url-prefix=$BASE_API_URL/workflow/flower --port=5566 &
 
-fi
 
-#echo "Create admin user"
+echo "Create admin user"
 
-#python /var/app/manage.py generate_super_user
+python /var/app/manage.py generate_super_user
 
 echo "Run server"
 

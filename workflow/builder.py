@@ -27,6 +27,12 @@ class WorkflowBuilder(object):
         self.failure_hook_canvas = []
 
         self.success_hook = celery_workflow.get_success_hook_task(str(self.workflow))
+
+        self.before_start_hook = celery_workflow.get_before_start_hook_task(str(self.workflow))
+
+        _l.info('self.success_hook %s' % self.success_hook)
+        _l.info('self.before_start_hook %s' % self.before_start_hook)
+
         self.success_hook_canvas = []
 
         # Pointer to the previous task(s)
@@ -55,16 +61,20 @@ class WorkflowBuilder(object):
             task_id=task_id,
         )
 
+        _l.info('self.previous %s' % self.previous)
+
         # workflow task has the same UID
         task = Task(
             celery_task_id=task_id,
             name=task_name,
             previous=self.previous,
             workflow_id=self.workflow.id,
-            status=Task.STATUS_PROGRESS,
+            status=Task.STATUS_INIT,
             is_hook=is_hook,
         )
         task.save()
+
+        _l.info('signature %s' % signature.id)
 
         if single:
             self.previous = [signature.id]
@@ -105,7 +115,19 @@ class WorkflowBuilder(object):
     def build(self):
         self.parse_queues()
         self.canvas = self.parse(self.tasks)
-        self.canvas.insert(0, start.si(self.workflow.id).set(queue=self.queue))
+        if self.before_start_hook:
+
+            initial_previous = self.previous
+            self.previous = None
+            self.before_start_hook_canvas = self.parse([self.before_start_hook], True)[0]
+
+            _l.info('self.before_start_hook_canvas %s' % self.before_start_hook_canvas)
+
+            self.canvas.insert(0, self.before_start_hook_canvas.set(queue=self.queue)) # insert before_start hook if exists
+
+            self.previous = initial_previous
+
+        self.canvas.insert(0, start.si(self.workflow.id).set(queue=self.queue)) # Workflow Start would be always first
         self.canvas.append(end.si(self.workflow.id).set(queue=self.queue))
 
     def build_hooks(self):
@@ -123,7 +145,7 @@ class WorkflowBuilder(object):
             ]
 
         if self.success_hook and not self.success_hook_canvas:
-            self.previous = None
+            # self.previous = None
             self.success_hook_canvas = [self.parse([self.success_hook], True)[0]]
 
         self.previous = initial_previous
@@ -155,7 +177,7 @@ class WorkflowBuilder(object):
         status_to_cancel = set([Task.STATUS_PROGRESS])
         for task in self.workflow.tasks:
             if task.status in status_to_cancel:
-                celery_app.control.revoke(task.id, terminate=True)
+                celery_app.control.revoke(task.celery_task_id, terminate=True)
                 task.status = Task.STATUS_CANCELED
                 task.save()
         self.workflow.status = Workflow.STATUS_CANCELED

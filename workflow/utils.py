@@ -1,8 +1,11 @@
-from flask_json_schema import JsonValidationError
-from jsonschema.validators import validator_for
+import logging
+
 from celery.schedules import crontab
+from jsonschema.validators import validator_for
 
 from workflow.exceptions import WorkflowSyntaxError
+
+_l = logging.getLogger('workflow')
 
 
 def validate(payload, schema):
@@ -11,7 +14,7 @@ def validate(payload, schema):
     validator = validator_cls(schema=schema)
     errors = list(validator.iter_errors(payload))
     if errors:
-        raise JsonValidationError("Payload is not valid", errors)
+        raise Exception("Payload is not valid", errors)
 
 
 def format_schema_errors(e):
@@ -24,6 +27,8 @@ def format_schema_errors(e):
 
 def build_celery_schedule(workflow_name, data):
     """A celery schedule can accept seconds or crontab"""
+
+    _l.info('build_celery_schedule %s' % workflow_name)
 
     def _handle_schedule(schedule):
         try:
@@ -69,5 +74,54 @@ def build_celery_schedule(workflow_name, data):
     try:
         # Apply the function mapped to the schedule type
         return str(schedule_input), schedule_functions[schedule_key](schedule_input)
-    except Exception:
+    except Exception as e:
+        _l.error("build_celery_schedule.e %s" % e)
+
         raise WorkflowSyntaxError(workflow_name)
+
+
+def send_alert(workflow):
+    from workflow.models import Workflow
+    from workflow.models import User
+    from workflow.models import Task
+    from workflow_app import settings
+    from rest_framework_simplejwt.tokens import RefreshToken
+    import requests
+    import json
+
+    if workflow.status == Workflow.STATUS_ERROR:
+
+        _l.info("Going to report Error to Finmars")
+
+        try:
+
+            bot = User.objects.get(username="finmars_bot")
+
+            refresh = RefreshToken.for_user(bot)
+
+            # _l.info('refresh %s' % refresh.access_token)
+
+            headers = {'Content-type': 'application/json', 'Accept': 'application/json',
+                       'Authorization': 'Bearer %s' % refresh.access_token}
+
+            error_task = workflow.tasks.filter(status=Task.STATUS_ERROR).first()
+
+            error_description = 'Unknown'
+
+            if error_task:
+                error_description = str(error_task.error_message)
+
+            data = {
+                "expression": "send_system_message(type=\"error\", title=\"Workflow Failed. %s (%s)\", description=\"%s\", action_status=\"required\")" % (
+                    workflow.name, workflow.id, error_description),
+                "is_eval": True
+            }
+
+            url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/utils/expression/'
+
+            response = requests.post(url=url, data=json.dumps(data), headers=headers)
+
+            # _l.info('response %s' % response.text)
+
+        except Exception as e:
+            _l.error("Could not send system message to finmars. Error %s" % e)

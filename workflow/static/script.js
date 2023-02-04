@@ -4,9 +4,71 @@ function getCookie(name) {
     if (parts.length === 2) return parts.pop().split(';').shift();
 }
 
+const notifyError = function (reason) {
+
+    console.log('notifyError.reason', reason);
+
+    let error_object = reason.response.data.error
+
+    let message = ''
+
+    message = message + '<span class="toast-error-field">Title</span>: ' + error_object.message + '<br/>'
+    message = message + '<span class="toast-error-field">Code</span>: ' + error_object.status_code + '<br/>'
+    message = message + '<span class="toast-error-field">URL</span>: ' + error_object.url + '<br/>'
+    message = message + '<span class="toast-error-field">Username</span>: ' + error_object.username + '<br/>'
+    message = message + '<span class="toast-error-field">Date & Time</span>: ' + error_object.datetime + '<br/>'
+    message = message + '<span class="toast-error-field">Details</span>: <div><pre>' + JSON.stringify(error_object.details, null, 4) + '</pre></div>'
+
+    let raw_title = 'Client Error'
+
+    if (error_object.status_code === 500) {
+        raw_title = 'Server Error'
+    }
+
+    let title = raw_title + '<span class="toast-click-to-copy">click to copy</span>'
+
+    toastr.error(message, title, {
+        progressBar: true,
+        closeButton: true,
+        tapToDismiss: false,
+        onclick: function (event) {
+
+            var listener = function (e) {
+
+                e.clipboardData.setData('text/plain', JSON.stringify(error_object, null, 4));
+
+                e.preventDefault();
+            };
+
+            document.addEventListener('copy', listener, false);
+
+            document.execCommand("copy");
+
+            document.removeEventListener('copy', listener, false);
+
+        },
+        timeOut: '10000',
+        extendedTimeOut: '10000'
+    });
+
+    return Promise.reject(reason)
+
+};
+
+axios.interceptors.response.use(function (response) {
+    // Any status code that lie within the range of 2xx cause this function to trigger
+    // Do something with response data
+    return response;
+}, function (error) {
+    // Any status codes that falls outside the range of 2xx cause this function to trigger
+    // Do something with response error
+    notifyError(error);
+    return Promise.reject(error);
+});
+
 
 const router = new VueRouter({
-    mode: HISTORY_MODE ? "history" : "hash",
+    mode: "hash",
     routes: [
         {
             name: "home",
@@ -18,7 +80,7 @@ const router = new VueRouter({
         },
         {
             name: 'worfklow',
-            path: '/:id'
+            path: '/item/:id'
         }
     ]
 });
@@ -27,6 +89,7 @@ const store = new Vuex.Store({
     state: {
         definitions: [],
         workflows: [],
+        workflowsCount: 0,
         workflowNames: [],
         network: null,
         selectedWorkflow: null,
@@ -46,10 +109,11 @@ const store = new Vuex.Store({
 
             axios({
                 method: 'get',
-                url: API_URL + "/workflow/?with_payload=false",
+                url: API_URL + "/workflow/",
                 headers: headers
             }).then((response) => {
                 commit("updateWorkflows", response.data.results);
+                commit("updateWorkflowsCount", response.data.count);
                 commit("changeLoadingState", false);
             });
         },
@@ -97,10 +161,13 @@ const store = new Vuex.Store({
                 'Content-type': 'application/json'
             };
 
-            axios({method: 'get', url: API_URL + "/refresh-storage", headers: headers})
+            axios({method: 'get', url: API_URL + "/refresh-storage/", headers: headers})
                 .then((response) => {
                     dispatch("listWorkflows");
                     dispatch("listDefinitions");
+
+                    toastr.success("Storage refreshed")
+
                 });
         },
         relaunchWorkflow({commit, dispatch}, workflow_id) {
@@ -140,6 +207,9 @@ const store = new Vuex.Store({
             state.workflowNames = ["All"].concat([
                 ...new Set(workflows.map((item) => item.fullname)),
             ]);
+        },
+        updateWorkflowsCount(state, count) {
+            state.workflowsCount = count;
         },
         updateDefinitions(state, definitions) {
             state.definitions = definitions
@@ -188,8 +258,10 @@ const store = new Vuex.Store({
                     class: className,
                 });
 
-                for (let j = 0; j < tasks[i].previous.length; j++) {
-                    graph.setEdge(tasks[i].previous[j], tasks[i].celery_task_id, {});
+                if (tasks[i].previous) {
+                    for (let j = 0; j < tasks[i].previous.length; j++) {
+                        graph.setEdge(tasks[i].previous[j], tasks[i].celery_task_id, {});
+                    }
                 }
             }
 
@@ -254,6 +326,8 @@ Vue.filter("statusColor", function (status) {
         return "#4caf50";
     } else if (status == "error") {
         return "#f44336";
+    } else if (status == "init") {
+        return "#f8f8f8";
     } else if (status == "canceled") {
         return "#b71c1c";
     } else if (status == "progress") {
@@ -274,11 +348,6 @@ new Vue({
         headers() {
             return [
                 {
-                    text: "ID",
-                    value: "id",
-                    align: " d-none",
-                },
-                {
                     text: "Status",
                     align: "left",
                     value: "status",
@@ -289,10 +358,15 @@ new Vue({
                     },
                 },
                 {
+                    text: "ID",
+                    value: "id",
+                    width: "16%",
+                },
+                {
                     text: "Name",
                     align: "left",
                     value: "fullname",
-                    width: "56%",
+                    width: "40%",
                     filter: (value) => {
                         if (
                             !this.selectedWorkflowName ||
@@ -313,6 +387,7 @@ new Vue({
         ...Vuex.mapState([
             "definitions",
             "workflows",
+            "workflowsCount",
             "workflowNames",
             "selectedWorkflow",
             "selectedTask",
@@ -330,6 +405,7 @@ new Vue({
         isHome: false,
         drawer: false,
         group: null,
+        docLink: DOCUMENTATION_LINK,
         // definitions
         multiLine: true,
         snackbar: false,
@@ -342,6 +418,7 @@ new Vue({
         selectedRunningWorkflow: null,
         postWorkflowErrorJSON: "",
         // workflow (home)
+        autoRefresh: true,
         interval: null,
         tab: null,
         payloadDialog: false,
@@ -349,24 +426,11 @@ new Vue({
         cancelDialog: false,
         search: "",
         selectedStatus: [],
-        status: ["success", "error", "progress", "pending", "canceled"],
+        status: ['init', "success", "error", "progress", "pending", "canceled"],
         selectedWorkflowName: "All",
     }),
     mounted() {
-        const theme = localStorage.getItem("dark_theme");
-        if (theme) {
-            if (theme === "true") {
-                this.$vuetify.theme.dark = true;
-            } else {
-                this.$vuetify.theme.dark = false;
-            }
-        } else if (
-            window.matchMedia &&
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-        ) {
-            this.$vuetify.theme.dark = true;
-            localStorage.setItem("dark_theme", this.$vuetify.theme.dark.toString());
-        }
+        this.$vuetify.theme.dark = true;
     },
     methods: {
         moveUp: function () {
@@ -379,6 +443,7 @@ new Vue({
                 canceled: "red darken-4",
                 warning: "orange",
                 progress: "blue",
+                init: "grey",
             }[status];
             return color;
         },
@@ -394,7 +459,11 @@ new Vue({
                 .catch(() => {
                 });
 
+            window.location.reload() // TODO remove app reload on location change
+
             this.$store.dispatch("getWorkflow", item.id);
+
+
         },
         displayTask: function (task) {
             this.$store.dispatch("selectTask", task);
@@ -406,6 +475,28 @@ new Vue({
         refreshStorage: function () {
             this.$store.dispatch("refreshStorage");
         },
+        refreshTask: function () {
+            this.$store.dispatch("getWorkflow", this.selectedWorkflow.id);
+        },
+        goToHashUrl: function (hashUrl) {
+            window.location.hash = hashUrl
+            window.location.reload() // TODO Make location change without app reload
+        },
+        toggleAutoRefresh: function () {
+
+            this.autoRefresh = !this.autoRefresh;
+
+            if (this.autoRefresh) {
+                this.interval = setInterval(() => {
+                    this.$store.dispatch("listWorkflows");
+
+                    let workflowID = this.$route.params.id;
+
+                }, 5000);
+            } else {
+                clearInterval(this.interval);
+            }
+        },
         cancelWorkflow: function () {
             this.$store.dispatch("cancelWorkflow", this.selectedWorkflow.id);
             this.cancelDialog = false;
@@ -416,7 +507,6 @@ new Vue({
             }
             return "";
         },
-
         runButton: function (item) {
             (this.postWorkflowResponse = ""),
                 (this.postWorkflowErrorJSON = ""),
@@ -472,28 +562,29 @@ new Vue({
                 );
         },
     },
-    watch: {
-        "$vuetify.theme.dark"(newValue) {
-            localStorage.setItem("dark_theme", newValue);
-        },
-    },
     created() {
         this.isHome = true;
         this.$store.dispatch('listDefinitions');
         this.$store.dispatch('listWorkflows');
 
         this.interval = setInterval(() => {
-            this.$store.dispatch("listWorkflows");
-        }, REFRESH_INTERVAL);
 
-        if (this.$route.name == "definitions") {
-            this.isHome = false;
-        }
+            this.$store.dispatch("listWorkflows");
+
+            let workflowID = this.$route.params.id;
+
+        }, 5000);
 
         let workflowID = this.$route.params.id;
         if (workflowID) {
             this.$store.dispatch("getWorkflow", workflowID);
         }
+
+
+        if (this.$route.name == "definitions") {
+            this.isHome = false;
+        }
+
     },
     beforeDestroy() {
         clearInterval(this.interval);

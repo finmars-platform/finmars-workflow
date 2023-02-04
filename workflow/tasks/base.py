@@ -1,23 +1,22 @@
 from celery import Task as _Task
-from celery.signals import task_prerun, task_postrun
+from celery.signals import task_prerun
 from celery.utils.log import get_task_logger
 
-from workflow_app import celery_app
 from workflow.models import Task, Workflow
+from workflow.utils import send_alert
+from workflow_app import celery_app
 
 logger = get_task_logger(__name__)
 
 
 @task_prerun.connect
 def workflow_prerun(task_id, task, *args, **kwargs):
-
     ignored_tasks = ("workflow.tasks", "celery.")
 
     if task.name.startswith(ignored_tasks):
         return
 
     with celery_app.app.app_context():
-
         print('task_id %s' % task_id)
 
         task = Task.objects.get(celery_task_id=task_id)
@@ -36,12 +35,27 @@ def workflow_prerun(task_id, task, *args, **kwargs):
 
 
 class BaseTask(_Task):
+
+    def before_start(self, task_id, args, kwargs):
+        task = Task.objects.get(celery_task_id=task_id)
+        task.status = Task.STATUS_PROGRESS
+        task.save()
+
+        logger.info(f"Task {task_id} is now in progress")
+        super(BaseTask, self).before_start(task_id, args, kwargs)
+
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_ERROR
         task.result = {"exception": str(exc), "traceback": einfo.traceback}
-        task.workflow.status = Workflow.STATUS_ERROR
+        task.error_message = str(exc)
         task.save()
+
+        workflow = Workflow.objects.get(id=task.workflow_id)
+        workflow.status = Workflow.STATUS_ERROR
+        workflow.save()
+
+        send_alert(workflow)
 
         logger.info(f"Task {task_id} is now in error")
         super(BaseTask, self).on_failure(exc, task_id, args, kwargs, einfo)
@@ -51,7 +65,6 @@ class BaseTask(_Task):
         task.status = Task.STATUS_SUCCESS
         task.result = retval
         task.save()
-
 
         logger.info(f"Task {task_id} is now in success. Retval {retval}")
         super(BaseTask, self).on_success(retval, task_id, args, kwargs)

@@ -19,7 +19,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DJANGO_LOG_LEVEL = ENV_STR('DJANGO_LOG_LEVEL', 'INFO')
 BASE_API_URL = ENV_STR('BASE_API_URL', 'space00000')
 AUTHORIZER_URL = ENV_STR('AUTHORIZER_URL', None)
-FLOWER_URL = ENV_STR('FLOWER_URL', BASE_API_URL + '/flower')
+FLOWER_URL = ENV_STR('FLOWER_URL', '/' + BASE_API_URL + '/workflow/flower')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = ENV_BOOL('DEBUG', False)
 USE_FILESYSTEM_STORAGE = ENV_BOOL('USE_FILESYSTEM_STORAGE', False)
@@ -167,10 +167,13 @@ AUTH_PASSWORD_VALIDATORS = [
 # = Static Configuration =
 # ========================
 
-STATIC_URL = '/workflow/static/'
+STATIC_URL = '/' + BASE_API_URL + '/workflow/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+
 STATICFILES_DIR = (
     os.path.join(BASE_DIR, 'static'),
+    os.path.join(BASE_DIR, 'static', 'documentation'),
 )
 
 # ========================
@@ -292,7 +295,9 @@ LOGGING = {
         },
         'file': {
             'level': DJANGO_LOG_LEVEL,
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'interval': 1,
+            'when': 'D',
             'filename': '/var/log/finmars/workflow/django.log',
             'formatter': 'verbose'
         }

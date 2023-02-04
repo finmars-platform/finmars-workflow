@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 
 import requests
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -97,7 +98,7 @@ def execute_pricing_procedure(payload):
     return response.json()
 
 
-def execute_task(payload):
+def execute_task(task_name, payload={}):
     bot = User.objects.get(username="finmars_bot")
 
     refresh = RefreshToken.for_user(bot)
@@ -106,7 +107,10 @@ def execute_task(payload):
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
                'Authorization': 'Bearer %s' % refresh.access_token}
-    data = payload
+    data = {
+        'task_name': task_name,
+        'payload': payload
+    }
 
     url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/tasks/task/execute/'
 
@@ -137,6 +141,32 @@ def get_task(id):
 
     return response.json()
 
+
+def _wait_task_to_complete_recursive(task_id=None, retries=5, retry_interval=60, counter=None):
+
+    if counter == retries:
+        raise Exception("Task exceeded retries %s count" % retries)
+
+    result = get_task(task_id)
+
+    counter = counter + 1
+
+    if result.status != 'progress' and result.status != 'P':
+        return result
+
+    time.sleep(retry_interval)
+
+    return _wait_task_to_complete_recursive(task_id=task_id, retries=retries, retry_interval=retry_interval, counter=counter)
+
+
+def wait_task_to_complete(task_id=None, retries=5, retry_interval=60):
+
+    counter = 0
+    result = None
+
+    result = _wait_task_to_complete_recursive(task_id=task_id, retries=retries, retry_interval=retry_interval, counter=counter)
+
+    return result
 
 def execute_transaction_import(payload):
     bot = User.objects.get(username="finmars_bot")

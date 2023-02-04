@@ -74,6 +74,9 @@ class KeycloakAuthentication(TokenAuthentication):
 
         user_model = get_user_model()
 
-        user = user_model.objects.get(username=userinfo['preferred_username'])
+        try:
+            user = user_model.objects.get(username=userinfo['preferred_username'])
+        except Exception as e:
+            user = user_model.objects.create(username=userinfo['preferred_username'])
 
         return user, key

@@ -1,3 +1,4 @@
+from workflow.utils import build_celery_schedule
 from workflow_app import settings
 
 import json
@@ -12,6 +13,7 @@ from pathlib import Path
 from workflow.exceptions import SchemaNotFound, SchemaNotValid, WorkflowNotFound
 from workflow.storage import get_storage
 from workflow_app import settings
+from workflow_app import celery_app
 
 storage = get_storage()
 
@@ -26,8 +28,8 @@ class CeleryWorkflow:
 
 
     def init_app(self):
-
-        _l.info('settings.BASE_API_URL %s' % settings.BASE_API_URL)
+        _l.info('CeleryWorkflow.init_app')
+        # _l.info('settings.BASE_API_URL %s' % settings.BASE_API_URL)
 
         workflow_path = settings.BASE_API_URL + '/workflows'
 
@@ -75,6 +77,9 @@ class CeleryWorkflow:
 
     def get_success_hook_task(self, name):
         return self.get_hook_task(name, "success")
+
+    def get_before_start_hook_task(self, name):
+        return self.get_hook_task(name, "before_start")
 
     def get_queue(self, name):
         try:
@@ -154,11 +159,39 @@ class CeleryWorkflow:
 
                 self.workflows[name]["schema"] = schema
 
+def init_periodic_tasks():
 
+    for workflow, conf in celery_workflow.workflows.items():
+
+        # A dict is built for the periodic cleaning if the retention is valid
+
+        if "periodic" in conf:
+            periodic_conf = conf.get("periodic")
+            periodic_payload = periodic_conf.get("payload", {})
+            schedule_str, schedule_value = build_celery_schedule(
+                workflow, periodic_conf
+            )
+
+            celery_app.conf.beat_schedule.update(
+                {
+                    f"periodic-{workflow}-{schedule_str}": {
+                        "task": "workflow.tasks.workflows.execute",
+                        "schedule": schedule_value,
+                        "args": (
+                            workflow,
+                            periodic_payload,
+                        ),
+                        'options': {'queue' : 'workflow'},
+                    }
+                }
+            )
+
+    _l.info('Schedule %s' % celery_app.conf.beat_schedule)
 
 
 _l.info("==== Load Tasks & Workflow ====")
 
 celery_workflow = CeleryWorkflow()
 celery_workflow.init_app()
-
+_l.info("==== Init Periodic Tasks ====")
+init_periodic_tasks()

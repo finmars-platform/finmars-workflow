@@ -12,6 +12,7 @@ COPY docker/finmars-run.sh /var/app/docker/finmars-run.sh
 #COPY data/ /var/app/data/
 COPY workflow/ /var/app/workflow/
 COPY workflow_app/ /var/app/workflow_app/
+COPY docs/ /var/app/docs/
 COPY healthcheck/ /var/app/healthcheck/
 COPY finmars_standardized_errors/ /var/app/finmars_standardized_errors/
 COPY logstash/ /var/app/logstash/
@@ -22,6 +23,7 @@ RUN mkdir -p /var/app/app-data/media/
 RUN mkdir -p /var/app/app-data/import/configs/
 RUN mkdir -p /var/app/app-data/import/files/
 RUN mkdir -p /var/log/finmars
+RUN mkdir -p /var/log/finmars/workflow/
 #RUN chown -R www-data:www-data /var/log/finmars/
 #RUN chown -R www-data:www-data /var/app
 #RUN chown -R www-data:www-data /var/app-data
