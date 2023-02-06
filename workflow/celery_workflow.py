@@ -47,10 +47,6 @@ class CeleryWorkflow:
 
                 if '.yml' in file or '.yaml' in file:
 
-                    if settings.AZURE_ACCOUNT_KEY:
-                        if file[-1] != '/':
-                            file = file + '/'
-
                     f = storage.open(workflow_path + '/' + file).read()
 
                     self.workflows.update(yaml.load(f, Loader=yaml.SafeLoader))
@@ -110,13 +106,7 @@ class CeleryWorkflow:
 
             if '.py' in filename:
 
-                original_filename = filename
-
                 _l.info("Going to sync file %s " % filename)
-
-                if settings.AZURE_ACCOUNT_KEY:
-                    if filename[-1] != '/':
-                        filename = filename + '/'
 
                 with storage.open(workflow_path + '/' + filename) as f:
 
@@ -124,7 +114,7 @@ class CeleryWorkflow:
 
                         os.makedirs(os.path.dirname(settings.MEDIA_ROOT + '/tasks/' + filename), exist_ok=True)
 
-                        with open(settings.MEDIA_ROOT + '/tasks/' + original_filename, 'wb') as new_file:
+                        with open(settings.MEDIA_ROOT + '/tasks/' + filename, 'wb') as new_file:
                             new_file.write(f_content)
 
 
