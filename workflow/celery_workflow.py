@@ -99,7 +99,10 @@ class CeleryWorkflow:
 
     def load_user_tasks_from_storage_to_local_filesystem(self):
 
-        shutil.rmtree(settings.MEDIA_ROOT + '/tasks/')
+        try:
+            shutil.rmtree(settings.MEDIA_ROOT + '/tasks/')
+        except Exception as e:
+            _l.error('load_user_tasks_from_storage_to_local_filesystem.e %s' % e)
 
         workflow_path = settings.BASE_API_URL + '/workflows/tasks/'
 
