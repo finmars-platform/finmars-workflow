@@ -42,6 +42,11 @@ class CeleryWorkflow:
         for file in files:
 
             if '.yml' in file or '.yaml' in file:
+
+                if settings.AZURE_ACCOUNT_KEY:
+                    if file[-1] != '/':
+                        file = file + '/'
+
                 f = storage.open(workflow_path + '/' + file).read()
 
                 self.workflows.update(yaml.load(f, Loader=yaml.SafeLoader))
