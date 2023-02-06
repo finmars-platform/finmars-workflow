@@ -1,3 +1,5 @@
+import traceback
+
 from workflow.utils import build_celery_schedule
 from workflow_app import settings
 
@@ -28,37 +30,43 @@ class CeleryWorkflow:
 
 
     def init_app(self):
-        _l.info('CeleryWorkflow.init_app')
-        # _l.info('settings.BASE_API_URL %s' % settings.BASE_API_URL)
 
-        workflow_path = settings.BASE_API_URL + '/workflows'
+        try:
+            _l.info('CeleryWorkflow.init_app')
+            # _l.info('settings.BASE_API_URL %s' % settings.BASE_API_URL)
 
-        workflowies, files = storage.listdir(workflow_path)
+            workflow_path = settings.BASE_API_URL + '/workflows'
 
-        self.workflows = {}
+            workflowies, files = storage.listdir(workflow_path)
 
-        # _l.info('files %s' % files)
+            self.workflows = {}
 
-        for file in files:
+            # _l.info('files %s' % files)
 
-            if '.yml' in file or '.yaml' in file:
+            for file in files:
 
-                if settings.AZURE_ACCOUNT_KEY:
-                    if file[-1] != '/':
-                        file = file + '/'
+                if '.yml' in file or '.yaml' in file:
 
-                f = storage.open(workflow_path + '/' + file).read()
+                    if settings.AZURE_ACCOUNT_KEY:
+                        if file[-1] != '/':
+                            file = file + '/'
 
-                self.workflows.update(yaml.load(f, Loader=yaml.SafeLoader))
+                    f = storage.open(workflow_path + '/' + file).read()
 
-        _l.info("Workflows are loaded")
+                    self.workflows.update(yaml.load(f, Loader=yaml.SafeLoader))
 
-        _l.info('self.workflows %s' % self.workflows)
+            _l.info("Workflows are loaded")
 
-        if self.workflows:
-            self.load_user_tasks_from_storage_to_local_filesystem()
-            self.import_user_tasks()
-            self.read_schemas()
+            _l.info('self.workflows %s' % self.workflows)
+
+            if self.workflows:
+                self.load_user_tasks_from_storage_to_local_filesystem()
+                self.import_user_tasks()
+                self.read_schemas()
+
+        except Exception as e:
+            _l.error("CeleryWorkflow.init_app error %s" % e)
+            _l.error("CeleryWorkflow.init_app traceback %s" % traceback.format_exc())
 
     def get_by_name(self, name):
         workflow = self.workflows.get(name)
