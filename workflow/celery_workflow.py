@@ -51,9 +51,9 @@ class CeleryWorkflow:
 
                 self.workflows.update(yaml.load(f, Loader=yaml.SafeLoader))
 
-        # _l.info("Workflows are loaded")
+        _l.info("Workflows are loaded")
 
-        # _l.info('self.workflows %s' % self.workflows)
+        _l.info('self.workflows %s' % self.workflows)
 
         if self.workflows:
             self.load_user_tasks_from_storage_to_local_filesystem()
@@ -102,16 +102,22 @@ class CeleryWorkflow:
 
             if '.py' in filename:
 
-                # _l.info("Going to sync file %s " % filename)
+                original_filename = filename
+
+                _l.info("Going to sync file %s " % filename)
+
+                if settings.AZURE_ACCOUNT_KEY:
+                    if filename[-1] != '/':
+                        filename = filename + '/'
 
                 with storage.open(workflow_path + '/' + filename) as f:
 
-                    f_content = f.read()
+                        f_content = f.read()
 
-                    os.makedirs(os.path.dirname(settings.MEDIA_ROOT + '/tasks/' + filename), exist_ok=True)
+                        os.makedirs(os.path.dirname(settings.MEDIA_ROOT + '/tasks/' + filename), exist_ok=True)
 
-                    with open(settings.MEDIA_ROOT + '/tasks/' + filename, 'wb') as new_file:
-                        new_file.write(f_content)
+                        with open(settings.MEDIA_ROOT + '/tasks/' + original_filename, 'wb') as new_file:
+                            new_file.write(f_content)
 
 
     def import_user_tasks(self):
