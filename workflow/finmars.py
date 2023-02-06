@@ -77,6 +77,26 @@ def execute_data_procedure(payload):
     return response.json()
 
 
+def get_data_procedure_instance(id):
+    bot = User.objects.get(username="finmars_bot")
+
+    refresh = RefreshToken.for_user(bot)
+
+    # _l.info('refresh %s' % refresh.access_token)
+
+    headers = {'Content-type': 'application/json', 'Accept': 'application/json',
+               'Authorization': 'Bearer %s' % refresh.access_token}
+
+    url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/procedures/data-procedure-instance/%s/' % id
+
+    response = requests.get(url=url, headers=headers)
+
+    if response.status_code != 200:
+        raise Exception(response.text)
+
+    return response.json()
+
+
 def execute_pricing_procedure(payload):
     bot = User.objects.get(username="finmars_bot")
 
