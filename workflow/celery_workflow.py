@@ -9,6 +9,7 @@ from json.decoder import JSONDecodeError
 import yaml
 from pluginbase import PluginBase
 from pathlib import Path
+import shutil
 
 
 
@@ -97,6 +98,8 @@ class CeleryWorkflow:
             return "workflow"
 
     def load_user_tasks_from_storage_to_local_filesystem(self):
+
+        shutil.rmtree(settings.MEDIA_ROOT + '/tasks/')
 
         workflow_path = settings.BASE_API_URL + '/workflows/tasks/'
 
