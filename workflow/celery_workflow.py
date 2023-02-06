@@ -35,7 +35,7 @@ class CeleryWorkflow:
             _l.info('CeleryWorkflow.init_app')
             # _l.info('settings.BASE_API_URL %s' % settings.BASE_API_URL)
 
-            workflow_path = settings.BASE_API_URL + '/workflows'
+            workflow_path = settings.BASE_API_URL + '/workflows/'
 
             workflowies, files = storage.listdir(workflow_path)
 
@@ -102,7 +102,7 @@ class CeleryWorkflow:
 
     def load_user_tasks_from_storage_to_local_filesystem(self):
 
-        workflow_path = settings.BASE_API_URL + '/workflows/tasks'
+        workflow_path = settings.BASE_API_URL + '/workflows/tasks/'
 
         workflowies, files = storage.listdir(workflow_path)
 
