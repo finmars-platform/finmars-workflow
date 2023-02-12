@@ -7,17 +7,30 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.authentication import get_authorization_header
 from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet
+from django_filters.rest_framework import FilterSet
 
 from workflow.celery_workflow import celery_workflow
 from workflow.models import Workflow, Task
 from workflow.serializers import WorkflowSerializer, TaskSerializer, PingSerializer
 from workflow.workflows import execute_workflow
+import django_filters
 
 _l = logging.getLogger('workflow')
 
+
+class WorkflowFilterSet(FilterSet):
+    name = django_filters.CharFilter()
+    project = django_filters.CharFilter()
+    status = django_filters.CharFilter()
+    created = django_filters.DateFromToRangeFilter()
+
+    class Meta:
+        model = Workflow
+        fields = []
 
 class WorkflowViewSet(ModelViewSet):
     queryset = Workflow.objects.select_related(
@@ -27,7 +40,13 @@ class WorkflowViewSet(ModelViewSet):
     permission_classes = ModelViewSet.permission_classes + [
 
     ]
+    filter_class = WorkflowFilterSet
     filter_backends = ModelViewSet.filter_backends + [
+        OrderingFilter
+    ]
+
+    ordering_fields = [
+        'name', 'project', 'created', 'modified', 'status', 'owner'
     ]
 
     @action(detail=False, methods=('POST',), url_path='run-workflow')
