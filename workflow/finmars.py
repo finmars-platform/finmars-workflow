@@ -188,6 +188,33 @@ def wait_task_to_complete(task_id=None, retries=5, retry_interval=60):
 
     return result
 
+
+def _wait_procedure_to_complete_recursive(procedure_instance_id=None, retries=5, retry_interval=60, counter=None):
+
+    if counter == retries:
+        raise Exception("Task exceeded retries %s count" % retries)
+
+    result = get_data_procedure_instance(procedure_instance_id)
+
+    counter = counter + 1
+
+    if result.status != 'progress' and result.status != 'P':
+        return result
+
+    time.sleep(retry_interval)
+
+    return _wait_procedure_to_complete_recursive(procedure_instance_id=procedure_instance_id, retries=retries, retry_interval=retry_interval, counter=counter)
+
+
+def wait_procedure_to_complete(procedure_instance_id=None, retries=5, retry_interval=60):
+
+    counter = 0
+    result = None
+
+    result = _wait_procedure_to_complete_recursive(procedure_instance_id=procedure_instance_id, retries=retries, retry_interval=retry_interval, counter=counter)
+
+    return result
+
 def execute_transaction_import(payload):
     bot = User.objects.get(username="finmars_bot")
 
