@@ -1,9 +1,14 @@
 import json
 import logging
 import time
+import datetime
+from datetime import timedelta
+import pandas as pd
 
 import requests
 from rest_framework_simplejwt.tokens import RefreshToken
+
+
 
 from workflow.models import User
 from workflow_app import settings
@@ -288,4 +293,58 @@ class Storage():
 
         return self.storage.save(name, content)
 
+
+class Utils():
+
+    def get_list_of_dates_between_two_dates(self, date_from, date_to, to_string=False):
+        result = []
+        format = '%Y-%m-%d'
+
+        if not isinstance(date_from, datetime.date):
+            date_from = datetime.datetime.strptime(date_from, format).date()
+
+        if not isinstance(date_to, datetime.date):
+            date_to = datetime.datetime.strptime(date_to, format).date()
+
+        diff = date_to - date_from
+
+        for i in range(diff.days + 1):
+            day = date_from + timedelta(days=i)
+            if to_string:
+                result.append(str(day))
+            else:
+                result.append(day)
+
+        return result
+
+    def is_business_day(self, date):
+        return bool(len(pd.bdate_range(date, date)))
+
+    def get_list_of_business_days_between_two_dates(self, date_from, date_to, to_string=False):
+        result = []
+        format = '%Y-%m-%d'
+
+        if not isinstance(date_from, datetime.date):
+            date_from = datetime.datetime.strptime(date_from, format).date()
+
+        if not isinstance(date_to, datetime.date):
+            date_to = datetime.datetime.strptime(date_to, format).date()
+
+        diff = date_to - date_from
+
+        for i in range(diff.days + 1):
+            day = date_from + timedelta(days=i)
+
+            if self.is_business_day(day):
+
+                if to_string:
+                    result.append(str(day))
+                else:
+                    result.append(day)
+
+        return result
+
+
 storage = Storage()
+
+utils = Utils()

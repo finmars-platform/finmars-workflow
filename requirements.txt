@@ -64,3 +64,4 @@ sqlalchemy==1.4.46
 flower==1.2.0
 mkdocs==1.4.2
 mkdocs-material==9.0.8
+pandas==1.5.2
