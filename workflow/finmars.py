@@ -4,6 +4,7 @@ import time
 import datetime
 from datetime import timedelta
 import pandas as pd
+from django.core.files.base import ContentFile
 
 import requests
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -292,6 +293,10 @@ class Storage():
     def save(self, name, content):
 
         return self.storage.save(name, content)
+
+    def save_text(self, name, content):
+
+        return self.storage.save(name, ContentFile(content))
 
 
 class Utils():
