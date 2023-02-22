@@ -39,7 +39,7 @@ class BaseTask(_Task):
 
     def update_progress(self, progress):
 
-        task = Task.objects.get(celery_task_id=self.task.id)
+        task = Task.objects.get(id=self.task.id)
 
         task.progress = progress
 
