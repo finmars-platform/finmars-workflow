@@ -41,6 +41,11 @@ class BaseTask(_Task):
         task.status = Task.STATUS_PROGRESS
         task.save()
 
+        workflow = Workflow.objects.get(id=task.workflow_id)
+
+        self.task = task
+        self.workflow = workflow
+
         logger.info(f"Task {task_id} is now in progress")
         super(BaseTask, self).before_start(task_id, args, kwargs)
 
