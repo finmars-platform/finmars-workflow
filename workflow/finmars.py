@@ -284,4 +284,8 @@ class Storage():
 
         return self.storage.exists(name)
 
+    def save(self, name, content):
+
+        return self.storage.save(name, content)
+
 storage = Storage()
