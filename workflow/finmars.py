@@ -255,3 +255,33 @@ def execute_simple_import(payload):
         raise Exception(response.text)
 
     return response.json()
+
+
+
+class Storage():
+
+    def __init__(self):
+
+        from workflow.storage import get_storage
+
+        self.storage = get_storage()
+
+    def open(self, name, mode):
+
+        # TODO permission check
+
+        return self.storage.open(name, mode)
+
+    def delete(self, name):
+
+        # TODO permission check
+
+        return self.storage.delete(name)
+
+    def exists(self, name):
+
+        # TODO permission check
+
+        return self.storage.exists(name)
+
+storage = Storage()
