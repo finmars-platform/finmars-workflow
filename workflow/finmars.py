@@ -266,7 +266,7 @@ class Storage():
 
         self.storage = get_storage()
 
-    def open(self, name, mode):
+    def open(self, name, mode='rb'):
 
         # TODO permission check
 
