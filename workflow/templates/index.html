@@ -417,6 +417,11 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                                 <td>{{ selectedTask.updated | formatDate }}</td>
                                             </tr>
                                             </tbody>
+
+                                            <code
+                                                    v-if="selectedTask.progress"
+                                            >{{ selectedTask.progress }}</code
+                                            >
                                         </template>
                                     </v-simple-table>
                                     <div v-if="tab == 1">
