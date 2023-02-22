@@ -296,7 +296,7 @@ class Storage():
 
     def save_text(self, name, content):
 
-        return self.storage.save(name, ContentFile(content))
+        return self.storage.save(name, ContentFile(content.encode('utf-8')))
 
 
 class Utils():
