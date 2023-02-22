@@ -272,9 +272,17 @@ class Storage():
 
         self.storage = get_storage()
 
+        self.base_path = settings.BASE_API_URL
+
     def open(self, name, mode='rb'):
 
         # TODO permission check
+
+
+        if name[0] == '/':
+            name = self.base_path + name
+        else:
+            name = self.base_path + '/' + name
 
         return self.storage.open(name, mode)
 
@@ -282,19 +290,39 @@ class Storage():
 
         # TODO permission check
 
+        if name[0] == '/':
+            name = self.base_path + name
+        else:
+            name = self.base_path + '/' + name
+
         return self.storage.delete(name)
 
     def exists(self, name):
 
         # TODO permission check
 
+        if name[0] == '/':
+            name = self.base_path + name
+        else:
+            name = self.base_path + '/' + name
+
         return self.storage.exists(name)
 
     def save(self, name, content):
 
+        if name[0] == '/':
+            name = self.base_path + name
+        else:
+            name = self.base_path + '/' + name
+
         return self.storage.save(name, content)
 
     def save_text(self, name, content):
+
+        if name[0] == '/':
+            name = self.base_path + name
+        else:
+            name = self.base_path + '/' + name
 
         return self.storage.save(name, ContentFile(content.encode('utf-8')))
 
