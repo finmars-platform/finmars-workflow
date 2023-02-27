@@ -36,10 +36,24 @@ def workflow_prerun(task_id, task, *args, **kwargs):
 
 class BaseTask(_Task):
 
+
+    def update_progress(self, progress):
+
+        task = Task.objects.get(id=self.task.id)
+
+        task.progress = progress
+
+        task.save()
+
     def before_start(self, task_id, args, kwargs):
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_PROGRESS
         task.save()
+
+        workflow = Workflow.objects.get(id=task.workflow_id)
+
+        self.task = task
+        self.workflow = workflow
 
         logger.info(f"Task {task_id} is now in progress")
         super(BaseTask, self).before_start(task_id, args, kwargs)

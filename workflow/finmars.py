@@ -1,9 +1,15 @@
 import json
 import logging
 import time
+import datetime
+from datetime import timedelta
+import pandas as pd
+from django.core.files.base import ContentFile
 
 import requests
 from rest_framework_simplejwt.tokens import RefreshToken
+
+
 
 from workflow.models import User
 from workflow_app import settings
@@ -171,7 +177,7 @@ def _wait_task_to_complete_recursive(task_id=None, retries=5, retry_interval=60,
 
     counter = counter + 1
 
-    if result.status != 'progress' and result.status != 'P':
+    if result['status'] != 'progress' and result['status'] != 'P':
         return result
 
     time.sleep(retry_interval)
@@ -185,6 +191,33 @@ def wait_task_to_complete(task_id=None, retries=5, retry_interval=60):
     result = None
 
     result = _wait_task_to_complete_recursive(task_id=task_id, retries=retries, retry_interval=retry_interval, counter=counter)
+
+    return result
+
+
+def _wait_procedure_to_complete_recursive(procedure_instance_id=None, retries=5, retry_interval=60, counter=None):
+
+    if counter == retries:
+        raise Exception("Task exceeded retries %s count" % retries)
+
+    result = get_data_procedure_instance(procedure_instance_id)
+
+    counter = counter + 1
+
+    if result['status'] != 'progress' and result['status'] != 'P':
+        return result
+
+    time.sleep(retry_interval)
+
+    return _wait_procedure_to_complete_recursive(procedure_instance_id=procedure_instance_id, retries=retries, retry_interval=retry_interval, counter=counter)
+
+
+def wait_procedure_to_complete(procedure_instance_id=None, retries=5, retry_interval=60):
+
+    counter = 0
+    result = None
+
+    result = _wait_procedure_to_complete_recursive(procedure_instance_id=procedure_instance_id, retries=retries, retry_interval=retry_interval, counter=counter)
 
     return result
 
@@ -228,3 +261,123 @@ def execute_simple_import(payload):
         raise Exception(response.text)
 
     return response.json()
+
+
+
+class Storage():
+
+    def __init__(self):
+
+        from workflow.storage import get_storage
+
+        self.storage = get_storage()
+
+        self.base_path = settings.BASE_API_URL
+
+    def open(self, name, mode='rb'):
+
+        # TODO permission check
+
+
+        if name[0] == '/':
+            name = self.base_path + name
+        else:
+            name = self.base_path + '/' + name
+
+        return self.storage.open(name, mode)
+
+    def delete(self, name):
+
+        # TODO permission check
+
+        if name[0] == '/':
+            name = self.base_path + name
+        else:
+            name = self.base_path + '/' + name
+
+        return self.storage.delete(name)
+
+    def exists(self, name):
+
+        # TODO permission check
+
+        if name[0] == '/':
+            name = self.base_path + name
+        else:
+            name = self.base_path + '/' + name
+
+        return self.storage.exists(name)
+
+    def save(self, name, content):
+
+        if name[0] == '/':
+            name = self.base_path + name
+        else:
+            name = self.base_path + '/' + name
+
+        return self.storage.save(name, content)
+
+    def save_text(self, name, content):
+
+        if name[0] == '/':
+            name = self.base_path + name
+        else:
+            name = self.base_path + '/' + name
+
+        return self.storage.save(name, ContentFile(content.encode('utf-8')))
+
+
+class Utils():
+
+    def get_list_of_dates_between_two_dates(self, date_from, date_to, to_string=False):
+        result = []
+        format = '%Y-%m-%d'
+
+        if not isinstance(date_from, datetime.date):
+            date_from = datetime.datetime.strptime(date_from, format).date()
+
+        if not isinstance(date_to, datetime.date):
+            date_to = datetime.datetime.strptime(date_to, format).date()
+
+        diff = date_to - date_from
+
+        for i in range(diff.days + 1):
+            day = date_from + timedelta(days=i)
+            if to_string:
+                result.append(str(day))
+            else:
+                result.append(day)
+
+        return result
+
+    def is_business_day(self, date):
+        return bool(len(pd.bdate_range(date, date)))
+
+    def get_list_of_business_days_between_two_dates(self, date_from, date_to, to_string=False):
+        result = []
+        format = '%Y-%m-%d'
+
+        if not isinstance(date_from, datetime.date):
+            date_from = datetime.datetime.strptime(date_from, format).date()
+
+        if not isinstance(date_to, datetime.date):
+            date_to = datetime.datetime.strptime(date_to, format).date()
+
+        diff = date_to - date_from
+
+        for i in range(diff.days + 1):
+            day = date_from + timedelta(days=i)
+
+            if self.is_business_day(day):
+
+                if to_string:
+                    result.append(str(day))
+                else:
+                    result.append(day)
+
+        return result
+
+
+storage = Storage()
+
+utils = Utils()
