@@ -96,6 +96,9 @@ class Workflow(TimeStampedModel):
     name = models.CharField(max_length=255, null=True, blank=True,
                             verbose_name=gettext_lazy('name'))
 
+    user_code = models.CharField(max_length=255, null=True, blank=True,
+                            verbose_name=gettext_lazy('user_code'))
+
     project = models.CharField(max_length=255, null=True, blank=True,
                             verbose_name=gettext_lazy('name'))
 
