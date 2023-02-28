@@ -23,7 +23,7 @@ FLOWER_URL = ENV_STR('FLOWER_URL', '/' + BASE_API_URL + '/workflow/flower')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = ENV_BOOL('DEBUG', False)
 USE_FILESYSTEM_STORAGE = ENV_BOOL('USE_FILESYSTEM_STORAGE', False)
-MEDIA_ROOT = os.path.join(BASE_DIR, 'app-data')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'finmars_data')
 
 # Very Important MasterUserConfigs encrypted by this key
 # Also Session (if enabled) are using it

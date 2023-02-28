@@ -18,6 +18,9 @@ COPY finmars_standardized_errors/ /var/app/finmars_standardized_errors/
 COPY logstash/ /var/app/logstash/
 COPY manage.py /var/app/manage.py
 
+RUN mkdir -p /var/app/finmars_data
+RUN chmod 777 /var/app/finmars_data
+
 RUN mkdir -p /var/app/app-data/
 RUN mkdir -p /var/app/app-data/media/
 RUN mkdir -p /var/app/app-data/import/configs/
