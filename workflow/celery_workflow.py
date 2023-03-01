@@ -209,4 +209,8 @@ _l.info("==== Load Tasks & Workflow ====")
 celery_workflow = CeleryWorkflow()
 celery_workflow.init_app()
 _l.info("==== Init Periodic Tasks ====")
-init_periodic_tasks()
+
+try:
+    init_periodic_tasks()
+except Exception as e:
+    _l.error("Could not init periodic tasks")
