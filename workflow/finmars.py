@@ -204,7 +204,7 @@ def _wait_procedure_to_complete_recursive(procedure_instance_id=None, retries=5,
 
     counter = counter + 1
 
-    if result['status'] not in ['progress', 'P']
+    if result['status'] not in ['progress', 'P']:
         return result
 
     time.sleep(retry_interval)
