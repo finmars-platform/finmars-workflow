@@ -213,4 +213,5 @@ _l.info("==== Init Periodic Tasks ====")
 try:
     init_periodic_tasks()
 except Exception as e:
-    _l.error("Could not init periodic tasks")
+    _l.error("Could not init periodic tasks exception: %s" % e)
+    _l.error("Could not init periodic tasks traceback: %s" % traceback.format_exc())
