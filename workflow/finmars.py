@@ -177,7 +177,7 @@ def _wait_task_to_complete_recursive(task_id=None, retries=5, retry_interval=60,
 
     counter = counter + 1
 
-    if result['status'] not in ['progress', 'P']:
+    if result['status'] not in ['progress', 'P', 'I']:
         return result
 
     time.sleep(retry_interval)
@@ -204,7 +204,7 @@ def _wait_procedure_to_complete_recursive(procedure_instance_id=None, retries=5,
 
     counter = counter + 1
 
-    if result['status'] not in ['progress', 'P']:
+    if result['status'] not in ['progress', 'P', 'I']:
         return result
 
     time.sleep(retry_interval)
