@@ -134,10 +134,10 @@ class DefinitionViewSet(ViewSet):
         workflow_definitions = []
 
         for fullname, definition in sorted(celery_workflow.workflows.items()):
-            project, name = fullname.split(".", 1)
+            project, user_code = fullname.split(".", 1)
 
             workflow_definitions.append(
-                {"fullname": fullname, "project": project, "name": name, **definition}
+                {"fullname": fullname, "project": project, "user_code": user_code, **definition}
             )
 
         return Response(workflow_definitions)

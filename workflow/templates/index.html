@@ -636,10 +636,10 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                             <tbody>
                                             <tr
                                                     v-for="item in definitions"
-                                                    :key="item.name"
+                                                    :key="item.user_code"
                                             >
                                                 <td>{{ item.project }}</td>
-                                                <td>{{ item.name }}</td>
+                                                <td>{{ item.user_code }}</td>
                                                 <td v-if="!item.periodic"></td>
                                                 <td v-if="item.periodic">
                                                     {{ item.periodic.crontab }} {{ item.periodic.interval }}

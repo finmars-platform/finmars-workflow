@@ -122,8 +122,8 @@ def execute(workflow, payload):
 
         finmars_bot = User.objects.get(username='finmars_bot')
 
-        project, name = workflow.split(".")
-        c_obj = Workflow(project=project, owner=finmars_bot, name=name, payload=payload, periodic=True)
+        project, user_code = workflow.split(".")
+        c_obj = Workflow(project=project, owner=finmars_bot, user_code=user_code, payload=payload, periodic=True)
         c_obj.save()
 
         # Build the workflow and execute it
