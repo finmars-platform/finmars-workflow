@@ -132,10 +132,10 @@ class Workflow(TimeStampedModel):
             self.payload_data = None
 
     def __str__(self):
-        return f"{self.project}.{self.name}"
+        return f"{self.project}.{self.user_code}"
 
     def __repr__(self):
-        return f"<Workflow {self.project}.{self.name}>"
+        return f"<Workflow {self.project}.{self.user_code}>"
 
     def to_dict(self, with_payload=True):
         d = {}
@@ -143,6 +143,7 @@ class Workflow(TimeStampedModel):
             {
                 "id": self.id,
                 "name": self.name,
+                "user_code": self.user_code,
                 "project": self.project,
                 "fullname": f"{self.project}.{self.name}",
                 "status": self.status,
