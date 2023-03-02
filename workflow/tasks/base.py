@@ -70,7 +70,7 @@ class BaseTask(_Task):
 
         running_workflows_count = Workflow.objects.exclude(id__in=[self.task.workflow_id]).filter(
             user_code=workflow_user_code,
-            status=Workflow.STATUS_PROGRESS)
+            status=Workflow.STATUS_PROGRESS).count()
 
         if running_workflows_count > 0:
             is_running = True
