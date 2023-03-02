@@ -74,7 +74,7 @@ class WorkflowViewSet(ModelViewSet):
         workflow = Workflow.objects.get(id=pk)
         workflow.cancel()
 
-        return Response({'status': 'ok'})
+        return Response(workflow.to_dict())
 
 
 class TaskViewSet(ModelViewSet):
