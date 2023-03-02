@@ -118,5 +118,5 @@
 }
 
 .terminate-workflow {
-  color: red;
+  color: red !important;
 }
