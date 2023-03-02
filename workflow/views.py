@@ -51,12 +51,12 @@ class WorkflowViewSet(ModelViewSet):
 
     @action(detail=False, methods=('POST',), url_path='run-workflow')
     def run_workflow(self, request, pk=None):
-        project, name, payload = (
+        project, user_code, payload = (
             request.data["project"],
-            request.data["name"],
+            request.data["user_code"],
             request.data["payload"],
         )
-        data, _ = execute_workflow(request.user.username, project, name, payload)
+        data, _ = execute_workflow(request.user.username, project, user_code, payload)
 
         _l.info('data %s' % data)
 

@@ -535,7 +535,7 @@ new Vue({
 
             let data = {
                 project: this.selectedRunningWorkflow.project,
-                name: this.selectedRunningWorkflow.name,
+                user_code: this.selectedRunningWorkflow.user_code,
                 payload: payloadValueTrim ? payloadValueParsed : {},
             };
 
