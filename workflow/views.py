@@ -46,7 +46,7 @@ class WorkflowViewSet(ModelViewSet):
     ]
 
     ordering_fields = [
-        'name', 'project', 'created', 'modified', 'status', 'owner'
+        'name', 'user_code', 'project', 'created', 'modified', 'status', 'owner'
     ]
 
     @action(detail=False, methods=('POST',), url_path='run-workflow')
@@ -65,7 +65,7 @@ class WorkflowViewSet(ModelViewSet):
     @action(detail=True, methods=('POST',), url_path='relaunch')
     def relaunch(self, request, pk=None):
         obj = Workflow.objects.get(id=pk)
-        data, _ = execute_workflow(request.user.username, obj.project, obj.name, obj.payload)
+        data, _ = execute_workflow(request.user.username, obj.project, obj.user_code, obj.payload)
 
         return Response(data)
 
