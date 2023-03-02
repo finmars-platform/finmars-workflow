@@ -5,10 +5,8 @@ import json
 import pytz
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
-from django.contrib.sessions.base_session import AbstractBaseSession
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
-from django.utils import timezone
 from django.utils.translation import gettext_lazy
 
 from workflow.storage import get_storage
@@ -19,6 +17,7 @@ TIMEZONE_CHOICES = sorted(list((k, k) for k in pytz.all_timezones))
 TIMEZONE_COMMON_CHOICES = sorted(list((k, k) for k in pytz.common_timezones))
 
 from django.utils.translation import gettext_lazy as _
+from workflow_app import celery_app
 
 import logging
 
@@ -28,7 +27,6 @@ storage = get_storage()
 
 
 class User(AbstractUser):
-
     language = models.CharField(max_length=LANGUAGE_MAX_LENGTH, default=settings.LANGUAGE_CODE,
                                 verbose_name=gettext_lazy('language'))
     timezone = models.CharField(max_length=TIMEZONE_MAX_LENGTH, default=settings.TIME_ZONE,
@@ -61,6 +59,7 @@ class User(AbstractUser):
         else:
             self.json_data = None
 
+
 class TimeStampedModel(models.Model):
     created = models.DateTimeField(auto_now_add=True, editable=False, db_index=True,
                                    verbose_name=gettext_lazy('created'))
@@ -72,8 +71,8 @@ class TimeStampedModel(models.Model):
         get_latest_by = 'modified'
         ordering = ['created', ]
 
-class Workflow(TimeStampedModel):
 
+class Workflow(TimeStampedModel):
     STATUS_INIT = 'init'
     STATUS_PENDING = 'pending'
     STATUS_PROGRESS = 'progress'
@@ -92,15 +91,14 @@ class Workflow(TimeStampedModel):
         (STATUS_CANCELED, 'CANCELED')
     )
 
-
     name = models.CharField(max_length=255, null=True, blank=True,
                             verbose_name=gettext_lazy('name'))
 
     user_code = models.CharField(max_length=255, null=True, blank=True,
-                            verbose_name=gettext_lazy('user_code'))
+                                 verbose_name=gettext_lazy('user_code'))
 
     project = models.CharField(max_length=255, null=True, blank=True,
-                            verbose_name=gettext_lazy('name'))
+                               verbose_name=gettext_lazy('name'))
 
     status = models.CharField(null=True, max_length=255, default=STATUS_INIT, choices=STATUS_CHOICES,
                               verbose_name='status')
@@ -154,6 +152,16 @@ class Workflow(TimeStampedModel):
             d["payload"] = self.payload
         return d
 
+    def cancel(self):
+        status_to_cancel = [Task.STATUS_PROGRESS, Task.STATUS_PENDING]
+        for task in self.tasks.all():
+            if task.status in status_to_cancel:
+                celery_app.control.revoke(task.celery_task_id, terminate=True)
+                task.status = Task.STATUS_CANCELED
+                task.save()
+        self.status = Workflow.STATUS_CANCELED
+        self.save()
+
 
 class Task(TimeStampedModel):
     STATUS_INIT = 'init'
@@ -175,7 +183,7 @@ class Task(TimeStampedModel):
     )
 
     workflow = models.ForeignKey(Workflow, verbose_name=gettext_lazy('workflow'),
-                                    on_delete=models.CASCADE, related_name="tasks")
+                                 on_delete=models.CASCADE, related_name="tasks")
 
     celery_task_id = models.CharField(null=True, max_length=255)
     name = models.CharField(null=True, max_length=255)
@@ -242,7 +250,7 @@ class Task(TimeStampedModel):
         if value is None:
             self.progress_data = None
         else:
-            self.progress_data = json.dumps(value,  sort_keys=True, indent=1)
+            self.progress_data = json.dumps(value, sort_keys=True, indent=1)
 
     @property
     def previous(self):
@@ -255,7 +263,7 @@ class Task(TimeStampedModel):
         if value is None:
             self.previous_data = None
         else:
-            self.previous_data = json.dumps(value,  sort_keys=True, indent=1)
+            self.previous_data = json.dumps(value, sort_keys=True, indent=1)
 
     # def add_attachment(self, file_report_id):
     #

@@ -69,6 +69,13 @@ class WorkflowViewSet(ModelViewSet):
 
         return Response(data)
 
+    @action(detail=True, methods=('POST',), url_path='cancel')
+    def cancel(self, request, pk=None):
+        workflow = Workflow.objects.get(id=pk)
+        workflow.cancel()
+
+        return Response({'status': 'ok'})
+
 
 class TaskViewSet(ModelViewSet):
     queryset = Task.objects.select_related(
