@@ -194,7 +194,7 @@ const store = new Vuex.Store({
             };
 
             axios
-                .post(API_URL + "/workflow/" + workflow_id + "/cancel", headers)
+                .post(API_URL + "/workflow/" + workflow_id + "/cancel/", headers)
                 .then((response) => {
                     dispatch("listWorkflows");
                     dispatch("getWorkflow", response.data.id);
