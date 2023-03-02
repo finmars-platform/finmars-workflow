@@ -43,11 +43,34 @@ class BaseTask(_Task):
 
         task.save()
 
+    '''
+    We need this method to prevent periodic worfklow overlap
+    e.g. workflow execution time is about 2 hours
+    but periodic runs it every hour
+    
+    00:00 - Run workflow (1)
+    01:00 - Run workflow (2) - it will be exited, because workflow (1) is still running
+    01:30 - Finished Workflow (1)
+    02:00 - Run Workflow (3) It will run, because no active workflow at the moment
+    02:40 - Finish Workflow (3) - Workflow was super fast and ended before next one
+    03:00 - Run Workflow (4) - It will run, because previous one finished quicker before schedule
+    
+    '''
+
     def is_workflow_already_running(self, workflow_user_code):
+        # Works great for everything except first task inside actual running workflow
         is_running = False
 
-        running_workflows_count = Workflow.objects.filter(user_code=workflow_user_code,
-                                                          status=Workflow.STATUS_PROGRESS).count()
+        # Workflow (1) started - worfklow_id generated - it has status progress
+        # Workflow (1) has first task in it with is_workflow_already_running check
+        # It return true, because Workflow (1) is in progress indeed, and stop working
+        # But it should work, because this is a task inside Running Workflow
+        # is_workflow_already_running should prevent from executuon in Workflow (2) and so on
+        # thats why we have exclude clause
+
+        running_workflows_count = Workflow.objects.exclude(id__in=[self.task.workflow_id]).filter(
+            user_code=workflow_user_code,
+            status=Workflow.STATUS_PROGRESS)
 
         if running_workflows_count > 0:
             is_running = True
