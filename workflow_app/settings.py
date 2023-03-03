@@ -126,7 +126,10 @@ DATABASES = {
         'USER': ENV_STR('DB_USER', None),
         'PASSWORD': ENV_STR('DB_PASSWORD', None),
         'HOST': ENV_STR('DB_HOST', None),
-        'PORT': ENV_INT('DB_PORT', 5432)
+        'PORT': ENV_INT('DB_PORT', 5432),
+        'OPTIONS': {
+            'connect_timeout': 5 # new timeout setting
+        }
     }
 }
 
