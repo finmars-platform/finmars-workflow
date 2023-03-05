@@ -587,6 +587,6 @@ new Vue({
 
     },
     beforeDestroy() {
-        clearInterval(this.interval);
+
     },
 });
