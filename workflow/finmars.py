@@ -33,7 +33,7 @@ def execute_expression(expression):
 
     url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/utils/expression/'
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -54,7 +54,7 @@ def execute_expression_procedure(payload):
 
     url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/procedures/expression-procedure/execute/'
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -75,7 +75,7 @@ def execute_data_procedure(payload):
 
     url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/procedures/data-procedure/execute/'
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -95,7 +95,7 @@ def get_data_procedure_instance(id):
 
     url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/procedures/data-procedure-instance/%s/' % id
 
-    response = requests.get(url=url, headers=headers)
+    response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -116,7 +116,7 @@ def execute_pricing_procedure(payload):
 
     url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/procedures/pricing-procedure/execute/'
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -140,7 +140,7 @@ def execute_task(task_name, payload={}):
 
     url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/tasks/task/execute/'
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -160,7 +160,7 @@ def get_task(id):
 
     url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/tasks/task/%s/' % id
 
-    response = requests.get(url=url, headers=headers)
+    response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -234,7 +234,7 @@ def execute_transaction_import(payload):
 
     url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/import/transaction-import/execute/'
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -255,7 +255,7 @@ def execute_simple_import(payload):
 
     url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/import/simple-import/execute/'
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
