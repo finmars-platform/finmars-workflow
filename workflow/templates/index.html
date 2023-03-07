@@ -170,7 +170,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                                     ></v-avatar>
                                                 </td>
                                                 <td>{{ item.id }}</td>
-                                                <td>{{ item.project }}.{{ item.name }}</td>
+                                                <td>{{ item.project }}.{{ item.user_code }}</td>
                                                 <td>
                                                     <v-ship>{{ item.created | formatDate }}</v-ship>
                                                 </td>
@@ -329,7 +329,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                 <v-tooltip bottom>
                                     <template v-slot:activator="{ on, attrs }">
                                         <v-btn
-                                                class="ma-2"
+                                                class="ma-2 terminate-workflow"
                                                 tile
                                                 outlined
                                                 color="director"
@@ -340,7 +340,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                             <v-icon>mdi-cancel</v-icon>
                                         </v-btn>
                                     </template>
-                                    <span>Cancel</span>
+                                    <span>Terminate</span>
                                 </v-tooltip>
                                 <v-tooltip bottom>
                                     <template v-slot:activator="{ on, attrs }">
@@ -636,10 +636,10 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                             <tbody>
                                             <tr
                                                     v-for="item in definitions"
-                                                    :key="item.name"
+                                                    :key="item.user_code"
                                             >
                                                 <td>{{ item.project }}</td>
-                                                <td>{{ item.name }}</td>
+                                                <td>{{ item.user_code }}</td>
                                                 <td v-if="!item.periodic"></td>
                                                 <td v-if="item.periodic">
                                                     {{ item.periodic.crontab }} {{ item.periodic.interval }}

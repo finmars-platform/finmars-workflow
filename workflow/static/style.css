@@ -116,3 +116,7 @@
 .monospacedPayload textarea {
   font-family: "Monospace";
 }
+
+.terminate-workflow {
+  color: red !important;
+}

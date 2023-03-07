@@ -8,8 +8,8 @@ from workflow.utils import validate
 
 _l = logging.getLogger('workflow')
 
-def execute_workflow(username, project, name, payload={}):
-    fullname = f"{project}.{name}"
+def execute_workflow(username, project, user_code, payload={}):
+    fullname = f"{project}.{user_code}"
 
     user = User.objects.get(username=username)
 
@@ -22,7 +22,7 @@ def execute_workflow(username, project, name, payload={}):
         raise Exception(f"Workflow {fullname} not found")
 
     # Create the workflow in DB
-    obj = Workflow(owner=user, project=project, name=name, payload=payload)
+    obj = Workflow(owner=user, project=project, user_code=user_code, payload=payload)
     obj.save()
 
     # Build the workflow and execute it

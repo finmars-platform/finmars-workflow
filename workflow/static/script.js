@@ -194,7 +194,7 @@ const store = new Vuex.Store({
             };
 
             axios
-                .post(API_URL + "/workflow/" + workflow_id + "/cancel", headers)
+                .post(API_URL + "/workflow/" + workflow_id + "/cancel/", headers)
                 .then((response) => {
                     dispatch("listWorkflows");
                     dispatch("getWorkflow", response.data.id);
@@ -535,7 +535,7 @@ new Vue({
 
             let data = {
                 project: this.selectedRunningWorkflow.project,
-                name: this.selectedRunningWorkflow.name,
+                user_code: this.selectedRunningWorkflow.user_code,
                 payload: payloadValueTrim ? payloadValueParsed : {},
             };
 
@@ -587,6 +587,6 @@ new Vue({
 
     },
     beforeDestroy() {
-        clearInterval(this.interval);
+
     },
 });
