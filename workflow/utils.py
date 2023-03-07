@@ -117,9 +117,9 @@ def send_alert(workflow):
                 "is_eval": True
             }
 
-            url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/utils/expression/'
+            url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/utils/expression/'
 
-            response = requests.post(url=url, data=json.dumps(data), headers=headers)
+            response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
             # _l.info('response %s' % response.text)
 

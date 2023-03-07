@@ -31,9 +31,9 @@ def execute_expression(expression):
         'is_eval': True
     }
 
-    url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/utils/expression/'
+    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/utils/expression/'
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -52,9 +52,9 @@ def execute_expression_procedure(payload):
                'Authorization': 'Bearer %s' % refresh.access_token}
     data = payload
 
-    url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/procedures/expression-procedure/execute/'
+    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/expression-procedure/execute/'
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -73,9 +73,9 @@ def execute_data_procedure(payload):
                'Authorization': 'Bearer %s' % refresh.access_token}
     data = payload
 
-    url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/procedures/data-procedure/execute/'
+    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/data-procedure/execute/'
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -93,9 +93,9 @@ def get_data_procedure_instance(id):
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
                'Authorization': 'Bearer %s' % refresh.access_token}
 
-    url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/procedures/data-procedure-instance/%s/' % id
+    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/data-procedure-instance/%s/' % id
 
-    response = requests.get(url=url, headers=headers)
+    response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -114,9 +114,9 @@ def execute_pricing_procedure(payload):
                'Authorization': 'Bearer %s' % refresh.access_token}
     data = payload
 
-    url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/procedures/pricing-procedure/execute/'
+    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/pricing-procedure/execute/'
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -138,9 +138,9 @@ def execute_task(task_name, payload={}):
         'payload': payload
     }
 
-    url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/tasks/task/execute/'
+    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/tasks/task/execute/'
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -158,9 +158,9 @@ def get_task(id):
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
                'Authorization': 'Bearer %s' % refresh.access_token}
 
-    url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/tasks/task/%s/' % id
+    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/tasks/task/%s/' % id
 
-    response = requests.get(url=url, headers=headers)
+    response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -177,7 +177,7 @@ def _wait_task_to_complete_recursive(task_id=None, retries=5, retry_interval=60,
 
     counter = counter + 1
 
-    if result['status'] != 'progress' and result['status'] != 'P':
+    if result['status'] not in ['progress', 'P', 'I']:
         return result
 
     time.sleep(retry_interval)
@@ -204,7 +204,7 @@ def _wait_procedure_to_complete_recursive(procedure_instance_id=None, retries=5,
 
     counter = counter + 1
 
-    if result['status'] != 'progress' and result['status'] != 'P':
+    if result['status'] not in ['progress', 'P', 'I']:
         return result
 
     time.sleep(retry_interval)
@@ -232,9 +232,9 @@ def execute_transaction_import(payload):
                'Authorization': 'Bearer %s' % refresh.access_token}
     data = payload
 
-    url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/import/transaction-import/execute/'
+    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/import/transaction-import/execute/'
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -253,9 +253,9 @@ def execute_simple_import(payload):
                'Authorization': 'Bearer %s' % refresh.access_token}
     data = payload
 
-    url = settings.HOST_URL + '/' + settings.BASE_API_URL + '/api/v1/import/simple-import/execute/'
+    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/import/simple-import/execute/'
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers)
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         raise Exception(response.text)

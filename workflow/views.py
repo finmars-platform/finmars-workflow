@@ -46,17 +46,17 @@ class WorkflowViewSet(ModelViewSet):
     ]
 
     ordering_fields = [
-        'name', 'project', 'created', 'modified', 'status', 'owner'
+        'name', 'user_code', 'project', 'created', 'modified', 'status', 'owner'
     ]
 
     @action(detail=False, methods=('POST',), url_path='run-workflow')
     def run_workflow(self, request, pk=None):
-        project, name, payload = (
+        project, user_code, payload = (
             request.data["project"],
-            request.data["name"],
+            request.data["user_code"],
             request.data["payload"],
         )
-        data, _ = execute_workflow(request.user.username, project, name, payload)
+        data, _ = execute_workflow(request.user.username, project, user_code, payload)
 
         _l.info('data %s' % data)
 
@@ -65,9 +65,16 @@ class WorkflowViewSet(ModelViewSet):
     @action(detail=True, methods=('POST',), url_path='relaunch')
     def relaunch(self, request, pk=None):
         obj = Workflow.objects.get(id=pk)
-        data, _ = execute_workflow(request.user.username, obj.project, obj.name, obj.payload)
+        data, _ = execute_workflow(request.user.username, obj.project, obj.user_code, obj.payload)
 
         return Response(data)
+
+    @action(detail=True, methods=('POST',), url_path='cancel')
+    def cancel(self, request, pk=None):
+        workflow = Workflow.objects.get(id=pk)
+        workflow.cancel()
+
+        return Response(workflow.to_dict())
 
 
 class TaskViewSet(ModelViewSet):
@@ -134,10 +141,10 @@ class DefinitionViewSet(ViewSet):
         workflow_definitions = []
 
         for fullname, definition in sorted(celery_workflow.workflows.items()):
-            project, name = fullname.split(".", 1)
+            project, user_code = fullname.split(".", 1)
 
             workflow_definitions.append(
-                {"fullname": fullname, "project": project, "name": name, **definition}
+                {"fullname": fullname, "project": project, "user_code": user_code, **definition}
             )
 
         return Response(workflow_definitions)

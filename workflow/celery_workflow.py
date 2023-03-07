@@ -1,26 +1,23 @@
-import traceback
-
-from workflow.utils import build_celery_schedule
-from workflow_app import settings
-
 import json
 import os
+import shutil
+import traceback
 from json.decoder import JSONDecodeError
+from pathlib import Path
+
 import yaml
 from pluginbase import PluginBase
-from pathlib import Path
-import shutil
-
-
 
 from workflow.exceptions import SchemaNotFound, SchemaNotValid, WorkflowNotFound
 from workflow.storage import get_storage
-from workflow_app import settings
+from workflow.utils import build_celery_schedule
 from workflow_app import celery_app
+from workflow_app import settings
 
 storage = get_storage()
 
 import logging
+
 _l = logging.getLogger('workflow')
 
 
@@ -28,7 +25,6 @@ class CeleryWorkflow:
     def __init__(self):
 
         self.workflows = None
-
 
     def init_app(self):
 
@@ -47,7 +43,6 @@ class CeleryWorkflow:
             for file in files:
 
                 if '.yml' in file or '.yaml' in file:
-
                     f = storage.open(workflow_path + '/' + file).read()
 
                     self.workflows.update(yaml.load(f, Loader=yaml.SafeLoader))
@@ -111,18 +106,15 @@ class CeleryWorkflow:
         for filename in files:
 
             if '.py' in filename:
-
                 _l.info("Going to sync file %s " % filename)
 
                 with storage.open(workflow_path + '/' + filename) as f:
+                    f_content = f.read()
 
-                        f_content = f.read()
+                    os.makedirs(os.path.dirname(settings.MEDIA_ROOT + '/tasks/' + filename), exist_ok=True)
 
-                        os.makedirs(os.path.dirname(settings.MEDIA_ROOT + '/tasks/' + filename), exist_ok=True)
-
-                        with open(settings.MEDIA_ROOT + '/tasks/' + filename, 'wb') as new_file:
-                            new_file.write(f_content)
-
+                    with open(settings.MEDIA_ROOT + '/tasks/' + filename, 'wb') as new_file:
+                        new_file.write(f_content)
 
     def import_user_tasks(self):
         self.plugin_base = PluginBase(package="workflow.foobar")
@@ -150,7 +142,7 @@ class CeleryWorkflow:
                         globals(),
                         {},
                         ["__name__"],
-                        )
+                    )
                 except Exception as e:
                     _l.info("Could not load user script %s. Error %s" % (task, e))
 
@@ -174,8 +166,8 @@ class CeleryWorkflow:
 
                 self.workflows[name]["schema"] = schema
 
-def init_periodic_tasks():
 
+def init_periodic_tasks():
     for workflow, conf in celery_workflow.workflows.items():
 
         # A dict is built for the periodic cleaning if the retention is valid
@@ -196,7 +188,7 @@ def init_periodic_tasks():
                             workflow,
                             periodic_payload,
                         ),
-                        'options': {'queue' : 'workflow'},
+                        'options': {'queue': 'workflow'},
                     }
                 }
             )
@@ -204,9 +196,24 @@ def init_periodic_tasks():
     _l.info('Schedule %s' % celery_app.conf.beat_schedule)
 
 
+def cancel_existing_tasks():
+    from workflow.models import Task
+    tasks = Task.objects.filter(status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT])
+
+    for task in tasks:
+        task.status = Task.STATUS_CANCELED
+
+    _l.info("Canceled %s tasks "% len(tasks))
+
+
 _l.info("==== Load Tasks & Workflow ====")
 
 celery_workflow = CeleryWorkflow()
 celery_workflow.init_app()
 _l.info("==== Init Periodic Tasks ====")
-init_periodic_tasks()
+cancel_existing_tasks()
+try:
+    init_periodic_tasks()
+except Exception as e:
+    _l.error("Could not init periodic tasks exception: %s" % e)
+    _l.error("Could not init periodic tasks traceback: %s" % traceback.format_exc())
