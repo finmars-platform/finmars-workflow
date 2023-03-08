@@ -203,6 +203,8 @@ def cancel_existing_tasks():
     for task in tasks:
         task.status = Task.STATUS_CANCELED
 
+        task.save()
+
     _l.info("Canceled %s tasks "% len(tasks))
 
 
