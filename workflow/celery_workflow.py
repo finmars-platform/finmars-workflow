@@ -212,16 +212,22 @@ def cancel_existing_tasks():
 
         task.save()
 
-    _l.info("Canceled %s tasks "% len(tasks))
+    _l.info("Canceled %s tasks " % len(tasks))
 
 
 _l.info("==== Load Tasks & Workflow ====")
 
 celery_workflow = CeleryWorkflow()
 celery_workflow.init_app()
-_l.info("==== Init Periodic Tasks ====")
-cancel_existing_tasks()
+
 try:
+    _l.info("==== Cancel Existing Tasks ====")
+    cancel_existing_tasks()
+except Exception as e:
+    _l.error("Could not cancel_existing_tasks exception: %s" % e)
+    _l.error("Could not cancel_existing_tasks traceback: %s" % traceback.format_exc())
+try:
+    _l.info("==== Init Periodic Tasks ====")
     init_periodic_tasks()
 except Exception as e:
     _l.error("Could not init periodic tasks exception: %s" % e)
