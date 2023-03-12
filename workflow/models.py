@@ -18,6 +18,7 @@ TIMEZONE_COMMON_CHOICES = sorted(list((k, k) for k in pytz.common_timezones))
 
 from django.utils.translation import gettext_lazy as _
 from workflow_app import celery_app
+from django.utils.timezone import now
 
 import logging
 
@@ -158,6 +159,7 @@ class Workflow(TimeStampedModel):
             if task.status in status_to_cancel:
                 celery_app.control.revoke(task.celery_task_id, terminate=True)
                 task.status = Task.STATUS_CANCELED
+                task.mark_task_as_finished()
                 task.save()
         self.status = Workflow.STATUS_CANCELED
         self.save()
@@ -206,6 +208,9 @@ class Task(TimeStampedModel):
     previous_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('previous data'))
 
     is_hook = models.BooleanField(default=False, verbose_name=gettext_lazy('is hook'))
+
+    finished_at = models.DateTimeField(null=True, db_index=True,
+                                       verbose_name=gettext_lazy('finished at'))
 
     class Meta:
         ordering = ['-created']
@@ -269,6 +274,10 @@ class Task(TimeStampedModel):
     #
     #     CeleryTaskAttachment.objects.create(celery_task=self,
     #                                         file_report_id=file_report_id)
+
+    def mark_task_as_finished(self):
+
+        self.finished_at = now()
 
     def update_progress(self, progress):
 
