@@ -210,6 +210,8 @@ def cancel_existing_tasks():
         except Exception as e:
             _l.error("Something went wrong %s" % e)
 
+        task.mark_task_as_finished()
+
         task.save()
 
     _l.info("Canceled %s tasks " % len(tasks))

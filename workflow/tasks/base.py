@@ -95,6 +95,7 @@ class BaseTask(_Task):
         task.status = Task.STATUS_ERROR
         task.result = {"exception": str(exc), "traceback": einfo.traceback}
         task.error_message = str(exc)
+        task.mark_task_as_finished()
         task.save()
 
         workflow = Workflow.objects.get(id=task.workflow_id)
@@ -110,6 +111,7 @@ class BaseTask(_Task):
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_SUCCESS
         task.result = retval
+        task.mark_task_as_finished()
         task.save()
 
         logger.info(f"Task {task_id} is now in success. Retval {retval}")
