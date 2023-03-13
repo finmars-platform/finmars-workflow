@@ -198,7 +198,9 @@ def init_periodic_tasks():
 
 def cancel_existing_tasks():
     from workflow.models import Task
+    from workflow.models import Workflow
     tasks = Task.objects.filter(status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT])
+    workflows = Workflow.objects.filter(status__in=[Workflow.STATUS_PROGRESS, Workflow.STATUS_INIT])
 
     for task in tasks:
         task.status = Task.STATUS_CANCELED
@@ -213,6 +215,10 @@ def cancel_existing_tasks():
         task.mark_task_as_finished()
 
         task.save()
+
+    for workflow in workflows:
+        workflow.status = Workflow.STATUS_CANCELED
+        workflow.save()
 
     _l.info("Canceled %s tasks " % len(tasks))
 
