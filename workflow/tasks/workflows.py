@@ -54,6 +54,7 @@ def mark_as_canceled_init_tasks(workflow_id):
     tasks = Task.objects.filter(workflow_id=workflow_id, status=Task.STATUS_INIT)
     for task in tasks:
         task.status = Task.STATUS_CANCELED
+        task.mark_task_as_finished()
         task.save()
 
 

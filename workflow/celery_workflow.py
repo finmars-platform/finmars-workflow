@@ -198,21 +198,44 @@ def init_periodic_tasks():
 
 def cancel_existing_tasks():
     from workflow.models import Task
+    from workflow.models import Workflow
     tasks = Task.objects.filter(status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT])
+    workflows = Workflow.objects.filter(status__in=[Workflow.STATUS_PROGRESS, Workflow.STATUS_INIT])
 
     for task in tasks:
         task.status = Task.STATUS_CANCELED
 
-    _l.info("Canceled %s tasks "% len(tasks))
+        try:  # just in case if rabbitmq still holds a task
+            if task.celery_task_id:
+                celery_app.control.revoke(task.celery_task_id, terminate=True)
+
+        except Exception as e:
+            _l.error("Something went wrong %s" % e)
+
+        task.mark_task_as_finished()
+
+        task.save()
+
+    for workflow in workflows:
+        workflow.status = Workflow.STATUS_CANCELED
+        workflow.save()
+
+    _l.info("Canceled %s tasks " % len(tasks))
 
 
 _l.info("==== Load Tasks & Workflow ====")
 
 celery_workflow = CeleryWorkflow()
 celery_workflow.init_app()
-_l.info("==== Init Periodic Tasks ====")
-cancel_existing_tasks()
+
 try:
+    _l.info("==== Cancel Existing Tasks ====")
+    cancel_existing_tasks()
+except Exception as e:
+    _l.error("Could not cancel_existing_tasks exception: %s" % e)
+    _l.error("Could not cancel_existing_tasks traceback: %s" % traceback.format_exc())
+try:
+    _l.info("==== Init Periodic Tasks ====")
     init_periodic_tasks()
 except Exception as e:
     _l.error("Could not init periodic tasks exception: %s" % e)
