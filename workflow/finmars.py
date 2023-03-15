@@ -1,15 +1,13 @@
+import datetime
 import json
 import logging
 import time
-import datetime
 from datetime import timedelta
+
 import pandas as pd
-from django.core.files.base import ContentFile
-
 import requests
+from django.core.files.base import ContentFile
 from rest_framework_simplejwt.tokens import RefreshToken
-
-
 
 from workflow.models import User
 from workflow_app import settings
@@ -169,7 +167,6 @@ def get_task(id):
 
 
 def _wait_task_to_complete_recursive(task_id=None, retries=5, retry_interval=60, counter=None):
-
     if counter == retries:
         raise Exception("Task exceeded retries %s count" % retries)
 
@@ -182,21 +179,21 @@ def _wait_task_to_complete_recursive(task_id=None, retries=5, retry_interval=60,
 
     time.sleep(retry_interval)
 
-    return _wait_task_to_complete_recursive(task_id=task_id, retries=retries, retry_interval=retry_interval, counter=counter)
+    return _wait_task_to_complete_recursive(task_id=task_id, retries=retries, retry_interval=retry_interval,
+                                            counter=counter)
 
 
 def wait_task_to_complete(task_id=None, retries=5, retry_interval=60):
-
     counter = 0
     result = None
 
-    result = _wait_task_to_complete_recursive(task_id=task_id, retries=retries, retry_interval=retry_interval, counter=counter)
+    result = _wait_task_to_complete_recursive(task_id=task_id, retries=retries, retry_interval=retry_interval,
+                                              counter=counter)
 
     return result
 
 
 def _wait_procedure_to_complete_recursive(procedure_instance_id=None, retries=5, retry_interval=60, counter=None):
-
     if counter == retries:
         raise Exception("Task exceeded retries %s count" % retries)
 
@@ -209,17 +206,19 @@ def _wait_procedure_to_complete_recursive(procedure_instance_id=None, retries=5,
 
     time.sleep(retry_interval)
 
-    return _wait_procedure_to_complete_recursive(procedure_instance_id=procedure_instance_id, retries=retries, retry_interval=retry_interval, counter=counter)
+    return _wait_procedure_to_complete_recursive(procedure_instance_id=procedure_instance_id, retries=retries,
+                                                 retry_interval=retry_interval, counter=counter)
 
 
 def wait_procedure_to_complete(procedure_instance_id=None, retries=5, retry_interval=60):
-
     counter = 0
     result = None
 
-    result = _wait_procedure_to_complete_recursive(procedure_instance_id=procedure_instance_id, retries=retries, retry_interval=retry_interval, counter=counter)
+    result = _wait_procedure_to_complete_recursive(procedure_instance_id=procedure_instance_id, retries=retries,
+                                                   retry_interval=retry_interval, counter=counter)
 
     return result
+
 
 def execute_transaction_import(payload):
     bot = User.objects.get(username="finmars_bot")
@@ -263,6 +262,43 @@ def execute_simple_import(payload):
     return response.json()
 
 
+def request_api(path, method='get', data=None):
+    bot = User.objects.get(username="finmars_bot")
+
+    refresh = RefreshToken.for_user(bot)
+
+    headers = {'Content-type': 'application/json', 'Accept': 'application/json',
+               'Authorization': 'Bearer %s' % refresh.access_token}
+
+    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + path
+
+    response = None
+
+    if method.lower() == 'get':
+
+        response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
+
+    elif method.lower() == 'post':
+
+        response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+
+    elif method.lower() == 'put':
+
+        response = requests.put(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+
+    elif method.lower() == 'patch':
+
+        response = requests.patch(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+
+    elif method.lower() == 'delete':
+
+        response = requests.delete(url=url, headers=headers, verify=settings.VERIFY_SSL)
+
+    if response.status_code != 200:
+        raise Exception(response.text)
+
+    return response.json()
+
 
 class Storage():
 
@@ -277,7 +313,6 @@ class Storage():
     def open(self, name, mode='rb'):
 
         # TODO permission check
-
 
         if name[0] == '/':
             name = self.base_path + name
