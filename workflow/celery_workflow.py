@@ -223,20 +223,32 @@ def cancel_existing_tasks():
     _l.info("Canceled %s tasks " % len(tasks))
 
 
-_l.info("==== Load Tasks & Workflow ====")
-
 celery_workflow = CeleryWorkflow()
-celery_workflow.init_app()
 
-try:
-    _l.info("==== Cancel Existing Tasks ====")
-    cancel_existing_tasks()
-except Exception as e:
-    _l.error("Could not cancel_existing_tasks exception: %s" % e)
-    _l.error("Could not cancel_existing_tasks traceback: %s" % traceback.format_exc())
-try:
-    _l.info("==== Init Periodic Tasks ====")
-    init_periodic_tasks()
-except Exception as e:
-    _l.error("Could not init periodic tasks exception: %s" % e)
-    _l.error("Could not init periodic tasks traceback: %s" % traceback.format_exc())
+import sys
+def init_celery():
+    if ('makemigrations' in sys.argv or 'migrate' in sys.argv):
+        _l.info("Celery is not inited. Probably Migration context")
+    else:
+        _l.info("==== Load Tasks & Workflow ====")
+
+
+        celery_workflow.init_app()
+
+        try:
+            _l.info("==== Cancel Existing Tasks ====")
+            cancel_existing_tasks()
+        except Exception as e:
+            _l.error("Could not cancel_existing_tasks exception: %s" % e)
+            _l.error("Could not cancel_existing_tasks traceback: %s" % traceback.format_exc())
+        try:
+            _l.info("==== Init Periodic Tasks ====")
+            init_periodic_tasks()
+        except Exception as e:
+            _l.error("Could not init periodic tasks exception: %s" % e)
+            _l.error("Could not init periodic tasks traceback: %s" % traceback.format_exc())
+
+init_celery()
+
+
+
