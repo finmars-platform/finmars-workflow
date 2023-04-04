@@ -237,7 +237,7 @@ def init_celery():
 
         try:
             _l.info("==== Cancel Existing Tasks ====")
-            cancel_existing_tasks()
+            # cancel_existing_tasks() # IMPORTANT do not execute it here, it breaks running tasks, when worker respawned
         except Exception as e:
             _l.error("Could not cancel_existing_tasks exception: %s" % e)
             _l.error("Could not cancel_existing_tasks traceback: %s" % traceback.format_exc())
