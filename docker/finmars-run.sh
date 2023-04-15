@@ -67,6 +67,10 @@ echo "Create admin user"
 
 python /var/app/manage.py generate_super_user
 
+echo "Cancel existing tasks"
+
+python /var/app/manage.py cancel_existing_tasks
+
 echo "Run server"
 
 uwsgi /etc/uwsgi/apps-enabled/workflow.ini
