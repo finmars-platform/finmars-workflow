@@ -54,13 +54,17 @@ export C_FORCE_ROOT='true'
 
 supervisord
 
+
+echo "Run Celery And CeleryBeat"
 supervisorctl start celery
 supervisorctl start celerybeat
-
-
 echo "Run Flower"
+supervisorctl start flower
 
-cd /var/app && nohup celery --app workflow_app --broker=amqp://guest:guest@$RABBITMQ_HOST:5672// flower --concurrency=2 --auto_refresh=False --broker_api=http://guest:guest@$RABBITMQ_HOST:15672/api/  --url-prefix=$BASE_API_URL/workflow/flower --port=5566 &
+
+
+
+# cd /var/app && nohup celery --app workflow_app --broker=amqp://guest:guest@$RABBITMQ_HOST:5672// flower --concurrency=2 --auto_refresh=False --broker_api=http://guest:guest@$RABBITMQ_HOST:15672/api/  --url-prefix=$BASE_API_URL/workflow/flower --port=5566 &
 
 
 echo "Create admin user"
