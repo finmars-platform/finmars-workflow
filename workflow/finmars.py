@@ -26,7 +26,7 @@ class DjangoStorageHandler(logging.Handler):
 
         storage = Storage()
 
-        storage.save_text(self.log_file, log_entry)
+        storage.append_text(self.log_file, log_entry)
 
         # with storage.open(self.log_file, 'a') as log_file:
         #     log_file.write(log_entry + '\n')
@@ -395,6 +395,18 @@ class Storage():
             name = self.base_path + name
         else:
             name = self.base_path + '/' + name
+
+        return self.storage.save(name, ContentFile(content.encode('utf-8')))
+
+    def append_text(self, name, content):
+
+        if name[0] == '/':
+            name = self.base_path + name
+        else:
+            name = self.base_path + '/' + name
+
+        if self.storage.exists(name):
+            content = self.storage.open(name).read().decode('utf-8') + content + '\n'
 
         return self.storage.save(name, ContentFile(content.encode('utf-8')))
 
