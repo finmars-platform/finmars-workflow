@@ -1,9 +1,11 @@
 import logging
 
+import django_filters
 import pexpect
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django_filters.rest_framework import FilterSet
 from rest_framework import status
 from rest_framework.authentication import get_authorization_header
 from rest_framework.decorators import action
@@ -11,13 +13,11 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet
-from django_filters.rest_framework import FilterSet
 
 from workflow.celery_workflow import celery_workflow
 from workflow.models import Workflow, Task
 from workflow.serializers import WorkflowSerializer, TaskSerializer, PingSerializer
 from workflow.workflows import execute_workflow
-import django_filters
 
 _l = logging.getLogger('workflow')
 
@@ -31,6 +31,7 @@ class WorkflowFilterSet(FilterSet):
     class Meta:
         model = Workflow
         fields = []
+
 
 class WorkflowViewSet(ModelViewSet):
     queryset = Workflow.objects.select_related(
@@ -123,10 +124,14 @@ class RefreshStorageViewSet(ViewSet):
         try:
             c = pexpect.spawn("supervisorctl restart celery", timeout=240)
             result = c.read()
-            _l.info('RefreshStorageViewSet.result %s' % result)
+            _l.info('RefreshStorageViewSet.celery result %s' % result)
             c = pexpect.spawn("supervisorctl restart celerybeat", timeout=240)
             result = c.read()
-            _l.info('RefreshStorageViewSet.result %s' % result)
+            _l.info('RefreshStorageViewSet.celerybeat result %s' % result)
+
+            c = pexpect.spawn("supervisorctl restart flower", timeout=240)
+            result = c.read()
+            _l.info('RefreshStorageViewSet.flower result %s' % result)
         except Exception as e:
             _l.info("Could not restart celery")
 

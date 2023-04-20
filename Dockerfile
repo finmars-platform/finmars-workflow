@@ -33,6 +33,7 @@ RUN mkdir -p /var/log/finmars/workflow/
 
 COPY docker/supervisor/celery.conf /etc/supervisor/conf.d/celery.conf
 COPY docker/supervisor/celerybeat.conf /etc/supervisor/conf.d/celerybeat.conf
+COPY docker/supervisor/flower.conf /etc/supervisor/conf.d/flower.conf
 
 COPY docker/uwsgi-www.ini /etc/uwsgi/apps-enabled/workflow.ini
 
