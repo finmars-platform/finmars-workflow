@@ -1,4 +1,5 @@
 import logging
+import os
 
 from celery.schedules import crontab
 from jsonschema.validators import validator_for
@@ -125,3 +126,7 @@ def send_alert(workflow):
 
         except Exception as e:
             _l.error("Could not send system message to finmars. Error %s" % e)
+
+
+def construct_path(*args):
+    return os.path.join(*args)

@@ -24,7 +24,7 @@ _l = logging.getLogger('workflow')
 
 class WorkflowFilterSet(FilterSet):
     name = django_filters.CharFilter()
-    project = django_filters.CharFilter()
+    user_code = django_filters.CharFilter()
     status = django_filters.CharFilter()
     created = django_filters.DateFromToRangeFilter()
 
@@ -47,17 +47,16 @@ class WorkflowViewSet(ModelViewSet):
     ]
 
     ordering_fields = [
-        'name', 'user_code', 'project', 'created', 'modified', 'status', 'owner'
+        'name', 'user_code', 'created', 'modified', 'status', 'owner'
     ]
 
     @action(detail=False, methods=('POST',), url_path='run-workflow')
     def run_workflow(self, request, pk=None):
-        project, user_code, payload = (
-            request.data["project"],
+        user_code, payload = (
             request.data["user_code"],
             request.data["payload"],
         )
-        data, _ = execute_workflow(request.user.username, project, user_code, payload)
+        data, _ = execute_workflow(request.user.username, user_code, payload)
 
         _l.info('data %s' % data)
 
@@ -66,7 +65,7 @@ class WorkflowViewSet(ModelViewSet):
     @action(detail=True, methods=('POST',), url_path='relaunch')
     def relaunch(self, request, pk=None):
         obj = Workflow.objects.get(id=pk)
-        data, _ = execute_workflow(request.user.username, obj.project, obj.user_code, obj.payload)
+        data, _ = execute_workflow(request.user.username, obj.user_code, obj.payload)
 
         return Response(data)
 
@@ -145,11 +144,12 @@ class DefinitionViewSet(ViewSet):
     def list(self, request, *args, **kwargs):
         workflow_definitions = []
 
-        for fullname, definition in sorted(celery_workflow.workflows.items()):
-            project, user_code = fullname.split(".", 1)
+        for user_code, definition in sorted(celery_workflow.workflows.items()):
+
+            _l.info('DefinitionViewSet.definition %s' % definition)
 
             workflow_definitions.append(
-                {"fullname": fullname, "project": project, "user_code": user_code, **definition}
+                {"user_code": user_code, **definition['workflow']}
             )
 
         return Response(workflow_definitions)

@@ -8,21 +8,20 @@ from workflow.utils import validate
 
 _l = logging.getLogger('workflow')
 
-def execute_workflow(username, project, user_code, payload={}):
-    fullname = f"{project}.{user_code}"
+def execute_workflow(username, user_code, payload={}):
 
     user = User.objects.get(username=username)
 
     # Check if the workflow exists
     try:
-        wf = celery_workflow.get_by_name(fullname)
+        wf = celery_workflow.get_by_user_code(user_code)
         if "schema" in wf:
             validate(payload, wf["schema"])
     except Exception:
-        raise Exception(f"Workflow {fullname} not found")
+        raise Exception(f"Workflow {user_code} not found")
 
     # Create the workflow in DB
-    obj = Workflow(owner=user, project=project, user_code=user_code, payload=payload)
+    obj = Workflow(owner=user, user_code=user_code, payload=payload)
     obj.save()
 
     # Build the workflow and execute it

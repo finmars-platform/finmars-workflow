@@ -170,7 +170,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                                     ></v-avatar>
                                                 </td>
                                                 <td>{{ item.id }}</td>
-                                                <td>{{ item.project }}.{{ item.user_code }}</td>
+                                                <td>{{ item.user_code }}</td>
                                                 <td>
                                                     <v-ship>{{ item.created | formatDate }}</v-ship>
                                                 </td>
@@ -627,7 +627,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                         <template v-slot:default>
                                             <thead>
                                             <tr>
-                                                <th class="text-left">Project</th>
+                                                <th class="text-left">User Code</th>
                                                 <th class="text-left">Name</th>
                                                 <th class="text-left">Periodic</th>
                                                 <th class="text-left">Run</th>
@@ -638,8 +638,8 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                                     v-for="item in definitions"
                                                     :key="item.user_code"
                                             >
-                                                <td>{{ item.project }}</td>
                                                 <td>{{ item.user_code }}</td>
+                                                <td>{{ item.name }}</td>
                                                 <td v-if="!item.periodic"></td>
                                                 <td v-if="item.periodic">
                                                     {{ item.periodic.crontab }} {{ item.periodic.interval }}
@@ -677,8 +677,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                         <v-container>
                             <p v-if="selectedRunningWorkflow != null">
                                 You are about to run workflow
-                                <strong>{{ selectedRunningWorkflow.name }}</strong> from project
-                                <strong>{{ selectedRunningWorkflow.project }}</strong>.
+                                <strong>{{ selectedRunningWorkflow.user_code }}</strong>
                             </p>
                             <v-row>
                                 <v-col cols="12" sm="12" md="12">

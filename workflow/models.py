@@ -95,11 +95,8 @@ class Workflow(TimeStampedModel):
     name = models.CharField(max_length=255, null=True, blank=True,
                             verbose_name=gettext_lazy('name'))
 
-    user_code = models.CharField(max_length=255, null=True, blank=True,
+    user_code = models.CharField(max_length=1024, null=True, blank=True,
                                  verbose_name=gettext_lazy('user_code'))
-
-    project = models.CharField(max_length=255, null=True, blank=True,
-                               verbose_name=gettext_lazy('name'))
 
     status = models.CharField(null=True, max_length=255, default=STATUS_INIT, choices=STATUS_CHOICES,
                               verbose_name='status')
@@ -131,10 +128,10 @@ class Workflow(TimeStampedModel):
             self.payload_data = None
 
     def __str__(self):
-        return f"{self.project}.{self.user_code}"
+        return f"{self.user_code}"
 
     def __repr__(self):
-        return f"<Workflow {self.project}.{self.user_code}>"
+        return f"<Workflow {self.user_code}>"
 
     def to_dict(self, with_payload=True):
         d = {}
@@ -143,8 +140,6 @@ class Workflow(TimeStampedModel):
                 "id": self.id,
                 "name": self.name,
                 "user_code": self.user_code,
-                "project": self.project,
-                "fullname": f"{self.project}.{self.name}",
                 "status": self.status,
                 "periodic": self.periodic,
             }
