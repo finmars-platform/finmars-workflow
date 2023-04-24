@@ -1,6 +1,8 @@
 import datetime
 import json
 import logging
+import os
+import sys
 import time
 from datetime import timedelta
 
@@ -13,6 +15,41 @@ from workflow.models import User
 from workflow_app import settings
 
 _l = logging.getLogger('workflow')
+
+class DjangoStorageHandler(logging.Handler):
+    def __init__(self, log_file, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.log_file = log_file
+
+    def emit(self, record):
+        log_entry = self.format(record)
+
+        storage = Storage()
+
+        storage.append_text(self.log_file, log_entry)
+
+        # with storage.open(self.log_file, 'a') as log_file:
+        #     log_file.write(log_entry + '\n')
+
+def create_logger(name, log_format=None):
+
+    if not log_format:
+        log_format = "[%(asctime)s][%(levelname)s][%(name)s][%(filename)s:%(funcName)s:%(lineno)d] - %(message)s"
+    formatter = logging.Formatter(log_format)
+
+    log_dir = "/.system/log/"
+
+    log_file = os.path.join(log_dir, str(name) + ".log")
+    file_handler = DjangoStorageHandler(log_file)
+    file_handler.setFormatter(formatter)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+
+    logger.addHandler(file_handler)
+
+    return logger
+
 
 
 def execute_expression(expression):
@@ -358,6 +395,18 @@ class Storage():
             name = self.base_path + name
         else:
             name = self.base_path + '/' + name
+
+        return self.storage.save(name, ContentFile(content.encode('utf-8')))
+
+    def append_text(self, name, content):
+
+        if name[0] == '/':
+            name = self.base_path + name
+        else:
+            name = self.base_path + '/' + name
+
+        if self.storage.exists(name):
+            content = self.storage.open(name).read().decode('utf-8') + content + '\n'
 
         return self.storage.save(name, ContentFile(content.encode('utf-8')))
 
