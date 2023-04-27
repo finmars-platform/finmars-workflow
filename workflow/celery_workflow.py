@@ -271,24 +271,26 @@ class CeleryWorkflow:
 
 
 def init_periodic_tasks():
-    for workflow, conf in celery_workflow.workflows.items():
+    for user_code, config in celery_workflow.workflows.items():
 
         # A dict is built for the periodic cleaning if the retention is valid
 
-        if "periodic" in conf:
-            periodic_conf = conf.get("periodic")
+        workflow = config['workflow']
+
+        if "periodic" in workflow:
+            periodic_conf = workflow.get("periodic")
             periodic_payload = periodic_conf.get("payload", {})
             schedule_str, schedule_value = build_celery_schedule(
-                workflow, periodic_conf
+                user_code, periodic_conf
             )
 
             celery_app.conf.beat_schedule.update(
                 {
-                    f"periodic-{workflow}-{schedule_str}": {
+                    f"periodic-{user_code}-{schedule_str}": {
                         "task": "workflow.tasks.workflows.execute",
                         "schedule": schedule_value,
                         "args": (
-                            workflow,
+                            user_code,
                             periodic_payload,
                         ),
                         'options': {'queue': 'workflow'},
