@@ -1,7 +1,9 @@
 import logging
+import os
 
 import django_filters
 import pexpect
+from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -145,7 +147,6 @@ class DefinitionViewSet(ViewSet):
         workflow_definitions = []
 
         for user_code, definition in sorted(celery_workflow.workflows.items()):
-
             _l.info('DefinitionViewSet.definition %s' % definition)
 
             workflow_definitions.append(
@@ -153,3 +154,21 @@ class DefinitionViewSet(ViewSet):
             )
 
         return Response(workflow_definitions)
+
+
+class LogFileViewSet(ViewSet):
+    def list(self, request):
+        log_file_path = '/var/log/finmars/workflow/django.log'
+
+        if not os.path.exists(log_file_path):
+            return Response({"error": "Log file not found"}, status=404)
+
+        # Read the last 2MB of your log file
+        bytes_to_read = 2 * 1024 * 1024  # 2MB in bytes
+
+        with open(log_file_path, 'r') as log_file:
+            log_file.seek(max(0, log_file.tell() - bytes_to_read), 0)
+
+            log_content = log_file.read()
+
+        return HttpResponse(log_content, content_type="text/plain")

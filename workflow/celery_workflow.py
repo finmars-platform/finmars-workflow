@@ -277,6 +277,8 @@ def init_periodic_tasks():
 
         workflow = config['workflow']
 
+        is_manager = workflow.get('is_manager', False)
+
         if "periodic" in workflow:
             periodic_conf = workflow.get("periodic")
             periodic_payload = periodic_conf.get("payload", {})
@@ -292,6 +294,7 @@ def init_periodic_tasks():
                         "args": (
                             user_code,
                             periodic_payload,
+                            is_manager
                         ),
                         'options': {'queue': 'workflow'},
                     }

@@ -116,7 +116,7 @@ def failure_hooks_launcher(workflow_id, queue, tasks_names, payload):
 
 
 @celery_app.task()
-def execute(user_code, payload):
+def execute(user_code, payload, is_manager):
     try:
 
         logger.info("periodic.execute %s" % user_code)
@@ -124,7 +124,7 @@ def execute(user_code, payload):
         finmars_bot = User.objects.get(username='finmars_bot')
 
 
-        c_obj = Workflow(owner=finmars_bot, user_code=user_code, payload=payload, periodic=True)
+        c_obj = Workflow(owner=finmars_bot, user_code=user_code, payload=payload, periodic=True, is_manager=is_manager)
         c_obj.save()
 
         # Build the workflow and execute it

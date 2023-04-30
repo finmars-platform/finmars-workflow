@@ -103,6 +103,8 @@ class Workflow(TimeStampedModel):
     payload_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('payload data'))
     periodic = models.BooleanField(default=False, verbose_name=gettext_lazy('periodic'))
 
+    is_manager = models.BooleanField(default=False, verbose_name=gettext_lazy('is manager'))
+
     owner = models.ForeignKey(User, verbose_name=gettext_lazy('owner'),
                               on_delete=models.CASCADE, related_name="workflows")
 
@@ -158,6 +160,30 @@ class Workflow(TimeStampedModel):
                 task.save()
         self.status = Workflow.STATUS_CANCELED
         self.save()
+
+    def run_new_workflow(self, user_code, payload={}):
+
+        if not user_code:
+            raise Exception("User code is required.")
+
+        if not self.is_manager:
+            raise Exception("Workflow is not manager. Can't run new workflow.")
+
+        from workflow.celery_workflow import celery_workflow
+        from workflow.workflows import execute_workflow
+
+        new_workflow = celery_workflow.get_by_user_code(user_code)
+
+        is_manager = new_workflow.get('is_manager', False)
+
+        if is_manager:
+            raise Exception("New Workflow is manager. Manager can't execute another manager")
+
+        _l.info('run_new_workflow. Going to execute: %s', user_code)
+
+        data, _ = execute_workflow(self.owner.username, user_code, payload)
+
+        return data
 
 
 class Task(TimeStampedModel):
