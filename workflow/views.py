@@ -17,6 +17,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet
 
 from workflow.celery_workflow import celery_workflow
+from workflow.filters import WorkflowQueryFilter
 from workflow.models import Workflow, Task
 from workflow.serializers import WorkflowSerializer, TaskSerializer, PingSerializer
 from workflow.workflows import execute_workflow
@@ -45,8 +46,10 @@ class WorkflowViewSet(ModelViewSet):
     ]
     filter_class = WorkflowFilterSet
     filter_backends = ModelViewSet.filter_backends + [
-        OrderingFilter
+        OrderingFilter,
+        WorkflowQueryFilter
     ]
+
 
     ordering_fields = [
         'name', 'user_code', 'created', 'modified', 'status', 'owner'
