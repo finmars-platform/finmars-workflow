@@ -1,7 +1,9 @@
 import logging
+import os
 
 import django_filters
 import pexpect
+from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -15,6 +17,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet
 
 from workflow.celery_workflow import celery_workflow
+from workflow.filters import WorkflowQueryFilter
 from workflow.models import Workflow, Task
 from workflow.serializers import WorkflowSerializer, TaskSerializer, PingSerializer
 from workflow.workflows import execute_workflow
@@ -24,7 +27,7 @@ _l = logging.getLogger('workflow')
 
 class WorkflowFilterSet(FilterSet):
     name = django_filters.CharFilter()
-    project = django_filters.CharFilter()
+    user_code = django_filters.CharFilter()
     status = django_filters.CharFilter()
     created = django_filters.DateFromToRangeFilter()
 
@@ -43,21 +46,22 @@ class WorkflowViewSet(ModelViewSet):
     ]
     filter_class = WorkflowFilterSet
     filter_backends = ModelViewSet.filter_backends + [
-        OrderingFilter
+        OrderingFilter,
+        WorkflowQueryFilter
     ]
 
+
     ordering_fields = [
-        'name', 'user_code', 'project', 'created', 'modified', 'status', 'owner'
+        'name', 'user_code', 'created', 'modified', 'status', 'owner'
     ]
 
     @action(detail=False, methods=('POST',), url_path='run-workflow')
     def run_workflow(self, request, pk=None):
-        project, user_code, payload = (
-            request.data["project"],
+        user_code, payload = (
             request.data["user_code"],
             request.data["payload"],
         )
-        data, _ = execute_workflow(request.user.username, project, user_code, payload)
+        data, _ = execute_workflow(request.user.username, user_code, payload)
 
         _l.info('data %s' % data)
 
@@ -66,7 +70,7 @@ class WorkflowViewSet(ModelViewSet):
     @action(detail=True, methods=('POST',), url_path='relaunch')
     def relaunch(self, request, pk=None):
         obj = Workflow.objects.get(id=pk)
-        data, _ = execute_workflow(request.user.username, obj.project, obj.user_code, obj.payload)
+        data, _ = execute_workflow(request.user.username, obj.user_code, obj.payload)
 
         return Response(data)
 
@@ -145,11 +149,29 @@ class DefinitionViewSet(ViewSet):
     def list(self, request, *args, **kwargs):
         workflow_definitions = []
 
-        for fullname, definition in sorted(celery_workflow.workflows.items()):
-            project, user_code = fullname.split(".", 1)
+        for user_code, definition in sorted(celery_workflow.workflows.items()):
+            _l.info('DefinitionViewSet.definition %s' % definition)
 
             workflow_definitions.append(
-                {"fullname": fullname, "project": project, "user_code": user_code, **definition}
+                {"user_code": user_code, **definition['workflow']}
             )
 
         return Response(workflow_definitions)
+
+
+class LogFileViewSet(ViewSet):
+    def list(self, request):
+        log_file_path = '/var/log/finmars/workflow/django.log'
+
+        if not os.path.exists(log_file_path):
+            return Response({"error": "Log file not found"}, status=404)
+
+        # Read the last 2MB of your log file
+        bytes_to_read = 2 * 1024 * 1024  # 2MB in bytes
+
+        with open(log_file_path, 'r') as log_file:
+            log_file.seek(max(0, log_file.tell() - bytes_to_read), 0)
+
+            log_content = log_file.read()
+
+        return HttpResponse(log_content, content_type="text/plain")

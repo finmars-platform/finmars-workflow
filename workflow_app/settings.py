@@ -235,7 +235,7 @@ if SERVER_TYPE == "local":
 
 REST_FRAMEWORK = {
     'PAGE_SIZE': 40,
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'DEFAULT_PAGINATION_CLASS': 'workflow.pagination.PageNumberPaginationExt',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         # 'rest_framework.authentication.SessionAuthentication',
         # 'rest_framework.authentication.BasicAuthentication',

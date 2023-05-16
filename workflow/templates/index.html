@@ -84,7 +84,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                 v-bind="attrs"
                                 @click.stop="refreshStorage()"
                         >
-                            <v-icon >mdi-cloud-refresh</v-icon>
+                            <v-icon>mdi-cloud-refresh</v-icon>
                         </v-btn>
                     </template>
                     <span>Refresh Storage</span>
@@ -132,6 +132,16 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                 </v-list-item>
                             </button>
                         </a>
+                        <a :href="logLink" class="text-decoration-none" target="_blank">
+                            <button style="margin-left: 1em">
+                                <v-list-item>
+                                    <v-list-item-icon>
+                                        <v-icon>mdi-clipboard-text</v-icon>
+                                    </v-list-item-icon>
+                                    <v-list-item-title>Logs</v-list-item-title>
+                                </v-list-item>
+                            </button>
+                        </a>
 
                     </v-list-item-group>
                 </v-list>
@@ -146,37 +156,75 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                             <v-card class="pa-4" outlined>
                                 <div>Workflows</div>
                                 <v-card-text>
-                                    <v-data-table
-                                            :loading="loading"
-                                            loading-text="Loading... Please wait"
-                                            :headers="headers"
-                                            :items="workflows"
-                                            :items-per-page="40"
-                                            :sort-by="['created']"
-                                            :sort-desc="[true]"
-                                            :server-items-length="workflowsCount"
-                                            :search="search"
-                                    >
-                                        <template v-slot:item="{ item }">
-                                            <tr
+
+
+                                    <div class="v-data-table theme--dark">
+
+                                        <div class="v-data-table__wrapper">
+
+                                            <table>
+
+                                                <thead>
+
+                                                <tr>
+                                                    <th>Status
+                                                    </th>
+                                                    <th>
+                                                        Id
+                                                    </th>
+                                                    <th>
+                                                        User Code
+                                                    </th>
+                                                    <th>
+                                                        Role
+                                                    </th>
+                                                    <th>Date
+                                                    </th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+
+                                                <tr v-for="item in workflows"
                                                     class="pointer"
                                                     @click="selectRow(item)"
                                                     :class="{'active': item.isSelected}"
-                                            >
-                                                <td>
-                                                    <v-avatar
-                                                            size="14"
-                                                            :color="item.status | statusColor"
-                                                    ></v-avatar>
-                                                </td>
-                                                <td>{{ item.id }}</td>
-                                                <td>{{ item.project }}.{{ item.user_code }}</td>
-                                                <td>
-                                                    <v-ship>{{ item.created | formatDate }}</v-ship>
-                                                </td>
-                                            </tr>
-                                        </template>
-                                    </v-data-table>
+                                                >
+                                                    <td>
+                                                        <v-avatar
+                                                                size="14"
+                                                                :color="item.status | statusColor"
+                                                        ></v-avatar>
+                                                    </td>
+                                                    <td>{{ item.id }}</td>
+                                                    <td>{{ item.user_code }}</td>
+                                                    <td>
+                                                        <span v-if="item.is_manager">Manager</span>
+                                                        <span v-if="!item.is_manager">Worker</span>
+                                                    </td>
+                                                    <td v-bind:title="item.created">
+                                                        <v-ship>{{ item.created | formatDate }}</v-ship>
+                                                    </td>
+                                                </tr>
+
+                                                </tbody>
+
+
+                                            </table>
+
+                                        </div>
+                                    </div>
+
+
+                                    <div class="pagination">
+                                        <button @click="changePage(page - 1)" :disabled="page === 1">Previous</button>
+                                        <button v-for="pageItem in totalPages" :key="pageItem"
+                                                @click="changePage(pageItem)"
+                                                :disabled="page === pageItem">{{ pageItem }}</button>
+                                        <button @click="changePage(page + 1)" :disabled="page === totalPages">Next
+                                        </button>
+                                    </div>
+
+
                                 </v-card-text>
                             </v-card>
                         </v-col>
@@ -185,7 +233,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                 <div>Search</div>
                                 <v-card-text>
                                     <v-text-field
-                                            v-model="search"
+                                            v-model="query"
                                             label="Search by Date/ID"
                                             label="Append"
                                             append-icon="mdi-magnify"
@@ -194,7 +242,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                     ></v-text-field>
                                 </v-card-text>
                             </v-card>
-                            <v-card class="pa-4 mb-4" outlined tile>
+                            <!--<v-card class="pa-4 mb-4" outlined tile>
                                 <div>Filter by workflow</div>
                                 <v-card-text>
                                     <v-chip-group
@@ -226,7 +274,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                     >
                                     </v-select>
                                 </v-card-text>
-                            </v-card>
+                            </v-card> -->
                         </v-col>
                     </v-row>
                 </v-container>
@@ -378,97 +426,103 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                 </v-alert>
                             </v-col>
                         </v-row>
-                        <div v-if="selectedTask">
-                            <v-tabs v-model="tab" grow color="director">
-                                <v-tab>Task {{ selectedTask.key }}</v-tab>
-                                <v-tab v-if="selectedTask.status != 'error'">Result</v-tab>
-                                <v-tab v-if="selectedTask.status == 'error'">Error</v-tab>
-                            </v-tabs>
-                            <div class="pa-4">
-                                <v-tabs-items v-model="tab">
-                                    <v-simple-table v-if="tab == 0">
-                                        <template>
-                                            <tbody>
-                                            <tr>
-                                                <td><strong>ID</strong></td>
-                                                <td>{{ selectedTask.id }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Key</strong></td>
-                                                <td>{{ selectedTask.name }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Task Status</strong></td>
-                                                <td>
-                                                    <v-chip
-                                                            small
-                                                            :color="getColor(selectedTask.status)"
-                                                            dark
-                                                    >{{ selectedTask.status }}</v-chip
-                                                    >
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Created</strong></td>
-                                                <td>{{ selectedTask.created | formatDate }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Updated</strong></td>
-                                                <td>{{ selectedTask.updated | formatDate }}</td>
-                                            </tr>
-                                            </tbody>
+                        <div v-if="selectedTask" class="pa-4">
 
-                                            <code
-                                                    v-if="selectedTask.progress"
-                                            >{{ selectedTask.progress }}</code
-                                            >
-                                        </template>
-                                    </v-simple-table>
-                                    <div v-if="tab == 1">
-                                        <v-row
-                                                v-if="!selectedTask.result"
-                                                class="mt-4"
-                                                justify="center"
-                                                no-gutters
-                                        >
-                                            <v-col>
-                                                <v-alert
-                                                        color="#3c4652"
+                            <h2 class="text-center" style="margin-bottom: 8px">Task</h2>
+
+                            <div class="v-data-table theme--dark">
+
+                                <div class="v-data-table__wrapper">
+                                    <table>
+                                        <tbody>
+                                        <tr>
+                                            <td><strong>ID</strong></td>
+                                            <td>{{ selectedTask.id }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Key</strong></td>
+                                            <td>{{ selectedTask.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Task Status</strong></td>
+                                            <td>
+                                                <v-chip
+                                                        small
+                                                        :color="getColor(selectedTask.status)"
                                                         dark
-                                                        icon="mdi-alert-circle-outline"
-                                                        outlined
+                                                >{{ selectedTask.status }}</v-chip
                                                 >
-                                                    No task result
-                                                </v-alert>
-                                            </v-col>
-                                        </v-row>
-                                        <code
-                                                v-if="selectedTask.result && selectedTask.status != 'error'"
-                                        >{{ selectedTask.result }}</code
-                                        >
-                                        <div
-                                                v-if="selectedTask.result && selectedTask.status == 'error'"
-                                        >
-                                            <v-row class="mt-4" justify="center" no-gutters>
-                                                <v-col>
-                                                    <v-alert
-                                                            text
-                                                            outlined
-                                                            color="red darken-1"
-                                                            icon="mdi-alert-circle-outline"
-                                                            dark
-                                                            icon="mdi-alert-circle-outline"
-                                                            outlined
-                                                    >
-                                                        {{ selectedTask.result.exception }}
-                                                    </v-alert>
-                                                </v-col>
-                                            </v-row>
-                                            <code>{{ selectedTask.result.traceback }}</code>
-                                        </div>
-                                    </div>
-                                </v-tabs-items>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Created</strong></td>
+                                            <td>{{ selectedTask.created | formatDate }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Updated</strong></td>
+                                            <td>{{ selectedTask.updated | formatDate }}</td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+
+                                </div>
                             </div>
+
+                            <div v-if="selectedTask.progress">
+                                <h2 class="text-center" style="margin-bottom: 8px">Progress</h2>
+                                <code
+
+                                >{{ selectedTask.progress }}</code
+                                >
+                            </div>
+
+                            <v-row
+                                    v-if="!selectedTask.result"
+                                    class="mt-4"
+                                    justify="center"
+                                    no-gutters
+                            >
+                                <v-col>
+                                    <v-alert
+                                            color="#3c4652"
+                                            dark
+                                            icon="mdi-alert-circle-outline"
+                                            outlined
+                                    >
+                                        No task result
+                                    </v-alert>
+                                </v-col>
+                            </v-row>
+
+                            <div>
+                                <h2 class="text-center" style="margin-bottom: 8px">Result</h2>
+                                <code
+                                        v-if="selectedTask.result && selectedTask.status != 'error'"
+                                >{{ selectedTask.result }}</code
+                                >
+                                <div
+                                        v-if="selectedTask.result && selectedTask.status == 'error'"
+                                >
+                                    <v-row class="mt-4" justify="center" no-gutters>
+                                        <v-col>
+                                            <v-alert
+                                                    text
+                                                    outlined
+                                                    color="red darken-1"
+                                                    icon="mdi-alert-circle-outline"
+                                                    dark
+                                                    icon="mdi-alert-circle-outline"
+                                                    outlined
+                                            >
+                                                {{ selectedTask.result.exception }}
+                                            </v-alert>
+                                        </v-col>
+                                    </v-row>
+                                    <code>{{ selectedTask.result.traceback }}</code>
+                                </div>
+                            </div>
+
+
                         </div>
                         <template v-slot:append v-if="selectedTask
 					    && (selectedWorkflow.status == 'success'
@@ -598,8 +652,8 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                         outlined
                 >
                     <a @click="selectRow({id: postWorkflowResponse.id})"
-                            class="nav-link"
-                            style="cursor: pointer"
+                       class="nav-link"
+                       style="cursor: pointer"
                     >
                         Open workflow : {{ postWorkflowResponse.name }}
                         {{ postWorkflowResponse.id }}
@@ -627,9 +681,10 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                         <template v-slot:default>
                                             <thead>
                                             <tr>
-                                                <th class="text-left">Project</th>
+                                                <th class="text-left">User Code</th>
                                                 <th class="text-left">Name</th>
                                                 <th class="text-left">Periodic</th>
+                                                <th class="text-left">Role</th>
                                                 <th class="text-left">Run</th>
                                             </tr>
                                             </thead>
@@ -638,12 +693,16 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                                                     v-for="item in definitions"
                                                     :key="item.user_code"
                                             >
-                                                <td>{{ item.project }}</td>
                                                 <td>{{ item.user_code }}</td>
+                                                <td>{{ item.name }}</td>
                                                 <td v-if="!item.periodic"></td>
                                                 <td v-if="item.periodic">
                                                     {{ item.periodic.crontab }} {{ item.periodic.interval }}
                                                     <v-icon small> mdi-clock</v-icon>
+                                                </td>
+                                                <td>
+                                                    <span v-if="item.is_manager">Manager</span>
+                                                    <span v-if="!item.is_manager">Worker</span>
                                                 </td>
                                                 <!-- run button begins here -->
                                                 <td>
@@ -677,8 +736,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
                         <v-container>
                             <p v-if="selectedRunningWorkflow != null">
                                 You are about to run workflow
-                                <strong>{{ selectedRunningWorkflow.name }}</strong> from project
-                                <strong>{{ selectedRunningWorkflow.project }}</strong>.
+                                <strong>{{ selectedRunningWorkflow.user_code }}</strong>
                             </p>
                             <v-row>
                                 <v-col cols="12" sm="12" md="12">
@@ -724,6 +782,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css
     const API_URL = "/{{ BASE_API_URL }}/workflow/api";
     const FLOWER_URL = '{{ FLOWER_URL }}';
     const DOCUMENTATION_LINK = '{{ DOCUMENTATION_LINK }}';
+    const LOG_LINK = '{{ LOG_LINK }}';
 </script>
 <script src="
 https://cdn.jsdelivr.net/npm/jquery@3.6.3/dist/jquery.min.js

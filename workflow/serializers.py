@@ -17,7 +17,6 @@ class TaskSerializer(serializers.ModelSerializer):
                   'previous', 'is_hook',
                   'payload', 'result', 'progress',
 
-
                   'created', 'modified',
                   'finished_at'
                   ]
@@ -29,7 +28,11 @@ class WorkflowSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Workflow
-        fields = ['id', 'name', 'user_code', 'project', 'owner', 'status', 'payload', 'created', 'modified', 'tasks', 'periodic']
+        fields = ['id', 'name', 'user_code',
+                  'owner',
+                  'status',
+                  'payload', 'created', 'modified', 'tasks', 'periodic',
+                  'is_manager']
 
 
 class PingSerializer(serializers.Serializer):

@@ -96,7 +96,10 @@ const store = new Vuex.Store({
         selectedTask: null,
         taskIndex: null,
         loading: true,
-        hideHooks: false
+        hideHooks: false,
+        page_size: 20,
+        query: null,
+        page: 1,
     },
     actions: {
         listWorkflows({commit}) {
@@ -107,9 +110,15 @@ const store = new Vuex.Store({
                 'Content-type': 'application/json'
             };
 
+            let url = API_URL + "/workflow/?page_size=" + this.state.pageSize + '&page=' + this.state.page
+
+            if (this.state.query) {
+                url = url + '&query=' + this.state.query
+            }
+
             axios({
                 method: 'get',
-                url: API_URL + "/workflow/",
+                url: url,
                 headers: headers
             }).then((response) => {
                 commit("updateWorkflows", response.data.results);
@@ -148,6 +157,9 @@ const store = new Vuex.Store({
                 commit("updateSelectedWorkflow", response.data);
                 commit("refreshNetwork", response.data.tasks);
                 commit("changeLoadingState", false);
+                if (response.data.tasks.length) {
+                    commit("updateSelectedTask", response.data.tasks[0]);
+                }
             });
         },
         selectTask({commit}, task) {
@@ -200,12 +212,28 @@ const store = new Vuex.Store({
                     dispatch("getWorkflow", response.data.id);
                 });
         },
+        updateQueryValue({commit}, value) {
+            commit('updateQueryValue', value);
+        },
+        changePage({commit, dispatch}, page) {
+            commit("setPage", page);
+            dispatch("listWorkflows");
+        },
     },
     mutations: {
+        setPage(state, page) {
+            state.page = page;
+        },
         updateWorkflows(state, workflows) {
             state.workflows = workflows;
+            console.log('workflows ', workflows)
+
+            var filtered = workflows.filter(function (item) {
+                return item.user_code
+            })
+
             state.workflowNames = ["All"].concat([
-                ...new Set(workflows.map((item) => item.fullname)),
+                ...new Set(filtered.map((item) => item.user_code)),
             ]);
         },
         updateWorkflowsCount(state, count) {
@@ -312,6 +340,15 @@ const store = new Vuex.Store({
         changeLoadingState(state, loading) {
             state.loading = loading;
         },
+        updateQueryValue(state, value) {
+            state.page = 1;
+            state.query = value;
+        },
+    },
+    getters: {
+        totalPages(state) {
+            return Math.ceil(state.workflowsCount / state.page_size);
+        },
     },
 });
 
@@ -394,8 +431,19 @@ new Vue({
             "taskIndex",
             "network",
             "loading",
-            "hideHooks"
+            "hideHooks",
+            "page"
         ]),
+        ...Vuex.mapGetters(["totalPages"]),
+        query: {
+            get() {
+                return this.$store.state.query;
+            },
+            set(value) {
+                console.log('val', value)
+                this.$store.dispatch('updateQueryValue', value);
+            }
+        }
     },
     store,
     router,
@@ -406,6 +454,7 @@ new Vue({
         drawer: false,
         group: null,
         docLink: DOCUMENTATION_LINK,
+        logLink: LOG_LINK,
         // definitions
         multiLine: true,
         snackbar: false,
@@ -424,15 +473,16 @@ new Vue({
         payloadDialog: false,
         relaunchDialog: false,
         cancelDialog: false,
-        search: "",
         selectedStatus: [],
         status: ['init', "success", "error", "progress", "pending", "canceled"],
         selectedWorkflowName: "All",
     }),
+
     mounted() {
         this.$vuetify.theme.dark = true;
     },
     methods: {
+        ...Vuex.mapActions(["changePage"]),
         moveUp: function () {
             window.scrollTo(0, 0);
         },
@@ -534,7 +584,6 @@ new Vue({
             }
 
             let data = {
-                project: this.selectedRunningWorkflow.project,
                 user_code: this.selectedRunningWorkflow.user_code,
                 payload: payloadValueTrim ? payloadValueParsed : {},
             };

@@ -36,8 +36,8 @@ admin.site.register(Task, TaskAdmin)
 
 class WorkflowAdmin(admin.ModelAdmin):
     model = Workflow
-    list_display = ['id', 'name', 'project', 'status']
-    search_fields = ['id', 'name', 'project', 'status']
+    list_display = ['id', 'name', 'user_code', 'status']
+    search_fields = ['id', 'name', 'user_code', 'status']
 
     actions_on_bottom = True
 

@@ -120,3 +120,16 @@
 .terminate-workflow {
   color: red !important;
 }
+
+.pagination button {
+  margin: 4px;
+  padding: 2px 8px;
+}
+.pagination button:hover {
+  opacity: .7;
+}
+.pagination button:disabled {
+  background-color: grey;
+  cursor: not-allowed;
+  opacity: 0.5;
+}

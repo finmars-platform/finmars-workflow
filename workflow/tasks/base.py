@@ -110,7 +110,10 @@ class BaseTask(_Task):
     def on_success(self, retval, task_id, args, kwargs):
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_SUCCESS
-        task.result = retval
+        if retval:
+            task.result = retval
+        else:
+            task.result = {"message": "Task finished successfully. No results returned"}
         task.mark_task_as_finished()
         task.save()
 
