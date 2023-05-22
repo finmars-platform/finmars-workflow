@@ -466,9 +466,9 @@ class Utils():
         # get the directory and the filename without extension
 
         if file_path[0] == '/':
-            file_path = os.path.dirname(settings.MEDIA_ROOT + '/tasks/' + settings.BASE_API_URL + file_path)
+            file_path = os.path.join(settings.MEDIA_ROOT + '/tasks/' + settings.BASE_API_URL + file_path)
         else:
-            file_path =  os.path.dirname(settings.MEDIA_ROOT + '/tasks/' + settings.BASE_API_URL + '/' + file_path)
+            file_path =  os.path.join(settings.MEDIA_ROOT + '/tasks/' + settings.BASE_API_URL + '/' + file_path)
 
         _l.info('import_from_storage.file_path %s' % file_path)
 
