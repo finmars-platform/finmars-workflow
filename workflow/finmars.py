@@ -478,18 +478,21 @@ class Utils():
         _l.info('import_from_storage.module_name %s' % module_name)
         _l.info('import_from_storage.file_path %s' % file_path)
 
+        loader = importlib.machinery.SourceFileLoader(module_name, file_path)
+        module = loader.load_module()
+
         # add the directory to sys.path
-        spec = importlib.util.spec_from_file_location(module_name, file_path)
-
-        if spec is None:
-            raise ImportError(f"Cannot import file {filename}")
-
-        module = importlib.util.module_from_spec(spec)
-
-        # execute the module
-        spec.loader.exec_module(module)
-
-        # return the module
+        # spec = importlib.util.spec_from_file_location(module_name, file_path)
+        #
+        # if spec is None:
+        #     raise ImportError(f"Cannot import file {filename}")
+        #
+        # module = importlib.util.module_from_spec(spec)
+        #
+        # # execute the module
+        # spec.loader.exec_module(module)
+        #
+        # # return the module
         return module
 
 storage = Storage()
