@@ -475,6 +475,9 @@ class Utils():
         directory, filename = os.path.split(file_path)
         module_name, _ = os.path.splitext(filename)
 
+        _l.info('import_from_storage.module_name %s' % module_name)
+        _l.info('import_from_storage.file_path %s' % file_path)
+
         # add the directory to sys.path
         spec = importlib.util.spec_from_file_location(module_name, file_path)
 
