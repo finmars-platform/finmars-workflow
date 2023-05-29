@@ -170,7 +170,7 @@ class CeleryWorkflow:
         except Exception as e:
             _l.error('load_user_tasks_from_storage_to_local_filesystem.e %s' % e)
 
-        workflows_folder_path = construct_path(settings.BASE_API_URL, 'workflows')
+        workflows_folder_path = construct_path('/', settings.BASE_API_URL, 'workflows')
 
         configuration_directories, _ = storage.listdir(workflows_folder_path)
 
