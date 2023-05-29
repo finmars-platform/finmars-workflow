@@ -64,11 +64,15 @@ class CeleryWorkflow:
 
                     modules_directories, _ = storage.listdir(module_folder_path)
 
+                    _l.info('init_app.modules_directories %s' % modules_directories)
+
                     for module_directory in modules_directories:
 
                         workflow_folder_path = construct_path(module_folder_path, module_directory)
 
                         workflow_directories, _ = storage.listdir(workflow_folder_path)
+
+                        _l.info('init_app.workflow_directories %s' % workflow_directories)
 
                         for workflow_directory in workflow_directories:
 
