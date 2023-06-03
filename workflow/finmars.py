@@ -331,7 +331,7 @@ def request_api(path, method='get', data=None):
 
         response = requests.delete(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
-    if response.status_code != 200 and response.status_code != 401:
+    if response.status_code != 200 and response.status_code != 201:
         raise Exception(response.text)
 
     return response.json()
