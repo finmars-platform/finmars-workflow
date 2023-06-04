@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import time
+import csv
 from datetime import timedelta
 
 import pandas as pd
@@ -362,6 +363,12 @@ class Storage():
         with self.open(filepath, 'r') as state:
             state_content = json.loads(state.read())
         return state_content
+
+    def read_csv(self, filepath):
+        with self.open(filepath, 'r') as f:
+            reader = csv.DictReader(f)
+            data = list(reader)
+        return data
 
     def delete(self, name):
 
