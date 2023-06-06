@@ -3,8 +3,8 @@ import importlib
 import json
 import logging
 import os
-import sys
 import time
+import csv
 from datetime import timedelta
 
 import pandas as pd
@@ -16,6 +16,7 @@ from workflow.models import User
 from workflow_app import settings
 
 _l = logging.getLogger('workflow')
+
 
 class DjangoStorageHandler(logging.Handler):
     def __init__(self, log_file, *args, **kwargs):
@@ -32,8 +33,8 @@ class DjangoStorageHandler(logging.Handler):
         # with storage.open(self.log_file, 'a') as log_file:
         #     log_file.write(log_entry + '\n')
 
-def create_logger(name, log_format=None):
 
+def create_logger(name, log_format=None):
     if not log_format:
         log_format = "[%(asctime)s][%(levelname)s][%(name)s][%(filename)s:%(funcName)s:%(lineno)d] - %(message)s"
     formatter = logging.Formatter(log_format)
@@ -50,7 +51,6 @@ def create_logger(name, log_format=None):
     logger.addHandler(file_handler)
 
     return logger
-
 
 
 def execute_expression(expression):
@@ -332,7 +332,7 @@ def request_api(path, method='get', data=None):
 
         response = requests.delete(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
-    if response.status_code != 200:
+    if response.status_code != 200 and response.status_code != 201:
         raise Exception(response.text)
 
     return response.json()
@@ -358,6 +358,17 @@ class Storage():
             name = self.base_path + '/' + name
 
         return self.storage.open(name, mode)
+
+    def read_json(self, filepath):
+        with self.open(filepath, 'r') as state:
+            state_content = json.loads(state.read())
+        return state_content
+
+    def read_csv(self, filepath):
+        with self.open(filepath, 'r') as f:
+            reader = csv.DictReader(f)
+            data = list(reader)
+        return data
 
     def delete(self, name):
 
@@ -468,7 +479,7 @@ class Utils():
         if file_path[0] == '/':
             file_path = os.path.join(settings.MEDIA_ROOT + '/tasks/' + settings.BASE_API_URL + file_path)
         else:
-            file_path =  os.path.join(settings.MEDIA_ROOT + '/tasks/' + settings.BASE_API_URL + '/' + file_path)
+            file_path = os.path.join(settings.MEDIA_ROOT + '/tasks/' + settings.BASE_API_URL + '/' + file_path)
 
         _l.info('import_from_storage.file_path %s' % file_path)
 
@@ -494,6 +505,7 @@ class Utils():
         #
         # # return the module
         return module
+
 
 storage = Storage()
 

@@ -299,9 +299,9 @@ LOGGING = {
         'file': {
             'level': DJANGO_LOG_LEVEL,
             # 'class': 'logging.handlers.TimedRotatingFileHandler', # cant work when multiple process
-            'class': 'logging.handlers.TimedRotatingFileHandler',
-            'interval': 1,
-            'when': 'D',
+            'class': 'logging.FileHandler',
+            # 'interval': 1,
+            # 'when': 'D',
             'filename': '/var/log/finmars/workflow/django.log',
             'formatter': 'verbose'
         }
