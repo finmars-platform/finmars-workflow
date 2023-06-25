@@ -1,10 +1,10 @@
+import csv
 import datetime
 import importlib
 import json
 import logging
 import os
 import time
-import csv
 from datetime import timedelta
 
 import pandas as pd
@@ -507,6 +507,35 @@ class Utils():
         return module
 
 
+class Vault():
+
+    def get_secret(self, path):
+
+        bot = User.objects.get(username="finmars_bot")  # TODO Refactor, should check actual user permission
+
+        refresh = RefreshToken.for_user(bot)
+
+        # _l.info('refresh %s' % refresh.access_token)
+
+        pieces = path.split('/')
+        engine_name = pieces[0]
+        secret_path = pieces[1]
+
+        headers = {'Content-type': 'application/json', 'Accept': 'application/json',
+                   'Authorization': 'Bearer %s' % refresh.access_token}
+
+        url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + f'/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}'
+
+        response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
+
+        if response.status_code != 200:
+            raise Exception(response.text)
+
+        return response.json()['data']
+
+
 storage = Storage()
 
 utils = Utils()
+
+vault = Vault()
