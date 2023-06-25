@@ -535,7 +535,7 @@ class Vault():
         if response.status_code != 200:
             raise Exception(response.text)
 
-        return response.json()['data']
+        return response.json()['data']['data']
 
 
 storage = Storage()
