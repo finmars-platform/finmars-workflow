@@ -10,6 +10,7 @@ from datetime import timedelta
 import pandas as pd
 import requests
 from django.core.files.base import ContentFile
+from flatten_json import flatten
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from workflow.models import User
@@ -506,11 +507,14 @@ class Utils():
         # # return the module
         return module
 
+    def tree_to_flat(self, data, **kwargs):
+
+        return flatten(data, **kwargs)
+
 
 class Vault():
 
     def get_secret(self, path):
-
         bot = User.objects.get(username="finmars_bot")  # TODO Refactor, should check actual user permission
 
         refresh = RefreshToken.for_user(bot)
