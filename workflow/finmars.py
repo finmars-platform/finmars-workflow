@@ -450,6 +450,11 @@ class Utils():
     def is_business_day(self, date):
         return bool(len(pd.bdate_range(date, date)))
 
+    def get_yesterday(self,):
+        today = datetime.now()
+        yesterday = today - timedelta(days=1)
+        return yesterday
+
     def get_list_of_business_days_between_two_dates(self, date_from, date_to, to_string=False):
         result = []
         format = '%Y-%m-%d'
