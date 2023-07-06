@@ -28,6 +28,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'finmars_data')
 # Very Important MasterUserConfigs encrypted by this key
 # Also Session (if enabled) are using it
 SECRET_KEY = ENV_STR('SECRET_KEY', None)
+ENCRYPTION_KEY = ENV_STR("ENCRYPTION_KEY", None)
 PROVISION_MANAGER = ENV_STR('PROVISION_MANAGER', 'rancher')
 
 SERVER_TYPE = ENV_STR('SERVER_TYPE', 'local') # local, development, production
