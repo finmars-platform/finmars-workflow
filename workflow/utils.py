@@ -113,8 +113,9 @@ def send_alert(workflow):
                 error_description = str(error_task.error_message)
 
             data = {
-                "expression": "send_system_message(type='error', title='Workflow Failed. %s (%s)', description='%s', action_status='required')" % (
-                    workflow.name, workflow.id, error_description),
+                "expression": "send_system_message(type='error', title='Workflow Failed. " + str(
+                    workflow.user_code) + " (" + str(
+                    workflow.id) + ")', description='Something Went Wrong. See Task for the details', action_status='required')",
                 "is_eval": True
             }
 

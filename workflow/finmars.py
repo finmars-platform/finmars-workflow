@@ -1,20 +1,23 @@
+import csv
 import datetime
+import importlib
 import json
 import logging
 import os
-import sys
 import time
 from datetime import timedelta
 
 import pandas as pd
 import requests
 from django.core.files.base import ContentFile
+from flatten_json import flatten
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from workflow.models import User
 from workflow_app import settings
 
 _l = logging.getLogger('workflow')
+
 
 class DjangoStorageHandler(logging.Handler):
     def __init__(self, log_file, *args, **kwargs):
@@ -31,8 +34,8 @@ class DjangoStorageHandler(logging.Handler):
         # with storage.open(self.log_file, 'a') as log_file:
         #     log_file.write(log_entry + '\n')
 
-def create_logger(name, log_format=None):
 
+def create_logger(name, log_format=None):
     if not log_format:
         log_format = "[%(asctime)s][%(levelname)s][%(name)s][%(filename)s:%(funcName)s:%(lineno)d] - %(message)s"
     formatter = logging.Formatter(log_format)
@@ -49,7 +52,6 @@ def create_logger(name, log_format=None):
     logger.addHandler(file_handler)
 
     return logger
-
 
 
 def execute_expression(expression):
@@ -331,7 +333,7 @@ def request_api(path, method='get', data=None):
 
         response = requests.delete(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
-    if response.status_code != 200:
+    if response.status_code != 200 and response.status_code != 201:
         raise Exception(response.text)
 
     return response.json()
@@ -357,6 +359,17 @@ class Storage():
             name = self.base_path + '/' + name
 
         return self.storage.open(name, mode)
+
+    def read_json(self, filepath):
+        with self.open(filepath, 'r') as state:
+            state_content = json.loads(state.read())
+        return state_content
+
+    def read_csv(self, filepath):
+        with self.open(filepath, 'r') as f:
+            reader = csv.DictReader(f)
+            data = list(reader)
+        return data
 
     def delete(self, name):
 
@@ -437,6 +450,11 @@ class Utils():
     def is_business_day(self, date):
         return bool(len(pd.bdate_range(date, date)))
 
+    def get_yesterday(self,):
+        today = datetime.now()
+        yesterday = today - timedelta(days=1)
+        return yesterday
+
     def get_list_of_business_days_between_two_dates(self, date_from, date_to, to_string=False):
         result = []
         format = '%Y-%m-%d'
@@ -461,7 +479,72 @@ class Utils():
 
         return result
 
+    def import_from_storage(self, file_path):
+        # get the directory and the filename without extension
+
+        if file_path[0] == '/':
+            file_path = os.path.join(settings.MEDIA_ROOT + '/tasks/' + settings.BASE_API_URL + file_path)
+        else:
+            file_path = os.path.join(settings.MEDIA_ROOT + '/tasks/' + settings.BASE_API_URL + '/' + file_path)
+
+        _l.info('import_from_storage.file_path %s' % file_path)
+
+        directory, filename = os.path.split(file_path)
+        module_name, _ = os.path.splitext(filename)
+
+        _l.info('import_from_storage.module_name %s' % module_name)
+        _l.info('import_from_storage.file_path %s' % file_path)
+
+        loader = importlib.machinery.SourceFileLoader(module_name, file_path)
+        module = loader.load_module()
+
+        # add the directory to sys.path
+        # spec = importlib.util.spec_from_file_location(module_name, file_path)
+        #
+        # if spec is None:
+        #     raise ImportError(f"Cannot import file {filename}")
+        #
+        # module = importlib.util.module_from_spec(spec)
+        #
+        # # execute the module
+        # spec.loader.exec_module(module)
+        #
+        # # return the module
+        return module
+
+    def tree_to_flat(self, data, **kwargs):
+
+        return flatten(data, **kwargs)
+
+
+class Vault():
+
+    def get_secret(self, path):
+        bot = User.objects.get(username="finmars_bot")  # TODO Refactor, should check actual user permission
+
+        refresh = RefreshToken.for_user(bot)
+
+        # _l.info('refresh %s' % refresh.access_token)
+
+        pieces = path.split('/')
+        engine_name = pieces[0]
+        secret_path = pieces[1]
+
+        headers = {'Content-type': 'application/json', 'Accept': 'application/json',
+                   'Authorization': 'Bearer %s' % refresh.access_token}
+
+        url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + f'/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}'
+
+        response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
+
+        if response.status_code != 200:
+            raise Exception(response.text)
+
+        return response.json()['data']['data']
+
 
 storage = Storage()
 
 utils = Utils()
+
+vault = Vault()

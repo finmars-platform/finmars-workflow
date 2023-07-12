@@ -28,6 +28,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'finmars_data')
 # Very Important MasterUserConfigs encrypted by this key
 # Also Session (if enabled) are using it
 SECRET_KEY = ENV_STR('SECRET_KEY', None)
+ENCRYPTION_KEY = ENV_STR("ENCRYPTION_KEY", None)
 PROVISION_MANAGER = ENV_STR('PROVISION_MANAGER', 'rancher')
 
 SERVER_TYPE = ENV_STR('SERVER_TYPE', 'local') # local, development, production
@@ -299,9 +300,9 @@ LOGGING = {
         'file': {
             'level': DJANGO_LOG_LEVEL,
             # 'class': 'logging.handlers.TimedRotatingFileHandler', # cant work when multiple process
-            'class': 'logging.handlers.TimedRotatingFileHandler',
-            'interval': 1,
-            'when': 'D',
+            'class': 'logging.FileHandler',
+            # 'interval': 1,
+            # 'when': 'D',
             'filename': '/var/log/finmars/workflow/django.log',
             'formatter': 'verbose'
         }

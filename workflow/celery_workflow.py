@@ -32,7 +32,7 @@ class CeleryWorkflow:
             _l.info('CeleryWorkflow.init_app')
             # _l.info('settings.BASE_API_URL %s' % settings.BASE_API_URL)
 
-            root_workflows_folder_path = construct_path(settings.BASE_API_URL, 'workflows')
+            root_workflows_folder_path = construct_path('/', settings.BASE_API_URL, 'workflows')
 
             configuration_directories, _ = storage.listdir(root_workflows_folder_path)
 
@@ -64,11 +64,15 @@ class CeleryWorkflow:
 
                     modules_directories, _ = storage.listdir(module_folder_path)
 
+                    _l.info('init_app.modules_directories %s' % modules_directories)
+
                     for module_directory in modules_directories:
 
                         workflow_folder_path = construct_path(module_folder_path, module_directory)
 
                         workflow_directories, _ = storage.listdir(workflow_folder_path)
+
+                        _l.info('init_app.workflow_directories %s' % workflow_directories)
 
                         for workflow_directory in workflow_directories:
 
@@ -166,7 +170,7 @@ class CeleryWorkflow:
         except Exception as e:
             _l.error('load_user_tasks_from_storage_to_local_filesystem.e %s' % e)
 
-        workflows_folder_path = construct_path(settings.BASE_API_URL, 'workflows')
+        workflows_folder_path = construct_path('/', settings.BASE_API_URL, 'workflows')
 
         configuration_directories, _ = storage.listdir(workflows_folder_path)
 
