@@ -68,3 +68,4 @@ pandas==2.0.3
 PyJWT==1.7.1
 flatten_json==0.1.13
 sentry-sdk==1.28.1
+openpyxl==3.1.2
