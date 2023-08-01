@@ -20,7 +20,7 @@ from django.views.generic import TemplateView
 from rest_framework import routers
 
 from workflow.views import WorkflowViewSet, TaskViewSet, PingViewSet, DefinitionViewSet, RefreshStorageViewSet, \
-    LogFileViewSet
+    LogFileViewSet, CodeExecutionViewSet
 from workflow_app import settings
 
 router = routers.DefaultRouter()
@@ -31,6 +31,8 @@ router.register(r'ping', PingViewSet, "ping")
 router.register(r'refresh-storage', RefreshStorageViewSet, "refresh-storage")
 router.register(r'definition', DefinitionViewSet, "ping")
 router.register(r'log', LogFileViewSet, "log")
+router.register(r'execute-code', CodeExecutionViewSet, basename='execute-code')
+
 
 urlpatterns = [
 

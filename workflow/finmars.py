@@ -349,6 +349,9 @@ class Storage():
 
         self.base_path = settings.BASE_API_URL
 
+    def listdir(self, path):
+        return self.storage.listdir('/' + self.base_path + path)
+
     def open(self, name, mode='rb'):
 
         # TODO permission check
@@ -426,6 +429,9 @@ class Storage():
 
 class Utils():
 
+    def get_current_space_code(self):
+        return settings.BASE_API_URL
+
     def get_list_of_dates_between_two_dates(self, date_from, date_to, to_string=False):
         result = []
         format = '%Y-%m-%d'
@@ -450,7 +456,7 @@ class Utils():
     def is_business_day(self, date):
         return bool(len(pd.bdate_range(date, date)))
 
-    def get_yesterday(self,):
+    def get_yesterday(self, ):
         today = datetime.now()
         yesterday = today - timedelta(days=1)
         return yesterday
