@@ -1,5 +1,8 @@
 
 import logging
+import sys
+import traceback
+
 _l = logging.getLogger('workflow')
 import contextlib
 import io
@@ -33,17 +36,18 @@ def execute_code(user_id, file_path, code):
         code_lines[-1] = f'print({code_lines[-1]})'
     code = '\n'.join(code_lines)
 
+    # Capture stdout
+    old_stdout = sys.stdout
+    redirected_output = sys.stdout = io.StringIO()
+
+    # Execute the code
     try:
-        # Redirect the standard output to the StringIO object
-        with contextlib.redirect_stdout(stdout):
-            # Execute the code with the context as the local namespace
-            exec(code, {}, context)
+        exec(code, context)
     except Exception as e:
-        # Handle or raise the exception
-        print(f"Error executing code: {str(e)}")
-        raise e
+        # Print the traceback of the error
+        traceback.print_exc(file=redirected_output)
 
-    # Get the captured standard output
-    output = stdout.getvalue()
+    # Reset stdout
+    sys.stdout = old_stdout
 
-    return output
+    return redirected_output.getvalue()
