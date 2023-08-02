@@ -361,8 +361,11 @@ class FinmarsS3Storage(FinmarsStorage, S3Boto3Storage):
 
 class FinmarsLocalFileSystemStorage(FinmarsStorage, FileSystemStorage):
 
+    def path(self, name):
+        return settings.MEDIA_ROOT + name
+
     def listdir(self, path):
-        path = settings.MEDIA_ROOT + path
+        path = self.path(path)
         directories, files = [], []
         with os.scandir(path) as entries:
             for entry in entries:
