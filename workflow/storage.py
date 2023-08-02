@@ -28,10 +28,12 @@ def download_local_folder_as_zip(folder_path):
 
     return zip_file_path
 
+
 class NamedBytesIO(BytesIO):
     def __init__(self, *args, name=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.name = name
+
 
 class EncryptedStorage(object):
 
@@ -358,6 +360,17 @@ class FinmarsS3Storage(FinmarsStorage, S3Boto3Storage):
 
 
 class FinmarsLocalFileSystemStorage(FinmarsStorage, FileSystemStorage):
+
+    def listdir(self, path):
+        path = settings.MEDIA_ROOT + path
+        directories, files = [], []
+        with os.scandir(path) as entries:
+            for entry in entries:
+                if entry.is_dir():
+                    directories.append(entry.name)
+                else:
+                    files.append(entry.name)
+        return directories, files
 
     def delete_directory(self, directory_path):
         shutil.rmtree(os.path.join(settings.MEDIA_ROOT, directory_path))
