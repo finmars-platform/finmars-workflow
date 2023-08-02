@@ -369,3 +369,5 @@ try:
 except Exception as e:
     _l.error("Could not init_celery exception: %s" % e)
     _l.error("Could not init_celery traceback: %s" % traceback.format_exc())
+
+    raise Exception(e)
