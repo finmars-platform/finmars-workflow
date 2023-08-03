@@ -422,7 +422,11 @@ class Storage():
             name = self.base_path + '/' + name
 
         if self.storage.exists(name):
-            content = self.storage.open(name).read().decode('utf-8') + content + '\n'
+
+            with self.open(name, 'r') as file:
+
+                content = file.read()
+                content = content + content + '\n'
 
         return self.storage.save(name, ContentFile(content.encode('utf-8')))
 
