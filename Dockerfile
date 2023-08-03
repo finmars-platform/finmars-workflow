@@ -11,6 +11,9 @@ WORKDIR /var/app
 
 # Copy the requirements file into the container
 COPY requirements.txt .
+COPY package.json .
+
+RUN npm install
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
