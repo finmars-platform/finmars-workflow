@@ -362,7 +362,12 @@ class FinmarsS3Storage(FinmarsStorage, S3Boto3Storage):
 class FinmarsLocalFileSystemStorage(FinmarsStorage, FileSystemStorage):
 
     def path(self, name):
-        return settings.MEDIA_ROOT + name
+
+        if name[0] == '/':
+            return settings.MEDIA_ROOT + name
+
+        return settings.MEDIA_ROOT + '/' + name
+
 
     def listdir(self, path):
         path = self.path(path)
