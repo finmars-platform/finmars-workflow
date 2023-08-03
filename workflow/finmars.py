@@ -407,19 +407,10 @@ class Storage():
 
     def save_text(self, name, content):
 
-        if name[0] == '/':
-            name = self.base_path + name
-        else:
-            name = self.base_path + '/' + name
-
         return self.storage.save(name, ContentFile(content.encode('utf-8')))
 
     def append_text(self, name, content):
 
-        if name[0] == '/':
-            name = self.base_path + name
-        else:
-            name = self.base_path + '/' + name
 
         if self.storage.exists(name):
 
