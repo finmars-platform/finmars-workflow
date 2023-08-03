@@ -46,8 +46,8 @@ cd /var/app/docs && mkdocs build --site-dir ../workflow/static/documentation
 python /var/app/manage.py collectstatic -c --noinput
 
 echo "Copy js/css files"
-python /var/app/manage.py copy_css_libs
-python /var/app/manage.py copy_js_libs
+cd /var/app && python /var/app/manage.py copy_css_libs
+cd /var/app && python /var/app/manage.py copy_js_libs
 
 
 
