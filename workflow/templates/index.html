@@ -500,6 +500,14 @@
                                 </div>
                             </div>
 
+                            <div v-if="selectedTask.log">
+                                <h2 class="text-center" style="margin-bottom: 8px">Log</h2>
+                                <code style="max-height: 300px;"
+
+                                >{{ selectedTask.log }}</code
+                                >
+                            </div>
+
                             <div v-if="selectedTask.progress">
                                 <h2 class="text-center" style="margin-bottom: 8px">Progress</h2>
                                 <code

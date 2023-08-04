@@ -17,7 +17,7 @@ class TaskSerializer(serializers.ModelSerializer):
                   'previous', 'is_hook',
                   'payload', 'result', 'progress',
 
-                  'created', 'modified',
+                  'created', 'modified', 'log',
                   'finished_at'
                   ]
 
