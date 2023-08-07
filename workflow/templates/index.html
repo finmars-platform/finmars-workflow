@@ -10,6 +10,53 @@
     />
     <title>Celery workflow</title>
 
+    <style>
+
+        @font-face {
+            font-family: 'Roboto';
+            font-style: normal;
+            font-weight: 400;
+            src: local('Roboto'), local('Roboto-Regular'), url({% static '/fonts/Roboto/Roboto-Regular.ttf' %}) format('truetype');
+        }
+
+        @font-face {
+            font-family: 'Roboto Light';
+            font-style: normal;
+            font-weight: 300;
+            src: local('Roboto Light'), local('Roboto-Light'), url({% static '/fonts/Roboto/Roboto-Light.ttf' %}) format('truetype');
+        }
+
+
+
+        @font-face {
+            font-family: 'Roboto Medium';
+            font-style: normal;
+            font-weight: 500;
+            src: local('Roboto Medium'), local('Roboto-Medium'), url({% static '/fonts/Roboto/Roboto-Medium.ttf' %}) format('truetype');
+        }
+
+
+
+        @font-face {
+            font-family: 'Roboto Bold';
+            font-style: normal;
+            font-weight: 700;
+            src: local('Roboto Bold'), local('Roboto-Bold'), url({% static '/fonts/Roboto/Roboto-Bold.ttf' %}) format('truetype');
+        }
+
+        @font-face {
+            font-family: "Material Design Icons";
+            src: url({% static '/fonts/materialdesignicons-webfont.eot' %});
+            src: url({% static '/fonts/materialdesignicons-webfont.eot' %}) format("embedded-opentype"),
+                    url({% static '/fonts/materialdesignicons-webfont.woff2' %}) format("woff2"),
+                    url({% static '/fonts/materialdesignicons-webfont.woff' %}) format("woff"),
+                    url({% static '/fonts/materialdesignicons-webfont.ttf' %}) format("truetype");
+            font-weight: normal;
+            font-style: normal
+        }
+
+    </style>
+
     <link
             rel="stylesheet"
             href="{% static 'css/vuetify.css' %}"
