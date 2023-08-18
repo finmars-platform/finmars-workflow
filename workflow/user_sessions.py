@@ -31,10 +31,10 @@ def execute_code(user_id, file_path, code):
     stdout = io.StringIO()
 
     # Add print() to last line if it's not an assignment
-    code_lines = code.split('\n')
-    if not '=' in code_lines[-1]:
-        code_lines[-1] = f'print({code_lines[-1]})'
-    code = '\n'.join(code_lines)
+    # code_lines = code.split('\n')
+    # if not '=' in code_lines[-1]:
+    #     code_lines[-1] = f'print({code_lines[-1]})'
+    # code = '\n'.join(code_lines)
 
     # Capture stdout
     old_stdout = sys.stdout

@@ -220,6 +220,8 @@ class Task(TimeStampedModel):
 
     progress_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('progress data'))
 
+    log = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('log'))
+
     notes = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('notes'))
     error_message = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('error message'))
 

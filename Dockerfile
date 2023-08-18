@@ -3,7 +3,7 @@ FROM python:3.10-bullseye
 
 # Update and install packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    vim htop wget supervisor nfs-common && \
+    vim htop wget supervisor nfs-common npm && \
     rm -rf /var/lib/apt/lists/*
 
 # Set working directory in the container
@@ -11,6 +11,9 @@ WORKDIR /var/app
 
 # Copy the requirements file into the container
 COPY requirements.txt .
+COPY package.json .
+
+RUN npm install
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt

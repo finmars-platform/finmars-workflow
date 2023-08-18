@@ -156,3 +156,5 @@ director/local
 app-data
 workflow/static/documentation/
 finmars_data
+workflow/static/scripts
+workflow/static/css
