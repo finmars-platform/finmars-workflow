@@ -5,6 +5,7 @@ from celery.utils.log import get_task_logger
 from workflow.models import Task, Workflow
 from workflow.utils import send_alert
 from workflow_app import celery_app
+from django.db.models import F
 
 logger = get_task_logger(__name__)
 
@@ -56,6 +57,15 @@ class BaseTask(_Task):
     03:00 - Run Workflow (4) - It will run, because previous one finished quicker before schedule
     
     '''
+
+    def log(self, message):
+        # Append the message to the task's log
+
+        if not self.task.log:
+            self.task.log = ''
+
+        self.task.log = self.task.log + message + '\n'
+        self.task.save()
 
     def is_workflow_already_running(self, workflow_user_code):
         # Works great for everything except first task inside actual running workflow

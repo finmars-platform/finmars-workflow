@@ -362,4 +362,12 @@ def init_celery():
             _l.error("Could not init periodic tasks traceback: %s" % traceback.format_exc())
 
 
-init_celery()
+try:
+
+    init_celery()
+
+except Exception as e:
+    _l.error("Could not init_celery exception: %s" % e)
+    _l.error("Could not init_celery traceback: %s" % traceback.format_exc())
+
+    raise Exception(e)
