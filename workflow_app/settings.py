@@ -441,6 +441,7 @@ XS_SHARING_ALLOWED_METHODS = ['POST','GET','OPTIONS', 'PUT', 'DELETE']
 import datetime
 SIMPLE_JWT = {"SIGNING_KEY": os.getenv("SIGNING_KEY", SECRET_KEY),
               'USER_ID_FIELD': 'username',
+              'LEEWAY': 60, # extra 10 seconds
               'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=15),
               'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=15),
 
