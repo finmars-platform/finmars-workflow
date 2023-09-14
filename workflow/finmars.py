@@ -209,12 +209,15 @@ def _wait_task_to_complete_recursive(task_id=None, retries=5, retry_interval=60,
     if counter == retries:
         raise Exception("Task exceeded retries %s count" % retries)
 
-    result = get_task(task_id)
+    try:
+        result = get_task(task_id)
+
+        if result['status'] not in ['progress', 'P', 'I']:
+            return result
+    except Exception as e:
+        _l.error("_wait_task_to_complete_recursive %s" % e)
 
     counter = counter + 1
-
-    if result['status'] not in ['progress', 'P', 'I']:
-        return result
 
     time.sleep(retry_interval)
 
@@ -416,11 +419,8 @@ class Storage():
 
     def append_text(self, name, content):
 
-
         if self.storage.exists(name):
-
             with self.open(name, 'r') as file:
-
                 content = file.read()
                 content = content + content + '\n'
 
