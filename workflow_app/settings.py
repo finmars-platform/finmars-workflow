@@ -241,9 +241,8 @@ REST_FRAMEWORK = {
         # 'rest_framework.authentication.SessionAuthentication',
         # 'rest_framework.authentication.BasicAuthentication',
         # 'rest_framework.authentication.TokenAuthentication',
-        "workflow.authentication.KeycloakAuthentication",
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-
+        "workflow.authentication.KeycloakAuthentication",
     ),
     # 'EXCEPTION_HANDLER': 'authorizer.utils.finmars_exception_handler',
     'EXCEPTION_HANDLER': 'finmars_standardized_errors.handler.exception_handler',
@@ -439,7 +438,13 @@ X_FRAME_OPTIONS = 'ALLOWALL'
 
 XS_SHARING_ALLOWED_METHODS = ['POST','GET','OPTIONS', 'PUT', 'DELETE']
 
-SIMPLE_JWT = {"SIGNING_KEY": os.getenv("SIGNING_KEY", SECRET_KEY), 'USER_ID_FIELD': 'username'}
+import datetime
+SIMPLE_JWT = {"SIGNING_KEY": os.getenv("SIGNING_KEY", SECRET_KEY),
+              'USER_ID_FIELD': 'username',
+              'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=15),
+              'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=15),
+
+              }
 
 
 # SENTRY
