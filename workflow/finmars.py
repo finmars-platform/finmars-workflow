@@ -62,7 +62,8 @@ def execute_expression(expression):
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
+
     data = {
         'expression': expression,
         'is_eval': True
@@ -86,7 +87,8 @@ def execute_expression_procedure(payload):
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
+
     data = payload
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/expression-procedure/execute/'
@@ -107,7 +109,8 @@ def execute_data_procedure(payload):
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
+
     data = payload
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/data-procedure/execute/'
@@ -128,7 +131,7 @@ def get_data_procedure_instance(id):
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/data-procedure-instance/%s/' % id
 
@@ -148,7 +151,8 @@ def execute_pricing_procedure(payload):
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
+
     data = payload
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/pricing-procedure/execute/'
@@ -169,7 +173,9 @@ def execute_task(task_name, payload={}):
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
+
+
     data = {
         'task_name': task_name,
         'payload': payload
@@ -193,7 +199,7 @@ def get_task(id):
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/tasks/task/%s/' % id
 
@@ -270,7 +276,7 @@ def execute_transaction_import(payload):
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
     data = payload
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/import/transaction-import/execute/'
@@ -291,7 +297,8 @@ def execute_simple_import(payload):
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
+
     data = payload
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/import/simple-import/execute/'
@@ -310,7 +317,7 @@ def request_api(path, method='get', data=None):
     refresh = RefreshToken.for_user(bot)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + path
 
@@ -537,7 +544,7 @@ class Vault():
         secret_path = pieces[1]
 
         headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-                   'Authorization': 'Bearer %s' % refresh.access_token}
+                   'Authorization': f'Bearer {refresh.access_token}'}
 
         url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + f'/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}'
 
