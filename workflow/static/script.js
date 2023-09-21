@@ -110,7 +110,7 @@ const store = new Vuex.Store({
                 'Content-type': 'application/json'
             };
 
-            let url = API_URL + "/workflow/?page_size=" + this.state.pageSize + '&page=' + this.state.page
+            let url = API_URL + "/workflow/light/?page_size=" + this.state.pageSize + '&page=' + this.state.page
 
             if (this.state.query) {
                 url = url + '&query=' + this.state.query
