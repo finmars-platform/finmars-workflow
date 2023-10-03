@@ -343,10 +343,13 @@ def request_api(path, method='get', data=None):
 
         response = requests.delete(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
-    if response.status_code != 200 and response.status_code != 201:
+    if response.status_code != 200 and response.status_code != 201 and response.status_code != 204:
         raise Exception(response.text)
 
-    return response.json()
+    if response.status_code != 204:
+        return response.json()
+
+    return {"status": "no_content"}
 
 
 class Storage():
