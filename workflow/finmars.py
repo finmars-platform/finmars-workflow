@@ -37,9 +37,6 @@ class DjangoStorageHandler(logging.Handler):
 
 def get_access_token():
     bot = User.objects.get(username="finmars_bot")
-
-    old_tokens = RefreshToken.objects.filter(user=bot)
-    old_tokens.delete()
     new_token = RefreshToken.for_user(bot)
 
     return new_token
