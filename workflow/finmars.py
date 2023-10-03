@@ -35,6 +35,16 @@ class DjangoStorageHandler(logging.Handler):
         #     log_file.write(log_entry + '\n')
 
 
+def get_access_token():
+    bot = User.objects.get(username="finmars_bot")
+
+    old_tokens = RefreshToken.objects.filter(user=bot)
+    old_tokens.delete()
+    new_token = RefreshToken.for_user(bot)
+
+    return new_token
+
+
 def create_logger(name, log_format=None):
     if not log_format:
         log_format = "[%(asctime)s][%(levelname)s][%(name)s][%(filename)s:%(funcName)s:%(lineno)d] - %(message)s"
@@ -55,9 +65,8 @@ def create_logger(name, log_format=None):
 
 
 def execute_expression(expression):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -80,9 +89,8 @@ def execute_expression(expression):
 
 
 def execute_expression_procedure(payload):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -102,9 +110,8 @@ def execute_expression_procedure(payload):
 
 
 def execute_data_procedure(payload):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -124,9 +131,8 @@ def execute_data_procedure(payload):
 
 
 def get_data_procedure_instance(id):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -144,9 +150,8 @@ def get_data_procedure_instance(id):
 
 
 def execute_pricing_procedure(payload):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -166,9 +171,8 @@ def execute_pricing_procedure(payload):
 
 
 def execute_task(task_name, payload={}):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -192,9 +196,8 @@ def execute_task(task_name, payload={}):
 
 
 def get_task(id):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -269,9 +272,8 @@ def wait_procedure_to_complete(procedure_instance_id=None, retries=5, retry_inte
 
 
 def execute_transaction_import(payload):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -290,9 +292,8 @@ def execute_transaction_import(payload):
 
 
 def execute_simple_import(payload):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -312,9 +313,8 @@ def execute_simple_import(payload):
 
 
 def request_api(path, method='get', data=None):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
                'Authorization': f'Bearer {refresh.access_token}'}
@@ -536,9 +536,8 @@ class Utils():
 class Vault():
 
     def get_secret(self, path):
-        bot = User.objects.get(username="finmars_bot")  # TODO Refactor, should check actual user permission
 
-        refresh = RefreshToken.for_user(bot)
+        refresh = get_access_token() # TODO refactor, should be permission check
 
         # _l.info('refresh %s' % refresh.access_token)
 
