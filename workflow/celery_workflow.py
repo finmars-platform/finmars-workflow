@@ -285,7 +285,7 @@ def init_periodic_tasks():
 
         if "periodic" in workflow:
             periodic_conf = workflow.get("periodic")
-            periodic_payload = periodic_conf.get("payload", {})
+            periodic_payload = periodic_conf.get("payload", "{}")
             schedule_str, schedule_value = build_celery_schedule(
                 user_code, periodic_conf
             )
