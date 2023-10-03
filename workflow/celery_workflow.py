@@ -297,7 +297,7 @@ def init_periodic_tasks():
                         "schedule": schedule_value,
                         "args": (
                             user_code,
-                            periodic_payload,
+                            json.loads(periodic_payload),
                             is_manager
                         ),
                         'options': {'queue': 'workflow'},
