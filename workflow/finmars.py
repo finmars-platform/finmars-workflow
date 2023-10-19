@@ -35,6 +35,13 @@ class DjangoStorageHandler(logging.Handler):
         #     log_file.write(log_entry + '\n')
 
 
+def get_access_token():
+    bot = User.objects.get(username="finmars_bot")
+    new_token = RefreshToken.for_user(bot)
+
+    return new_token
+
+
 def create_logger(name, log_format=None):
     if not log_format:
         log_format = "[%(asctime)s][%(levelname)s][%(name)s][%(filename)s:%(funcName)s:%(lineno)d] - %(message)s"
@@ -55,14 +62,14 @@ def create_logger(name, log_format=None):
 
 
 def execute_expression(expression):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
+
     data = {
         'expression': expression,
         'is_eval': True
@@ -79,14 +86,14 @@ def execute_expression(expression):
 
 
 def execute_expression_procedure(payload):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token
 
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
+
     data = payload
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/expression-procedure/execute/'
@@ -100,14 +107,14 @@ def execute_expression_procedure(payload):
 
 
 def execute_data_procedure(payload):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
+
     data = payload
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/data-procedure/execute/'
@@ -121,14 +128,13 @@ def execute_data_procedure(payload):
 
 
 def get_data_procedure_instance(id):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/data-procedure-instance/%s/' % id
 
@@ -141,14 +147,14 @@ def get_data_procedure_instance(id):
 
 
 def execute_pricing_procedure(payload):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
+
     data = payload
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/pricing-procedure/execute/'
@@ -162,14 +168,15 @@ def execute_pricing_procedure(payload):
 
 
 def execute_task(task_name, payload={}):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
+
+
     data = {
         'task_name': task_name,
         'payload': payload
@@ -186,14 +193,13 @@ def execute_task(task_name, payload={}):
 
 
 def get_task(id):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/tasks/task/%s/' % id
 
@@ -209,12 +215,15 @@ def _wait_task_to_complete_recursive(task_id=None, retries=5, retry_interval=60,
     if counter == retries:
         raise Exception("Task exceeded retries %s count" % retries)
 
-    result = get_task(task_id)
+    try:
+        result = get_task(task_id)
+
+        if result['status'] not in ['progress', 'P', 'I']:
+            return result
+    except Exception as e:
+        _l.error("_wait_task_to_complete_recursive %s" % e)
 
     counter = counter + 1
-
-    if result['status'] not in ['progress', 'P', 'I']:
-        return result
 
     time.sleep(retry_interval)
 
@@ -260,14 +269,13 @@ def wait_procedure_to_complete(procedure_instance_id=None, retries=5, retry_inte
 
 
 def execute_transaction_import(payload):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
     data = payload
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/import/transaction-import/execute/'
@@ -281,14 +289,14 @@ def execute_transaction_import(payload):
 
 
 def execute_simple_import(payload):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
+
     data = payload
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/import/simple-import/execute/'
@@ -302,12 +310,11 @@ def execute_simple_import(payload):
 
 
 def request_api(path, method='get', data=None):
-    bot = User.objects.get(username="finmars_bot")
 
-    refresh = RefreshToken.for_user(bot)
+    refresh = get_access_token()
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': 'Bearer %s' % refresh.access_token}
+               'Authorization': f'Bearer {refresh.access_token}'}
 
     url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + path
 
@@ -333,10 +340,13 @@ def request_api(path, method='get', data=None):
 
         response = requests.delete(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
-    if response.status_code != 200 and response.status_code != 201:
+    if response.status_code != 200 and response.status_code != 201 and response.status_code != 204:
         raise Exception(response.text)
 
-    return response.json()
+    if response.status_code != 204:
+        return response.json()
+
+    return {"status": "no_content"}
 
 
 class Storage():
@@ -416,11 +426,8 @@ class Storage():
 
     def append_text(self, name, content):
 
-
         if self.storage.exists(name):
-
             with self.open(name, 'r') as file:
-
                 content = file.read()
                 content = content + content + '\n'
 
@@ -526,9 +533,8 @@ class Utils():
 class Vault():
 
     def get_secret(self, path):
-        bot = User.objects.get(username="finmars_bot")  # TODO Refactor, should check actual user permission
 
-        refresh = RefreshToken.for_user(bot)
+        refresh = get_access_token() # TODO refactor, should be permission check
 
         # _l.info('refresh %s' % refresh.access_token)
 
@@ -537,7 +543,7 @@ class Vault():
         secret_path = pieces[1]
 
         headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-                   'Authorization': 'Bearer %s' % refresh.access_token}
+                   'Authorization': f'Bearer {refresh.access_token}'}
 
         url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + f'/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}'
 

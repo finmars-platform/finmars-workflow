@@ -35,6 +35,15 @@ class WorkflowSerializer(serializers.ModelSerializer):
                   'is_manager']
 
 
+class WorkflowLightSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Workflow
+        fields = ['id', 'name', 'user_code',
+                  'owner',
+                  'status',
+                  'created', 'modified', 'periodic',
+                  'is_manager']
+
 class PingSerializer(serializers.Serializer):
     message = serializers.CharField(read_only=True)
     version = serializers.CharField(read_only=True)

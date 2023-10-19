@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
 import os
+
 from workflow_app.utils import ENV_BOOL, ENV_STR, ENV_INT, print_finmars
 
 print_finmars()
@@ -31,14 +32,14 @@ SECRET_KEY = ENV_STR('SECRET_KEY', None)
 ENCRYPTION_KEY = ENV_STR("ENCRYPTION_KEY", None)
 PROVISION_MANAGER = ENV_STR('PROVISION_MANAGER', 'rancher')
 
-SERVER_TYPE = ENV_STR('SERVER_TYPE', 'local') # local, development, production
+SERVER_TYPE = ENV_STR('SERVER_TYPE', 'local')  # local, development, production
 HOST_LOCATION = ENV_STR('HOST_LOCATION', 'local')  # local, azure, aws, private cloud or custom, only for log purpose
 HOST_URL = ENV_STR('HOST_URL', 'http://0.0.0.0:8000')
 ALLOWED_HOST = ENV_STR('ALLOWED_HOST', '*')
 DOMAIN_NAME = ENV_STR('DOMAIN_NAME', 'finmars.com')
 
-REGISTER_ACCESS_KEY = ENV_STR('REGISTER_ACCESS_KEY', None) # deprecated, for newly created users to auto-activate
-INSTALLATION_TYPE = ENV_STR('INSTALLATION_TYPE', "cloud") # cloud, hnwi_client, private_cloud
+REGISTER_ACCESS_KEY = ENV_STR('REGISTER_ACCESS_KEY', None)  # deprecated, for newly created users to auto-activate
+INSTALLATION_TYPE = ENV_STR('INSTALLATION_TYPE', "cloud")  # cloud, hnwi_client, private_cloud
 
 # possible deprecated, 0 - local 1 eu-central 2 - zurich, should be generated in licnse server
 BASE_API_URL_PREFIX = ENV_STR('BASE_API_URL_PREFIX', '0')
@@ -129,7 +130,7 @@ DATABASES = {
         'HOST': ENV_STR('DB_HOST', None),
         'PORT': ENV_INT('DB_PORT', 5432),
         'OPTIONS': {
-            'connect_timeout': 5 # new timeout setting
+            'connect_timeout': 5  # new timeout setting
         }
     }
 }
@@ -173,7 +174,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 STATIC_URL = '/' + BASE_API_URL + '/workflow/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
-
 
 STATICFILES_DIR = (
     os.path.join(BASE_DIR, 'static'),
@@ -241,9 +241,8 @@ REST_FRAMEWORK = {
         # 'rest_framework.authentication.SessionAuthentication',
         # 'rest_framework.authentication.BasicAuthentication',
         # 'rest_framework.authentication.TokenAuthentication',
-        "workflow.authentication.KeycloakAuthentication",
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-
+        "workflow.authentication.KeycloakAuthentication",
     ),
     # 'EXCEPTION_HANDLER': 'authorizer.utils.finmars_exception_handler',
     'EXCEPTION_HANDLER': 'finmars_standardized_errors.handler.exception_handler',
@@ -326,7 +325,6 @@ LOGGING = {
 }
 
 if SEND_LOGS_TO_FINMARS:
-
     print("Logs will be sending to Finmars")
 
     LOGGING['handlers']['logstash'] = {
@@ -357,7 +355,6 @@ CACHES = {
     }
 }
 
-
 # =================
 # = SMTP Settings =
 # =================
@@ -379,13 +376,16 @@ RABBITMQ_USER = ENV_STR('RABBITMQ_USER', 'guest')
 RABBITMQ_PASSWORD = ENV_STR('RABBITMQ_PASSWORD', 'guest')
 RABBITMQ_VHOST = ENV_STR('RABBITMQ_VHOST', '')
 
-CELERY_BROKER_URL = 'amqp://%s:%s@%s:%s/%s' % (RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_HOST, RABBITMQ_PORT, RABBITMQ_VHOST)
+CELERY_BROKER_URL = 'amqp://%s:%s@%s:%s/%s' % (
+RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_HOST, RABBITMQ_PORT, RABBITMQ_VHOST)
 
-CELERY_RESULT_BACKEND = 'db+postgresql+psycopg2://%s:%s@%s:%s/%s' %  (ENV_STR('DB_USER', None), ENV_STR('DB_PASSWORD', None), ENV_STR('DB_HOST', None), ENV_INT('DB_PORT', 5432), ENV_STR('DB_NAME', None))
+CELERY_RESULT_BACKEND = 'db+postgresql+psycopg2://%s:%s@%s:%s/%s' % (
+ENV_STR('DB_USER', None), ENV_STR('DB_PASSWORD', None), ENV_STR('DB_HOST', None), ENV_INT('DB_PORT', 5432),
+ENV_STR('DB_NAME', None))
 CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'UTC'
 
-DJANGO_CELERY_RESULTS_TASK_ID_MAX_LENGTH=191
+DJANGO_CELERY_RESULTS_TASK_ID_MAX_LENGTH = 191
 
 # ==============
 # = WEBSOCKETS =
@@ -432,16 +432,43 @@ AZURE_CONTAINER = ENV_STR('AZURE_CONTAINER', None)
 KEYCLOAK_SERVER_URL = os.environ.get('KEYCLOAK_SERVER_URL', 'https://eu-central.finmars.com')
 KEYCLOAK_REALM = os.environ.get('KEYCLOAK_REALM', 'finmars')
 KEYCLOAK_CLIENT_ID = os.environ.get('KEYCLOAK_CLIENT_ID', 'finmars')
-KEYCLOAK_CLIENT_SECRET_KEY = os.environ.get('KEYCLOAK_CLIENT_SECRET_KEY', None)  # not required anymore, api works in Bearer-only mod
-
+KEYCLOAK_CLIENT_SECRET_KEY = os.environ.get('KEYCLOAK_CLIENT_SECRET_KEY',
+                                            None)  # not required anymore, api works in Bearer-only mod
 
 X_FRAME_OPTIONS = 'ALLOWALL'
 
-XS_SHARING_ALLOWED_METHODS = ['POST','GET','OPTIONS', 'PUT', 'DELETE']
+XS_SHARING_ALLOWED_METHODS = ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE']
 
-SIMPLE_JWT = {"SIGNING_KEY": os.getenv("SIGNING_KEY", SECRET_KEY), 'USER_ID_FIELD': 'username'}
+from datetime import timedelta
 
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'UPDATE_LAST_LOGIN': True,
 
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'JWK_URL': None,
+    'LEEWAY': 0,
+
+    'AUTH_HEADER_TYPES': ('Bearer'),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+
+    'JTI_CLAIM': 'jti',
+
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}
 # SENTRY
 
 import sentry_sdk

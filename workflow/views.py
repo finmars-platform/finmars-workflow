@@ -19,7 +19,7 @@ from rest_framework.viewsets import ModelViewSet, ViewSet
 from workflow.celery_workflow import celery_workflow
 from workflow.filters import WorkflowQueryFilter
 from workflow.models import Workflow, Task
-from workflow.serializers import WorkflowSerializer, TaskSerializer, PingSerializer
+from workflow.serializers import WorkflowSerializer, TaskSerializer, PingSerializer, WorkflowLightSerializer
 from workflow.workflows import execute_workflow
 
 from workflow.user_sessions import create_session, execute_code, sessions
@@ -56,6 +56,19 @@ class WorkflowViewSet(ModelViewSet):
     ordering_fields = [
         'name', 'user_code', 'created', 'modified', 'status', 'owner'
     ]
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="light",
+        serializer_class=WorkflowLightSerializer,
+    )
+    def list_light(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginator.post_paginate_queryset(queryset, request)
+        serializer = self.get_serializer(page, many=True)
+
+        return self.get_paginated_response(serializer.data)
 
     @action(detail=False, methods=('POST',), url_path='run-workflow')
     def run_workflow(self, request, pk=None):
