@@ -209,10 +209,10 @@ class CeleryWorkflow:
                                 with storage.open(filepath) as f:
                                     f_content = f.read()
 
-                                    os.makedirs(os.path.dirname(settings.MEDIA_ROOT + '/tasks/' + filepath),
+                                    os.makedirs(os.path.dirname(os.path.join(settings.MEDIA_ROOT, 'tasks', filepath.lstrip('/'))),
                                                 exist_ok=True)
 
-                                    with open(settings.MEDIA_ROOT + '/tasks/' + filepath, 'wb') as new_file:
+                                    with open(os.path.join(settings.MEDIA_ROOT, 'tasks', filepath.lstrip('/')), 'wb') as new_file:
                                         new_file.write(f_content)
 
                                 _l.info(

@@ -384,6 +384,19 @@ class Storage():
             data = list(reader)
         return data
 
+    def read(self, filepath, mode='rb'):
+
+        # Open the file from your storage backend
+        file_obj = self.open(filepath, mode)  # 'rb' is to read in binary mode
+
+        try:
+            # Read the file's contents
+            file_content = file_obj.read()
+            return file_content
+        finally:
+            # Make sure we close the file object
+            file_obj.close()
+
     def delete(self, name):
 
         # TODO permission check
@@ -509,6 +522,45 @@ class Utils():
         _l.info('import_from_storage.file_path %s' % file_path)
 
         loader = importlib.machinery.SourceFileLoader(module_name, file_path)
+        module = loader.load_module()
+
+        # add the directory to sys.path
+        # spec = importlib.util.spec_from_file_location(module_name, file_path)
+        #
+        # if spec is None:
+        #     raise ImportError(f"Cannot import file {filename}")
+        #
+        # module = importlib.util.module_from_spec(spec)
+        #
+        # # execute the module
+        # spec.loader.exec_module(module)
+        #
+        # # return the module
+        return module
+
+    def relative_import_from_storage(self, file_path, base_path):
+
+        """
+        Imports a module from a given file path, resolving the path from a specified base path.
+
+        :param file_path: Relative or absolute path to the Python file to import.
+        :param base_path: Base directory against which relative paths should be resolved.
+        :return: The imported module.
+        """
+
+        # Resolve the relative file_path against the provided base directory
+        absolute_file_path = os.path.normpath(os.path.join(base_path, file_path))
+
+        _l.info(f'Normalized file path: {absolute_file_path}')
+
+        # Continue with your existing logic, but use absolute_file_path instead of file_path
+        directory, filename = os.path.split(absolute_file_path)
+        module_name, _ = os.path.splitext(filename)
+
+        _l.info(f'import_from_storage.module_name {module_name}')
+        _l.info(f'import_from_storage.file_path {absolute_file_path}')
+
+        loader = importlib.machinery.SourceFileLoader(module_name, absolute_file_path)
         module = loader.load_module()
 
         # add the directory to sys.path
