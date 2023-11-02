@@ -373,13 +373,13 @@ class Storage():
 
         return self.storage.open(name, mode)
 
-    def read_json(self, filepath):
-        with self.open(filepath, 'r') as state:
+    def read_json(self, filepath, mode='rb'):
+        with self.open(filepath, mode) as state:
             state_content = json.loads(state.read())
         return state_content
 
-    def read_csv(self, filepath):
-        with self.open(filepath, 'r') as f:
+    def read_csv(self, filepath, mode='rb'):
+        with self.open(filepath, mode) as f:
             reader = csv.DictReader(f)
             data = list(reader)
         return data
