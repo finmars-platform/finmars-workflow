@@ -349,6 +349,27 @@ const store = new Vuex.Store({
         totalPages(state) {
             return Math.ceil(state.workflowsCount / state.page_size);
         },
+        displayPages(state, getters) {
+            let pages = [];
+            let total_pages = getters.totalPages;
+            for (let pageItem = 1; pageItem <= total_pages; pageItem++) {
+                if (pageItem===1 || pageItem===state.page || pageItem===total_pages || Math.abs(pageItem-state.page)<=1){
+                    pages.push(pageItem);
+                }
+                else{
+                    pages.push('...');
+                }
+            }
+
+            let result = [];
+            for (let i = 0; i < pages.length; i++) {
+                if (pages[i] !== pages[i + 1]) {
+                    result.push(pages[i]);
+                }
+            }
+            return result;
+        },
+
     },
 });
 
@@ -434,7 +455,7 @@ new Vue({
             "hideHooks",
             "page"
         ]),
-        ...Vuex.mapGetters(["totalPages"]),
+        ...Vuex.mapGetters(["totalPages", "displayPages"]),
         query: {
             get() {
                 return this.$store.state.query;
