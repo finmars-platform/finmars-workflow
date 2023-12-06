@@ -97,7 +97,7 @@ const store = new Vuex.Store({
         taskIndex: null,
         loading: true,
         hideHooks: false,
-        page_size: 20,
+        page_size: 40,
         query: null,
         page: 1,
     },
@@ -110,7 +110,7 @@ const store = new Vuex.Store({
                 'Content-type': 'application/json'
             };
 
-            let url = API_URL + "/workflow/light/?page_size=" + this.state.pageSize + '&page=' + this.state.page
+            let url = API_URL + "/workflow/light/?page_size=" + this.state.page_size + '&page=' + this.state.page
 
             if (this.state.query) {
                 url = url + '&query=' + this.state.query
@@ -449,7 +449,7 @@ new Vue({
     router,
     vuetify: new Vuetify(),
     data: () => ({
-        // navigation
+                // navigation
         isHome: false,
         drawer: false,
         group: null,
