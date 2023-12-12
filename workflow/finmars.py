@@ -87,7 +87,7 @@ def execute_expression(expression):
 
 def execute_expression_procedure(payload):
 
-    refresh = get_access_token
+    refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 

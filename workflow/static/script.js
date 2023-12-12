@@ -165,23 +165,6 @@ const store = new Vuex.Store({
         selectTask({commit}, task) {
             commit("updateSelectedTask", task);
         },
-        refreshStorage({commit, dispatch}) {
-
-            const headers = {
-                'Authorization': 'Token ' + getCookie('access_token'),
-                'Accept': 'application/json',
-                'Content-type': 'application/json'
-            };
-
-            axios({method: 'get', url: API_URL + "/refresh-storage/", headers: headers})
-                .then((response) => {
-                    dispatch("listWorkflows");
-                    dispatch("listDefinitions");
-
-                    toastr.success("Storage refreshed")
-
-                });
-        },
         relaunchWorkflow({commit, dispatch}, workflow_id) {
 
             const headers = {
@@ -476,6 +459,7 @@ new Vue({
         selectedStatus: [],
         status: ['init', "success", "error", "progress", "pending", "canceled"],
         selectedWorkflowName: "All",
+        refreshStorageProcessing: false
     }),
 
     mounted() {
@@ -523,7 +507,26 @@ new Vue({
             this.relaunchDialog = false;
         },
         refreshStorage: function () {
-            this.$store.dispatch("refreshStorage");
+
+            this.refreshStorageProcessing = true;
+
+            const headers = {
+                'Authorization': 'Token ' + getCookie('access_token'),
+                'Accept': 'application/json',
+                'Content-type': 'application/json'
+            };
+
+            axios({method: 'get', url: API_URL + "/refresh-storage/", headers: headers})
+                .then((response) => {
+                    this.$store.dispatch("listWorkflows");
+                    this.$store.dispatch("listDefinitions");
+
+                    this.refreshStorageProcessing = false;
+
+                    toastr.success("Storage refreshed")
+
+                });
+
         },
         refreshTask: function () {
             this.$store.dispatch("getWorkflow", this.selectedWorkflow.id);

@@ -157,6 +157,10 @@
                     <span>Refresh Storage</span>
                 </v-tooltip>
 
+                <div v-if="refreshStorageProcessing">
+                    Refreshing...
+                </div>
+
             </v-app-bar>
             <!-- Drawer Begins-->
             <v-navigation-drawer v-model="drawer" absolute temporary>

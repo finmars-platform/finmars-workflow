@@ -295,15 +295,6 @@ LOGGING = {
             'level': DJANGO_LOG_LEVEL,
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
-        },
-        'file': {
-            'level': DJANGO_LOG_LEVEL,
-            # 'class': 'logging.handlers.TimedRotatingFileHandler', # cant work when multiple process
-            'class': 'logging.FileHandler',
-            # 'interval': 1,
-            # 'when': 'D',
-            'filename': '/var/log/finmars/workflow/django.log',
-            'formatter': 'verbose'
         }
     },
     'loggers': {
@@ -323,6 +314,26 @@ LOGGING = {
         }
     }
 }
+
+if SERVER_TYPE == 'local':
+
+    os.makedirs(BASE_DIR + '/log/', exist_ok=True)
+
+    LOGGING['handlers']['file'] = {
+        'level': DJANGO_LOG_LEVEL,
+        'class': 'logging.FileHandler',
+        'filename': BASE_DIR + '/log/django.log',
+        'formatter': 'verbose'
+    }
+
+else:
+
+    LOGGING['handlers']['file'] = {
+        'level': DJANGO_LOG_LEVEL,
+        'class': 'logging.FileHandler',
+        'filename': '/var/log/finmars/workflow/django.log',
+        'formatter': 'verbose'
+    }
 
 if SEND_LOGS_TO_FINMARS:
     print("Logs will be sending to Finmars")
@@ -442,15 +453,15 @@ XS_SHARING_ALLOWED_METHODS = ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE']
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': False,
     'UPDATE_LAST_LOGIN': True,
 
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
-    'VERIFYING_KEY': None,
+    'VERIFYING_KEY': "",
     'AUDIENCE': None,
     'ISSUER': None,
     'JWK_URL': None,

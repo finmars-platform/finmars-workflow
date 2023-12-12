@@ -82,7 +82,7 @@ class CeleryWorkflow:
                             workflow_json_path = construct_path(
                                 construct_path(workflow_folder_path, workflow_directory), 'workflow.json')
 
-                            _l.info("init_app.Trying to load workflow config file:  %s" % workflow_yaml_path)
+                            # _l.info("init_app.Trying to load workflow config file:  %s" % workflow_yaml_path)
 
                             try:
 
@@ -94,7 +94,7 @@ class CeleryWorkflow:
 
                                 self.workflows[yaml_config['workflow']['user_code']] = yaml_config
 
-                                _l.info("init_app.loaded: %s" % workflow_yaml_path)
+                                # _l.info("init_app.loaded: %s" % workflow_yaml_path)
                             except Exception as e:
 
                                 _l.error("init_app. could not load %s" % workflow_yaml_path)
@@ -113,7 +113,7 @@ class CeleryWorkflow:
 
                                     self.workflows[yaml_config['workflow']['user_code']] = yaml_config
 
-                                    _l.info("init_app.loaded: %s" % workflow_yaml_path)
+                                    # _l.info("init_app.loaded: %s" % workflow_yaml_path)
 
                                 except Exception as e:
 
@@ -125,14 +125,14 @@ class CeleryWorkflow:
                                         f = storage.open(workflow_json_path).read()
                                         config = json.loads(f)
                                         self.workflows[config['workflow']['user_code']] = config
-                                        _l.info("init_app.loaded: %s" % workflow_json_path)
+                                        # _l.info("init_app.loaded: %s" % workflow_json_path)
                                     except Exception as e:
                                         _l.error("init_app. could not load %s" % workflow_json_path)
                                         _l.error("init_app. could not load error %s" % e)
 
-            _l.info("init_app.workflows are loaded")
+            # _l.info("init_app.workflows are loaded")
 
-            _l.info('self.workflows %s' % self.workflows)
+            # _l.info('self.workflows %s' % self.workflows)
 
             if self.workflows:
                 self.load_user_tasks_from_storage_to_local_filesystem()
