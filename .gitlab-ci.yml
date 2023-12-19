@@ -90,13 +90,14 @@ Push Version:
       NOTES=$(git log -1 --pretty=%B)
       JSON_PAYLOAD="{ \"app\": \"$CI_PROJECT_NAME\", \"version\": \"$IMAGE_TAG\", \"build_number\": $CI_PIPELINE_ID, \"notes\": \"$NOTES\", \"channel\": \"$CHANNEL\"  }"
 
-      # Pass the payload to curl
-      response=$(curl --request POST https://license.finmars.com/api/v1/version/ \
-      --header "Content-Type: application/json" \
-      --data "$JSON_PAYLOAD")
+      echo "----- Build Payload -----"
+      echo "$JSON_PAYLOAD"
+      echo "-------------------------"
+
+      status_code=$(curl -o /dev/null -s -w "%{http_code}" --request POST https://license.finmars.com/api/v1/version/ --header "Content-Type: application/json" --data "$JSON_PAYLOAD")
       
-      if [[ "$response" -ne 200 ]]; then
-        echo "Error detected. Failing the build."
+      if [[ "$status_code" -ne "201" ]]; then
+        echo "Build failed. Status Code: $status_code"
         exit 1
       else
         echo "Build succeeded."
