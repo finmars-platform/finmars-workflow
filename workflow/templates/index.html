@@ -283,13 +283,16 @@
 
 
                                     <div class="pagination">
-                                        <button @click="changePage(page - 1)" :disabled="page === 1">Previous</button>
-                                        <button v-for="pageItem in totalPages" :key="pageItem"
-                                                @click="changePage(pageItem)"
-                                                :disabled="page === pageItem">{{ pageItem }}
-                                        </button>
-                                        <button @click="changePage(page + 1)" :disabled="page === totalPages">Next
-                                        </button>
+                                        <button @click="changePage(1)" :disabled="page === 1"><<</button>
+                                        <button @click="changePage(page - 1)" :disabled="page === 1"><</button>
+                                        <template v-for="pageItem in displayPages">
+                                            <button v-if="pageItem !== '...'" @click="changePage(pageItem)" :disabled="page === pageItem" :key="pageItem">
+                                                {{ pageItem }}
+                                            </button>
+                                            <span v-else :key="pageItem">...</span>
+                                        </template>
+                                        <button @click="changePage(page + 1)" :disabled="page === totalPages">></button>
+                                        <button @click="changePage(totalPages)" :disabled="page === totalPages">>></button>
                                     </div>
 
 

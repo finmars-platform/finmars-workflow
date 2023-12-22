@@ -18,6 +18,7 @@ class WorkflowQueryFilter(BaseFilterBackend):
             name_q = Q()
             user_code_q = Q()
             created_q = Q()
+            status_q = Q()
 
 
             for piece in pieces:
@@ -25,6 +26,7 @@ class WorkflowQueryFilter(BaseFilterBackend):
                 name_q.add(Q(name__icontains=piece), Q.AND)
                 user_code_q.add(Q(user_code__icontains=piece), Q.AND)
                 created_q.add(Q(created__icontains=piece), Q.AND)
+                status_q.add(Q(status__icontains=piece), Q.AND)
 
 
             options = Q()
@@ -33,6 +35,7 @@ class WorkflowQueryFilter(BaseFilterBackend):
             options.add(name_q, Q.OR)
             options.add(user_code_q, Q.OR)
             options.add(created_q, Q.OR)
+            options.add(status_q, Q.OR)
 
             return queryset.filter(options)
 

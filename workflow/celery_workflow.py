@@ -76,8 +76,11 @@ class CeleryWorkflow:
 
                         for workflow_directory in workflow_directories:
 
+                            # Check for YAML configuration first
                             workflow_yaml_path = construct_path(
                                 construct_path(workflow_folder_path, workflow_directory), 'workflow.yaml')
+                            workflow_json_path = construct_path(
+                                construct_path(workflow_folder_path, workflow_directory), 'workflow.json')
 
                             _l.info("init_app.Trying to load workflow config file:  %s" % workflow_yaml_path)
 
@@ -116,6 +119,16 @@ class CeleryWorkflow:
 
                                     _l.error("init_app. could not load %s" % workflow_yaml_path)
                                     _l.error("init_app. could not load error %s" % e)
+
+                                    # If YAML fails, try JSON
+                                    try:
+                                        f = storage.open(workflow_json_path).read()
+                                        config = json.loads(f)
+                                        self.workflows[config['workflow']['user_code']] = config
+                                        _l.info("init_app.loaded: %s" % workflow_json_path)
+                                    except Exception as e:
+                                        _l.error("init_app. could not load %s" % workflow_json_path)
+                                        _l.error("init_app. could not load error %s" % e)
 
             _l.info("init_app.workflows are loaded")
 

@@ -158,3 +158,4 @@ workflow/static/documentation/
 finmars_data
 workflow/static/scripts
 workflow/static/css
+node_modules
