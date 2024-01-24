@@ -112,50 +112,60 @@
     <div id="app" v-cloak>
         <v-app id="inspire">
             <v-app-bar app clipped-right color="director" dark>
-                <v-app-bar-nav-icon @click="drawer = true, moveUp()"></v-app-bar-nav-icon>
-                <router-link to="/" tag="span" style="cursor: pointer">
-                    <v-toolbar-title @click="isHome = true"
-                    >Finmars Workflow
-                    </v-toolbar-title
-                    >
-                </router-link>
-                <v-spacer></v-spacer>
+                <div claass="app-bar">
+                    <div class="app-bar-left">
+                        <v-app-bar-nav-icon @click="drawer = true, moveUp()"></v-app-bar-nav-icon>
+                        <router-link to="/" tag="span" style="cursor: pointer">
+                            <v-toolbar-title @click="isHome = true"
+                            >Finmars Workflow
+                            </v-toolbar-title
+                            >
+                        </router-link>
+                    </div>
+                    <!-- <v-spacer></v-spacer> -->
+                    <div class="app-bar-right"> 
+                        <v-app-bar-title v-if="$route.params.id">
+                            Server Time: {{ selectedWorkflow.created | serverFormatDate }}
+                        </v-toolbar-title>
+                        
+                        <v-tooltip bottom>
+                            <template v-slot:activator="{ on, attrs }">
+                                <v-btn
+                                        tile
+                                        outlined
+                                        color="director"
+                                        style="margin-right: 8px;"
+                                        v-on="on"
+                                        v-bind="attrs"
+                                        @click.stop="toggleAutoRefresh()"
+                                >
+                                    <v-icon v-if="autoRefresh">mdi-sync</v-icon>
+                                    <v-icon v-if="!autoRefresh">mdi-sync-off</v-icon>
+                                </v-btn>
+                            </template>
+                            <span v-if="autoRefresh">Disable Auto Refresh</span>
+                            <span v-if="!autoRefresh">Enable Auto Refresh</span>
+                        </v-tooltip>
 
-                <v-tooltip bottom>
-                    <template v-slot:activator="{ on, attrs }">
-                        <v-btn
-                                tile
-                                outlined
-                                color="director"
-                                style="margin-right: 8px;"
-                                v-on="on"
-                                v-bind="attrs"
-                                @click.stop="toggleAutoRefresh()"
-                        >
-                            <v-icon v-if="autoRefresh">mdi-sync</v-icon>
-                            <v-icon v-if="!autoRefresh">mdi-sync-off</v-icon>
-                        </v-btn>
-                    </template>
-                    <span v-if="autoRefresh">Disable Auto Refresh</span>
-                    <span v-if="!autoRefresh">Enable Auto Refresh</span>
-                </v-tooltip>
+                        <v-tooltip bottom>
+                            <template v-slot:activator="{ on, attrs }">
+                                <v-btn
+                                        tile
+                                        outlined
+                                        color="director"
+                                        style="margin-right: 8px;"
+                                        v-on="on"
+                                        v-bind="attrs"
+                                        @click.stop="refreshStorage()"
+                                >
+                                    <v-icon>mdi-cloud-refresh</v-icon>
+                                </v-btn>
+                            </template>
+                            <span>Refresh Storage (last update: {{ refreshStorageLastTime | formatDate }})</span>
+                        </v-tooltip>
+                    </div>
+                </div>
 
-                <v-tooltip bottom>
-                    <template v-slot:activator="{ on, attrs }">
-                        <v-btn
-                                tile
-                                outlined
-                                color="director"
-                                style="margin-right: 8px;"
-                                v-on="on"
-                                v-bind="attrs"
-                                @click.stop="refreshStorage()"
-                        >
-                            <v-icon>mdi-cloud-refresh</v-icon>
-                        </v-btn>
-                    </template>
-                    <span>Refresh Storage</span>
-                </v-tooltip>
 
             </v-app-bar>
             <!-- Drawer Begins-->

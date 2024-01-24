@@ -100,6 +100,7 @@ const store = new Vuex.Store({
         page_size: 40,
         query: null,
         page: 1,
+        refreshStorageLastTime: "time",
     },
     actions: {
         listWorkflows({commit}) {
@@ -166,6 +167,7 @@ const store = new Vuex.Store({
             commit("updateSelectedTask", task);
         },
         refreshStorage({commit, dispatch}) {
+            commit("updateRefreshStorageLastTime");
 
             const headers = {
                 'Authorization': 'Token ' + getCookie('access_token'),
@@ -344,6 +346,9 @@ const store = new Vuex.Store({
             state.page = 1;
             state.query = value;
         },
+        updateRefreshStorageLastTime(state) {
+            state.refreshStorageLastTime = Date.now();
+        }
     },
     getters: {
         totalPages(state) {
@@ -369,13 +374,21 @@ const store = new Vuex.Store({
             }
             return result;
         },
-
+        refreshStorageLastTime(state) {
+            return state.refreshStorageLastTime;
+        },
     },
 });
 
 Vue.filter("formatDate", function (value) {
     if (value) {
-        return moment.utc(value).local().format("YYYY-MM-DD HH:mm:ss Z");
+        return moment.utc(value).local().format("YYYY-MM-DD HH:MM:SS");
+    }
+});
+
+Vue.filter("serverFormatDate", function (value) {
+    if (value) {
+        return moment.utc(value).format("YYYY-MM-DD HH:MM:SS");
     }
 });
 
@@ -455,7 +468,7 @@ new Vue({
             "hideHooks",
             "page"
         ]),
-        ...Vuex.mapGetters(["totalPages", "displayPages"]),
+        ...Vuex.mapGetters(["totalPages", "displayPages", "refreshStorageLastTime"]),
         query: {
             get() {
                 return this.$store.state.query;
