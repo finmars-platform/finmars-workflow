@@ -2,12 +2,12 @@ import logging
 
 from workflow.builder import WorkflowBuilder
 from workflow.celery_workflow import celery_workflow
-from workflow.models import Workflow, User
+from workflow.models import Workflow, User, Space
 
 _l = logging.getLogger('workflow')
 
 
-def execute_workflow(username, user_code, payload={}):
+def execute_workflow(username, user_code, payload={}, realm_code=None, space_code=None):
     user = User.objects.get(username=username)
 
     # Check if the workflow exists
@@ -16,8 +16,11 @@ def execute_workflow(username, user_code, payload={}):
     except Exception:
         raise Exception(f"Workflow {user_code} not found")
 
+    space = Space.objects.get(space_code=space_code)
+
     # Create the workflow in DB
-    obj = Workflow(owner=user, user_code=user_code, payload=payload, is_manager=wf.get('is_manager', False))
+    obj = Workflow(owner=user, space=space, user_code=user_code, payload=payload,
+                   is_manager=wf.get('is_manager', False))
     obj.save()
 
     # Build the workflow and execute it

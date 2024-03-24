@@ -20,9 +20,13 @@ class RealmAndSpaceMiddleware:
     def __call__(self, request):
         # Example URL pattern: /realm0abcd/space0xyzv/
 
+        request.realm_code = None
+        request.space_code = None
+
         path_parts = request.path_info.split('/')
 
         if 'realm' in path_parts[1]:
+
             request.realm_code = path_parts[1]
             request.space_code = path_parts[2]
 

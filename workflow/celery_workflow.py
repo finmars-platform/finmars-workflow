@@ -47,23 +47,23 @@ class CeleryWorkflow:
 
             # and looking for workflow.yaml files
 
-            _l.info("init_app.going to check %s folder" % root_workflows_folder_path)
+            # _l.info("init_app.going to check %s folder" % root_workflows_folder_path)
 
             for configuration_directory in configuration_directories:
 
                 organization_folder_path = construct_path(root_workflows_folder_path, configuration_directory)
-                _l.info(f"init_app.going to check {organization_folder_path} folder")
+                # _l.info(f"init_app.going to check {organization_folder_path} folder")
 
                 organization_directories, _ = storage.listdir(organization_folder_path)
 
                 for organization_directory in organization_directories:
 
                     module_folder_path = construct_path(organization_folder_path, organization_directory)
-                    _l.info(f"init_app.going to check {module_folder_path} folder")
+                    # _l.info(f"init_app.going to check {module_folder_path} folder")
 
                     modules_directories, _ = storage.listdir(module_folder_path)
 
-                    _l.info('init_app.modules_directories %s' % modules_directories)
+                    # _l.info('init_app.modules_directories %s' % modules_directories)
 
                     for module_directory in modules_directories:
 
@@ -71,7 +71,7 @@ class CeleryWorkflow:
 
                         workflow_directories, _ = storage.listdir(workflow_folder_path)
 
-                        _l.info('init_app.workflow_directories %s' % workflow_directories)
+                        # _l.info('init_app.workflow_directories %s' % workflow_directories)
 
                         for workflow_directory in workflow_directories:
 
@@ -81,7 +81,7 @@ class CeleryWorkflow:
                             workflow_json_path = construct_path(
                                 construct_path(workflow_folder_path, workflow_directory), 'workflow.json')
 
-                            _l.info("init_app.Trying to load workflow config file:  %s" % workflow_yaml_path)
+                            # _l.info("init_app.Trying to load workflow config file:  %s" % workflow_yaml_path)
 
                             try:
 
@@ -93,11 +93,11 @@ class CeleryWorkflow:
 
                                 self.workflows[yaml_config['workflow']['user_code']] = yaml_config
 
-                                _l.info("init_app.loaded: %s" % workflow_yaml_path)
+                                # _l.info("init_app.loaded: %s" % workflow_yaml_path)
                             except Exception as e:
 
-                                _l.error("init_app. could not load %s" % workflow_yaml_path)
-                                _l.error("init_app. could not load error %s" % e)
+                                # _l.error("init_app. could not load %s" % workflow_yaml_path)
+                                # _l.error("init_app. could not load error %s" % e)
 
                                 workflow_yaml_path = construct_path(
                                     construct_path(workflow_folder_path, workflow_directory), 'workflow.yml')
@@ -112,24 +112,24 @@ class CeleryWorkflow:
 
                                     self.workflows[yaml_config['workflow']['user_code']] = yaml_config
 
-                                    _l.info("init_app.loaded: %s" % workflow_yaml_path)
+                                    # _l.info("init_app.loaded: %s" % workflow_yaml_path)
 
                                 except Exception as e:
 
-                                    _l.error("init_app. could not load %s" % workflow_yaml_path)
-                                    _l.error("init_app. could not load error %s" % e)
+                                    # _l.error("init_app. could not load %s" % workflow_yaml_path)
+                                    # _l.error("init_app. could not load error %s" % e)
 
                                     # If YAML fails, try JSON
                                     try:
                                         f = storage.open(workflow_json_path).read()
                                         config = json.loads(f)
                                         self.workflows[config['workflow']['user_code']] = config
-                                        _l.info("init_app.loaded: %s" % workflow_json_path)
+                                        # _l.info("init_app.loaded: %s" % workflow_json_path)
                                     except Exception as e:
                                         _l.error("init_app. could not load %s" % workflow_json_path)
                                         _l.error("init_app. could not load error %s" % e)
 
-            _l.info("init_app.workflows are loaded")
+            # _l.info("init_app.workflows are loaded")
 
             _l.info('self.workflows %s' % self.workflows)
 

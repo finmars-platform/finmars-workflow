@@ -70,6 +70,7 @@ class WorkflowBuilder(object):
             previous=self.previous,
             workflow_id=self.workflow.id,
             status=Task.STATUS_INIT,
+            space=self._workflow.space,
             is_hook=is_hook,
         )
         task.save()

@@ -1,9 +1,12 @@
 from rest_framework import serializers
 
+from workflow.fields import SpaceField
 from workflow.models import Workflow, Task
 
 
 class TaskSerializer(serializers.ModelSerializer):
+    space = SpaceField()
+
     payload = serializers.JSONField(allow_null=True, required=False)
     result = serializers.JSONField(allow_null=True, required=False)
     progress = serializers.JSONField(allow_null=True, required=False)
@@ -12,6 +15,7 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = ['id',
+                  'space',
                   'name', 'source_code',
                   'workflow', 'status', 'celery_task_id', 'source_code',
                   'previous', 'is_hook',
@@ -23,13 +27,15 @@ class TaskSerializer(serializers.ModelSerializer):
 
 
 class WorkflowSerializer(serializers.ModelSerializer):
+    space = SpaceField()
+
     payload = serializers.JSONField(allow_null=True, required=False)
     tasks = TaskSerializer(many=True)
 
     class Meta:
         model = Workflow
         fields = ['id', 'name', 'user_code',
-                  'owner',
+                  'owner', 'space',
                   'status',
                   'payload', 'created', 'modified', 'tasks', 'periodic',
                   'is_manager']
@@ -43,6 +49,7 @@ class WorkflowLightSerializer(serializers.ModelSerializer):
                   'status',
                   'created', 'modified', 'periodic',
                   'is_manager']
+
 
 class PingSerializer(serializers.Serializer):
     message = serializers.CharField(read_only=True)

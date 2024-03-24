@@ -70,27 +70,29 @@ class WorkflowViewSet(ModelViewSet):
 
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=False, methods=('POST',), url_path='run-workflow')
-    def run_workflow(self, request, pk=None):
+    @action(detail=False, methods=['POST'], url_path='run-workflow')
+    def run_workflow(self, request, pk=None, *args, **kwargs):
+
         user_code, payload = (
             request.data["user_code"],
             request.data["payload"],
         )
-        data, _ = execute_workflow(request.user.username, user_code, payload)
+
+        data, _ = execute_workflow(request.user.username, user_code, payload, request.realm_code, request.space_code)
 
         _l.info('data %s' % data)
 
         return Response(data)
 
     @action(detail=True, methods=('POST',), url_path='relaunch')
-    def relaunch(self, request, pk=None):
+    def relaunch(self, request, pk=None, *args, **kwargs):
         obj = Workflow.objects.get(id=pk)
         data, _ = execute_workflow(request.user.username, obj.user_code, obj.payload)
 
         return Response(data)
 
     @action(detail=True, methods=('POST',), url_path='cancel')
-    def cancel(self, request, pk=None):
+    def cancel(self, request, pk=None, *args, **kwargs):
         workflow = Workflow.objects.get(id=pk)
         workflow.cancel()
 
@@ -175,7 +177,7 @@ class DefinitionViewSet(ViewSet):
 
 
 class LogFileViewSet(ViewSet):
-    def list(self, request):
+    def list(self, request, *args, **kwargs):
         log_file_path = '/var/log/finmars/workflow/django.log'
 
         if not os.path.exists(log_file_path):
@@ -193,7 +195,7 @@ class LogFileViewSet(ViewSet):
 
 class CodeExecutionViewSet(ViewSet):
 
-    def create(self, request):
+    def create(self, request, *args, **kwargs):
         """
         This function handles POST request to execute code.
         It expects 'code' and 'file_path' in the request data.
