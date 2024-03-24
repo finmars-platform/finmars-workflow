@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from workflow.models import User, Task, Workflow
+from workflow.models import User, Task, Workflow, Space
 from workflow_app import settings
 
 admin.site.site_header = 'Workflow Admin'
@@ -21,6 +21,17 @@ class CustomUserAdmin(UserAdmin):
 
 
 admin.site.register(User, CustomUserAdmin)
+
+
+class SpaceAdmin(admin.ModelAdmin):
+    model = Space
+    list_display = ['id', 'name', 'realm_code', 'space_code']
+    search_fields = ['id', 'name', 'realm_code', 'space_code']
+
+    actions_on_bottom = True
+
+
+admin.site.register(Space, SpaceAdmin)
 
 
 class TaskAdmin(admin.ModelAdmin):

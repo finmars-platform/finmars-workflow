@@ -20,12 +20,12 @@ class PageNumberPaginationExt(PageNumberPagination):
 
         qs = super().paginate_queryset(queryset, request, view)
 
-        _l.debug('post_paginate_queryset before list page')
+        # _l.debug('post_paginate_queryset before list page')
 
         list_page_st = time.perf_counter()
 
-        _l.debug('res %s' % len(qs))
+        # _l.debug('res %s' % len(qs))
 
-        _l.debug('post_paginate_queryset list page done: %s', "{:3.3f}".format(time.perf_counter() - list_page_st))
+        # _l.debug('post_paginate_queryset list page done: %s', "{:3.3f}".format(time.perf_counter() - list_page_st))
         return qs
 

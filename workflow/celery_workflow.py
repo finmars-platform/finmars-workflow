@@ -30,7 +30,6 @@ class CeleryWorkflow:
 
         try:
             _l.info('CeleryWorkflow.init_app')
-            # _l.info('settings.BASE_API_URL %s' % settings.BASE_API_URL)
 
             root_workflows_folder_path = construct_path('/', settings.BASE_API_URL, 'workflows')
 

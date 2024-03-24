@@ -73,6 +73,16 @@ class TimeStampedModel(models.Model):
         ordering = ['created', ]
 
 
+class Space(TimeStampedModel):
+    name = models.CharField(max_length=255, null=True, blank=True,
+                            verbose_name=gettext_lazy('name'))
+
+    realm_code = models.CharField(max_length=255, null=True, blank=True,
+                                  verbose_name=gettext_lazy('realm_code'))
+
+    space_code = models.CharField(max_length=255,
+                            verbose_name=gettext_lazy('space_code'))
+
 class Workflow(TimeStampedModel):
     STATUS_INIT = 'init'
     STATUS_PENDING = 'pending'
@@ -104,6 +114,9 @@ class Workflow(TimeStampedModel):
     periodic = models.BooleanField(default=False, verbose_name=gettext_lazy('periodic'))
 
     is_manager = models.BooleanField(default=False, verbose_name=gettext_lazy('is manager'))
+
+    space = models.ForeignKey(Space, verbose_name=gettext_lazy('space'),
+                              on_delete=models.CASCADE, related_name="workflows")
 
     owner = models.ForeignKey(User, verbose_name=gettext_lazy('owner'),
                               on_delete=models.CASCADE, related_name="workflows")
@@ -234,6 +247,9 @@ class Task(TimeStampedModel):
 
     finished_at = models.DateTimeField(null=True, db_index=True,
                                        verbose_name=gettext_lazy('finished at'))
+
+    space = models.ForeignKey(Space, verbose_name=gettext_lazy('space'),
+                              on_delete=models.CASCADE, related_name="tasks")
 
     class Meta:
         ordering = ['-created']
