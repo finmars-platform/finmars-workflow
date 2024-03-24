@@ -21,7 +21,6 @@ from rest_framework import routers
 
 from workflow.views import WorkflowViewSet, TaskViewSet, PingViewSet, DefinitionViewSet, RefreshStorageViewSet, \
     LogFileViewSet, CodeExecutionViewSet
-from workflow_app import settings
 
 router = routers.DefaultRouter()
 
@@ -33,13 +32,22 @@ router.register(r'definition', DefinitionViewSet, "ping")
 router.register(r'log', LogFileViewSet, "log")
 router.register(r'execute-code', CodeExecutionViewSet, basename='execute-code')
 
-
 urlpatterns = [
 
-    re_path(r'^' + settings.BASE_API_URL + '/workflow/api/', include(router.urls)),
-    re_path(r'^' + settings.BASE_API_URL + '/workflow/admin/docs/', include('django.contrib.admindocs.urls')),
-    re_path(r'^' + settings.BASE_API_URL + '/workflow/admin/', admin.site.urls),
+    # Old Approach (delete in 1.9.0)
+    re_path(r'^(?P<space_code>[^/]+)/workflow/api/', include(router.urls)),
+    re_path(r'^(?P<space_code>[^/]+)/workflow/admin/docs/', include('django.contrib.admindocs.urls')),
+    re_path(r'^(?P<space_code>[^/]+)/workflow/admin/', admin.site.urls),
 
-    re_path(r'^' + settings.BASE_API_URL + '/workflow/$', TemplateView.as_view(template_name='index.html'))
+    re_path(r'^(?P<space_code>[^/]+)/workflow/$', TemplateView.as_view(template_name='index.html')),
+
+    # New Approach
+    re_path(r'^(?P<realm_code>[^/]+)/(?P<space_code>[^/]+)/workflow/api/', include(router.urls)),
+    re_path(r'^(?P<realm_code>[^/]+)/(?P<space_code>[^/]+)/workflow/admin/docs/',
+            include('django.contrib.admindocs.urls')),
+    re_path(r'^(?P<realm_code>[^/]+)/(?P<space_code>[^/]+)/workflow/admin/', admin.site.urls),
+
+    re_path(r'^(?P<realm_code>[^/]+)/(?P<space_code>[^/]+)/workflow/$',
+            TemplateView.as_view(template_name='index.html'))
 
 ]

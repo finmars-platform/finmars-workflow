@@ -18,7 +18,10 @@ print_finmars()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 DJANGO_LOG_LEVEL = ENV_STR('DJANGO_LOG_LEVEL', 'INFO')
-BASE_API_URL = ENV_STR('BASE_API_URL', 'space00000')
+
+REALM_CODE = ENV_STR("REALM_CODE", "realm00000")
+BASE_API_URL = ENV_STR("BASE_API_URL", "space00000") # DEPRECATED, remove in 1.9.0
+
 AUTHORIZER_URL = ENV_STR('AUTHORIZER_URL', None)
 FLOWER_URL = ENV_STR('FLOWER_URL', '/' + BASE_API_URL + '/workflow/flower')
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -84,6 +87,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    "workflow.middleware.RealmAndSpaceMiddleware",  # do not delete, required for all requests
 
     'corsheaders.middleware.CorsMiddleware',
 
