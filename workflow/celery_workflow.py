@@ -353,7 +353,7 @@ import sys
 
 
 def init_celery():
-    if ('makemigrations' in sys.argv or 'migrate' in sys.argv):
+    if ('makemigrations' in sys.argv or 'migrate' in sys.argv or 'migrate_all_schemes' in sys.argv):
         _l.info("Celery is not inited. Probably Migration context")
     else:
         _l.info("==== Load Tasks & Workflow ====")
