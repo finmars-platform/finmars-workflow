@@ -4,8 +4,12 @@ from django.conf import settings  # import the settings file
 def workflow(request):
     # return the value you want as a dictionnary. you may add multiple values in there.
 
-    doc_link = '/' + settings.BASE_API_URL + '/workflow/static/documentation/index.html'
-    log_link = '/' + settings.BASE_API_URL + '/workflow/api/log'
+    if request.realm_code:
+        doc_link = '/' + request.realm_code + '/' + request.space_code + '/workflow/static/documentation/index.html'
+        log_link = '/' + request.realm_code + '/' + request.space_code + '/workflow/api/log'
+    else:
+        doc_link = '/' + request.space_code + '/workflow/static/documentation/index.html'
+        log_link = '/' + request.space_code + '/workflow/api/log'
 
     return {'FLOWER_URL': settings.FLOWER_URL,
             'BASE_API_URL': settings.BASE_API_URL,
