@@ -2,7 +2,7 @@ from celery import Task as _Task
 from celery.signals import task_prerun
 from celery.utils.log import get_task_logger
 
-from workflow.models import Task, Workflow
+from workflow.models import Task, Workflow, Space
 from workflow.utils import send_alert
 from workflow_app import celery_app
 from django.db.models import F

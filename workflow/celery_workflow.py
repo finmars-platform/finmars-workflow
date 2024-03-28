@@ -26,7 +26,7 @@ _l = logging.getLogger('workflow')
 class CeleryWorkflow:
     def __init__(self):
 
-        self.workflows = None
+        self.workflows = {}
 
     def init_app(self):
 
@@ -40,7 +40,7 @@ class CeleryWorkflow:
 
             configuration_directories, _ = storage.listdir(root_workflows_folder_path)
 
-            self.workflows = {}
+            # self.workflows = {}
 
             # _l.info('files %s' % files)
 
@@ -136,7 +136,7 @@ class CeleryWorkflow:
 
             # _l.info("init_app.workflows are loaded")
 
-            _l.info('self.workflows %s' % self.workflows)
+            # _l.info('self.workflows %s' % self.workflows)
 
             if self.workflows:
                 self.load_user_tasks_from_storage_to_local_filesystem()
@@ -221,8 +221,7 @@ class CeleryWorkflow:
                             if '.py' in filename:
                                 filepath = workflows_folder_path + '/' + configuration_directory + '/' + organization_directory + '/' + module_directory + '/' + workflow_directory + '/' + filename
 
-                                _l.info(
-                                    "load_user_tasks_from_storage_to_local_filesystem.Going to sync file %s " % filepath)
+                                # _l.info("load_user_tasks_from_storage_to_local_filesystem.Going to sync file %s " % filepath)
 
                                 with storage.open(filepath) as f:
                                     f_content = f.read()
@@ -235,8 +234,7 @@ class CeleryWorkflow:
                                               'wb') as new_file:
                                         new_file.write(f_content)
 
-                                _l.info(
-                                    "load_user_tasks_from_storage_to_local_filesystem.Going to sync file %s DONE " % filepath)
+                                # _l.info("load_user_tasks_from_storage_to_local_filesystem.Going to sync file %s DONE " % filepath)
 
     def import_user_tasks(self):
         self.plugin_base = PluginBase(package="workflow.foobar")
@@ -261,7 +259,7 @@ class CeleryWorkflow:
 
                     name = str(task.relative_to(folder))[:-3].replace("/", ".")
 
-                    _l.info('name %s' % name)
+                    # _l.info('name %s' % name)
 
                     __import__(
                         self.plugin_source.base.package + "." + name,

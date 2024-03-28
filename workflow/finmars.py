@@ -603,7 +603,7 @@ class Utils():
         # Resolve the relative file_path against the provided base directory
         absolute_file_path = os.path.normpath(os.path.join(base_path, file_path))
 
-        _l.info(f'Normalized file path: {absolute_file_path}')
+        # _l.info(f'Normalized file path: {absolute_file_path}')
 
         # Continue with your existing logic, but use absolute_file_path instead of file_path
         directory, filename = os.path.split(absolute_file_path)

@@ -1,3 +1,5 @@
+import logging
+
 from celery import chain, group
 from celery.utils import uuid
 
@@ -7,10 +9,8 @@ from workflow.models import Workflow, Task
 from workflow.tasks.workflows import start, end, failure_hooks_launcher
 from workflow_app import celery_app
 
-
-
-import logging
 _l = logging.getLogger('workflow')
+
 
 class WorkflowBuilder(object):
     def __init__(self, workflow_id):
@@ -21,6 +21,7 @@ class WorkflowBuilder(object):
         self.custom_queues = {}
 
         self.tasks = celery_workflow.get_tasks(str(self.workflow))
+
         self.canvas = []
 
         self.failure_hook = celery_workflow.get_failure_hook_task(str(self.workflow))
@@ -46,6 +47,8 @@ class WorkflowBuilder(object):
 
     def new_task(self, task_name, is_hook, single=True):
         task_id = uuid()
+
+        task_name = self.workflow.space.space_code + '.' + task_name
 
         queue = self.custom_queues.get(task_name, self.queue)
 
@@ -93,6 +96,7 @@ class WorkflowBuilder(object):
         canvas = []
 
         for task in tasks:
+
             if type(task) is str:
                 signature = self.new_task(task, is_hook)
                 canvas.append(signature)
@@ -117,18 +121,18 @@ class WorkflowBuilder(object):
         self.parse_queues()
         self.canvas = self.parse(self.tasks)
         if self.before_start_hook:
-
             initial_previous = self.previous
             self.previous = None
             self.before_start_hook_canvas = self.parse([self.before_start_hook], True)[0]
 
             _l.info('self.before_start_hook_canvas %s' % self.before_start_hook_canvas)
 
-            self.canvas.insert(0, self.before_start_hook_canvas.set(queue=self.queue)) # insert before_start hook if exists
+            self.canvas.insert(0, self.before_start_hook_canvas.set(
+                queue=self.queue))  # insert before_start hook if exists
 
             self.previous = initial_previous
 
-        self.canvas.insert(0, start.si(self.workflow.id).set(queue=self.queue)) # Workflow Start would be always first
+        self.canvas.insert(0, start.si(self.workflow.id).set(queue=self.queue))  # Workflow Start would be always first
         self.canvas.append(end.si(self.workflow.id).set(queue=self.queue))
 
     def build_hooks(self):
