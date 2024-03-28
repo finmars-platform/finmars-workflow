@@ -82,7 +82,7 @@ def execute_expression(expression):
 
     space = get_space()
 
-    if space.realm_code:
+    if space.realm_code and space.realm_code != 'realm00000':
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/utils/expression/'
     else:
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/utils/expression/'
@@ -107,7 +107,7 @@ def execute_expression_procedure(payload):
 
     space = get_space()
 
-    if space.realm_code:
+    if space.realm_code and space.realm_code != 'realm00000':
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/procedures/expression-procedure/execute/'
     else:
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/procedures/expression-procedure/execute/'
@@ -132,7 +132,7 @@ def execute_data_procedure(payload):
 
     space = get_space()
 
-    if space.realm_code:
+    if space.realm_code and space.realm_code != 'realm00000':
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/procedures/data-procedure/execute/'
     else:
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/procedures/data-procedure/execute/'
@@ -155,7 +155,7 @@ def get_data_procedure_instance(id):
 
     space = get_space()
 
-    if space.realm_code:
+    if space.realm_code and space.realm_code != 'realm00000':
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/procedures/data-procedure-instance/%s/' % id
     else:
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/procedures/data-procedure-instance/%s/' % id
@@ -180,7 +180,7 @@ def execute_pricing_procedure(payload):
 
     space = get_space()
 
-    if space.realm_code:
+    if space.realm_code and space.realm_code != 'realm00000':
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/procedures/pricing-procedure/execute/'
     else:
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/procedures/pricing-procedure/execute/'
@@ -208,7 +208,7 @@ def execute_task(task_name, payload={}):
 
     space = get_space()
 
-    if space.realm_code:
+    if space.realm_code and space.realm_code != 'realm00000':
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/tasks/task/execute/'
     else:
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/tasks/task/execute/'
@@ -231,7 +231,7 @@ def get_task(id):
 
     space = get_space()
 
-    if space.realm_code:
+    if space.realm_code and space.realm_code != 'realm00000':
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/tasks/task/%s/' % id
     else:
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/tasks/task/%s/' % id
@@ -312,7 +312,7 @@ def execute_transaction_import(payload):
 
     space = get_space()
 
-    if space.realm_code:
+    if space.realm_code and space.realm_code != 'realm00000':
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/import/transaction-import/execute/'
     else:
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/import/transaction-import/execute/'
@@ -337,7 +337,7 @@ def execute_simple_import(payload):
 
     space = get_space()
 
-    if space.realm_code:
+    if space.realm_code and space.realm_code != 'realm00000':
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/import/simple-import/execute/'
     else:
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/import/simple-import/execute/'
@@ -358,7 +358,7 @@ def request_api(path, method='get', data=None):
 
     space = get_space()
 
-    if space.realm_code:
+    if space.realm_code and space.realm_code != 'realm00000':
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + path
     else:
         url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + path
@@ -402,19 +402,23 @@ class Storage():
 
         self.storage = get_storage()
 
-        self.base_path = settings.BASE_API_URL
+    def get_base_path(self):
+
+        space = Space.objects.all().first()
+
+        return space.space_code
 
     def listdir(self, path):
-        return self.storage.listdir('/' + self.base_path + path)
+        return self.storage.listdir('/' + self.get_base_path() + path)
 
     def open(self, name, mode='rb'):
 
         # TODO permission check
 
         if name[0] == '/':
-            name = self.base_path + name
+            name = self.get_base_path() + name
         else:
-            name = self.base_path + '/' + name
+            name = self.get_base_path() + '/' + name
 
         return self.storage.open(name, mode)
 
@@ -447,9 +451,9 @@ class Storage():
         # TODO permission check
 
         if name[0] == '/':
-            name = self.base_path + name
+            name = self.get_base_path() + name
         else:
-            name = self.base_path + '/' + name
+            name = self.get_base_path() + '/' + name
 
         return self.storage.delete(name)
 
@@ -458,27 +462,27 @@ class Storage():
         # TODO permission check
 
         if name[0] == '/':
-            name = self.base_path + name
+            name = self.get_base_path() + name
         else:
-            name = self.base_path + '/' + name
+            name = self.get_base_path() + '/' + name
 
         return self.storage.exists(name)
 
     def save(self, name, content):
 
         if name[0] == '/':
-            name = self.base_path + name
+            name = self.get_base_path() + name
         else:
-            name = self.base_path + '/' + name
+            name = self.get_base_path() + '/' + name
 
         return self.storage.save(name, content)
 
     def save_text(self, name, content):
 
         if name[0] == '/':
-            name = self.base_path + name
+            name = self.get_base_path() + name
         else:
-            name = self.base_path + '/' + name
+            name = self.get_base_path() + '/' + name
 
         return self.storage.save(name, ContentFile(content.encode('utf-8')))
 
@@ -554,10 +558,12 @@ class Utils():
     def import_from_storage(self, file_path):
         # get the directory and the filename without extension
 
+        space = get_space()
+
         if file_path[0] == '/':
-            file_path = os.path.join(settings.MEDIA_ROOT + '/tasks/' + settings.BASE_API_URL + file_path)
+            file_path = os.path.join(settings.MEDIA_ROOT + '/tasks/' + space.space_code + file_path)
         else:
-            file_path = os.path.join(settings.MEDIA_ROOT + '/tasks/' + settings.BASE_API_URL + '/' + file_path)
+            file_path = os.path.join(settings.MEDIA_ROOT + '/tasks/' + space.space_code + '/' + file_path)
 
         _l.info('import_from_storage.file_path %s' % file_path)
 
@@ -642,7 +648,12 @@ class Vault():
         headers = {'Content-type': 'application/json', 'Accept': 'application/json',
                    'Authorization': f'Bearer {refresh.access_token}'}
 
-        url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + f'/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}'
+        space = get_space()
+
+        if space.realm_code and space.realm_code != 'realm00000':
+            url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + f'/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}'
+        else:
+            url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + f'/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}'
 
         response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
