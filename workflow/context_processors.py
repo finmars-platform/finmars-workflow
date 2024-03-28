@@ -12,6 +12,7 @@ def workflow(request):
         log_link = '/' + request.space_code + '/workflow/api/log'
 
     return {'FLOWER_URL': settings.FLOWER_URL,
-            'BASE_API_URL': settings.BASE_API_URL,
+            'SPACE_CODE': request.space_code,
+            'REALM_CODE': request.realm_code,
             'DOCUMENTATION_LINK': doc_link,
             'LOG_LINK': log_link}

@@ -1,12 +1,9 @@
-import json
 import logging
 
-import requests
 from django.apps import AppConfig
 from django.db import DEFAULT_DB_ALIAS
-from django.db.models.signals import post_migrate
 from django.db import connection
-
+from django.db.models.signals import post_migrate
 
 from workflow_app import settings
 
@@ -18,6 +15,7 @@ def get_current_search_path():
         cursor.execute("SHOW search_path;")
         search_path = cursor.fetchone()
         return search_path[0] if search_path else None
+
 
 class WorkflowConfig(AppConfig):
     name = 'workflow'
@@ -42,11 +40,16 @@ class WorkflowConfig(AppConfig):
             space_code = 'space00000'
 
         try:
-            Space.objects.get(space_code=space_code, name=space_code, realm_code=settings.REALM_CODE)
+            space = Space.objects.get(space_code=space_code, name=space_code, realm_code=settings.REALM_CODE)
             _l.info("bootstrap.space_exists: %s " % space_code)
         except Space.DoesNotExist:
-            Space.objects.create(space_code=space_code, name=space_code, realm_code=settings.REALM_CODE)
+            space = Space.objects.create(space_code=space_code, name=space_code, realm_code=settings.REALM_CODE)
             _l.info("bootstrap.creating_new_space: %s " % space_code)
+
+        # TODO remove later (probably in 1.9.0)
+        if settings.BASE_API_URL:
+            space.space_code = settings.BASE_API_URL
+            space.save()
 
     def create_finmars_bot(self):
 

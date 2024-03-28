@@ -13,7 +13,7 @@ from django.core.files.base import ContentFile
 from flatten_json import flatten
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from workflow.models import User
+from workflow.models import User, Space
 from workflow_app import settings
 
 _l = logging.getLogger('workflow')
@@ -42,6 +42,12 @@ def get_access_token():
     return new_token
 
 
+def get_space():
+    space = Space.objects.all().first()
+
+    return space
+
+
 def create_logger(name, log_format=None):
     if not log_format:
         log_format = "[%(asctime)s][%(levelname)s][%(name)s][%(filename)s:%(funcName)s:%(lineno)d] - %(message)s"
@@ -62,7 +68,6 @@ def create_logger(name, log_format=None):
 
 
 def execute_expression(expression):
-
     refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
@@ -75,7 +80,12 @@ def execute_expression(expression):
         'is_eval': True
     }
 
-    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/utils/expression/'
+    space = get_space()
+
+    if space.realm_code:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/utils/expression/'
+    else:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/utils/expression/'
 
     response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
@@ -86,7 +96,6 @@ def execute_expression(expression):
 
 
 def execute_expression_procedure(payload):
-
     refresh = get_access_token
 
     # _l.info('refresh %s' % refresh.access_token)
@@ -96,7 +105,12 @@ def execute_expression_procedure(payload):
 
     data = payload
 
-    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/expression-procedure/execute/'
+    space = get_space()
+
+    if space.realm_code:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/procedures/expression-procedure/execute/'
+    else:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/procedures/expression-procedure/execute/'
 
     response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
@@ -107,7 +121,6 @@ def execute_expression_procedure(payload):
 
 
 def execute_data_procedure(payload):
-
     refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
@@ -117,7 +130,12 @@ def execute_data_procedure(payload):
 
     data = payload
 
-    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/data-procedure/execute/'
+    space = get_space()
+
+    if space.realm_code:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/procedures/data-procedure/execute/'
+    else:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/procedures/data-procedure/execute/'
 
     response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
@@ -128,7 +146,6 @@ def execute_data_procedure(payload):
 
 
 def get_data_procedure_instance(id):
-
     refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
@@ -136,7 +153,12 @@ def get_data_procedure_instance(id):
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
                'Authorization': f'Bearer {refresh.access_token}'}
 
-    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/data-procedure-instance/%s/' % id
+    space = get_space()
+
+    if space.realm_code:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/procedures/data-procedure-instance/%s/' % id
+    else:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/procedures/data-procedure-instance/%s/' % id
 
     response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
@@ -147,7 +169,6 @@ def get_data_procedure_instance(id):
 
 
 def execute_pricing_procedure(payload):
-
     refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
@@ -157,7 +178,12 @@ def execute_pricing_procedure(payload):
 
     data = payload
 
-    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/procedures/pricing-procedure/execute/'
+    space = get_space()
+
+    if space.realm_code:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/procedures/pricing-procedure/execute/'
+    else:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/procedures/pricing-procedure/execute/'
 
     response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
@@ -168,7 +194,6 @@ def execute_pricing_procedure(payload):
 
 
 def execute_task(task_name, payload={}):
-
     refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
@@ -176,13 +201,17 @@ def execute_task(task_name, payload={}):
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
                'Authorization': f'Bearer {refresh.access_token}'}
 
-
     data = {
         'task_name': task_name,
         'payload': payload
     }
 
-    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/tasks/task/execute/'
+    space = get_space()
+
+    if space.realm_code:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/tasks/task/execute/'
+    else:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/tasks/task/execute/'
 
     response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
@@ -193,7 +222,6 @@ def execute_task(task_name, payload={}):
 
 
 def get_task(id):
-
     refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
@@ -201,7 +229,12 @@ def get_task(id):
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
                'Authorization': f'Bearer {refresh.access_token}'}
 
-    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/tasks/task/%s/' % id
+    space = get_space()
+
+    if space.realm_code:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/tasks/task/%s/' % id
+    else:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/tasks/task/%s/' % id
 
     response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
@@ -269,7 +302,6 @@ def wait_procedure_to_complete(procedure_instance_id=None, retries=5, retry_inte
 
 
 def execute_transaction_import(payload):
-
     refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
@@ -278,7 +310,12 @@ def execute_transaction_import(payload):
                'Authorization': f'Bearer {refresh.access_token}'}
     data = payload
 
-    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/import/transaction-import/execute/'
+    space = get_space()
+
+    if space.realm_code:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/import/transaction-import/execute/'
+    else:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/import/transaction-import/execute/'
 
     response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
@@ -289,7 +326,6 @@ def execute_transaction_import(payload):
 
 
 def execute_simple_import(payload):
-
     refresh = get_access_token()
 
     # _l.info('refresh %s' % refresh.access_token)
@@ -299,7 +335,12 @@ def execute_simple_import(payload):
 
     data = payload
 
-    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + '/api/v1/import/simple-import/execute/'
+    space = get_space()
+
+    if space.realm_code:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/import/simple-import/execute/'
+    else:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/import/simple-import/execute/'
 
     response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
@@ -310,13 +351,17 @@ def execute_simple_import(payload):
 
 
 def request_api(path, method='get', data=None):
-
     refresh = get_access_token()
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
                'Authorization': f'Bearer {refresh.access_token}'}
 
-    url = 'https://' + settings.DOMAIN_NAME + '/' + settings.BASE_API_URL + path
+    space = get_space()
+
+    if space.realm_code:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + path
+    else:
+        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + path
 
     response = None
 
@@ -450,7 +495,8 @@ class Storage():
 class Utils():
 
     def get_current_space_code(self):
-        return settings.BASE_API_URL
+        space = Space.objects.all().first()
+        return space.space_code
 
     def get_list_of_dates_between_two_dates(self, date_from, date_to, to_string=False):
         result = []
@@ -585,8 +631,7 @@ class Utils():
 class Vault():
 
     def get_secret(self, path):
-
-        refresh = get_access_token() # TODO refactor, should be permission check
+        refresh = get_access_token()  # TODO refactor, should be permission check
 
         # _l.info('refresh %s' % refresh.access_token)
 
