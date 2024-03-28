@@ -6,9 +6,11 @@ from json.decoder import JSONDecodeError
 from pathlib import Path
 
 import yaml
+from django.db import connection
 from pluginbase import PluginBase
 
 from workflow.exceptions import SchemaNotFound, SchemaNotValid, WorkflowNotFound
+from workflow.models import Space
 from workflow.storage import get_storage
 from workflow.utils import build_celery_schedule, construct_path
 from workflow_app import celery_app
@@ -29,9 +31,12 @@ class CeleryWorkflow:
     def init_app(self):
 
         try:
-            _l.info('CeleryWorkflow.init_app')
 
-            root_workflows_folder_path = construct_path('/', settings.BASE_API_URL, 'workflows')
+            space = Space.objects.all().first()
+
+            _l.info('CeleryWorkflow.init_app for space %s' % space.space_code)
+
+            root_workflows_folder_path = construct_path('/', space.space_code, 'workflows')
 
             configuration_directories, _ = storage.listdir(root_workflows_folder_path)
 
@@ -136,7 +141,6 @@ class CeleryWorkflow:
             if self.workflows:
                 self.load_user_tasks_from_storage_to_local_filesystem()
                 self.import_user_tasks()
-                # self.read_schemas()
 
         except Exception as e:
             _l.error("CeleryWorkflow.init_app error %s" % e)
@@ -176,13 +180,15 @@ class CeleryWorkflow:
 
     def load_user_tasks_from_storage_to_local_filesystem(self):
 
+        space = Space.objects.all().first()
+
         try:
             # Remove local-synced Tasks
             shutil.rmtree(settings.MEDIA_ROOT + '/tasks/')
         except Exception as e:
             _l.error('load_user_tasks_from_storage_to_local_filesystem.e %s' % e)
 
-        workflows_folder_path = construct_path('/', settings.BASE_API_URL, 'workflows')
+        workflows_folder_path = construct_path('/', space.space_code, 'workflows')
 
         configuration_directories, _ = storage.listdir(workflows_folder_path)
 
@@ -221,10 +227,12 @@ class CeleryWorkflow:
                                 with storage.open(filepath) as f:
                                     f_content = f.read()
 
-                                    os.makedirs(os.path.dirname(os.path.join(settings.MEDIA_ROOT, 'tasks', filepath.lstrip('/'))),
+                                    os.makedirs(os.path.dirname(
+                                        os.path.join(settings.MEDIA_ROOT, 'tasks', filepath.lstrip('/'))),
                                                 exist_ok=True)
 
-                                    with open(os.path.join(settings.MEDIA_ROOT, 'tasks', filepath.lstrip('/')), 'wb') as new_file:
+                                    with open(os.path.join(settings.MEDIA_ROOT, 'tasks', filepath.lstrip('/')),
+                                              'wb') as new_file:
                                         new_file.write(f_content)
 
                                 _l.info(
@@ -265,25 +273,6 @@ class CeleryWorkflow:
                     _l.info("Could not load user script %s. Error %s" % (task, e))
 
         _l.info("Tasks are loaded")
-
-    # NOT IMPLEMENTED YET
-    def read_schemas(self):
-        folder = Path(settings.BASE_API_URL + '/workflows/').resolve()
-
-        for name, conf in self.workflows.items():
-            if "schema" in conf:
-                path = Path(folder / "schemas" / f"{conf['schema']}.json")
-
-                try:
-                    schema = json.loads(open(path).read())
-                except FileNotFoundError:
-                    raise SchemaNotFound(
-                        f"Schema '{conf['schema']}' not found ({path})"
-                    )
-                except JSONDecodeError as e:
-                    raise SchemaNotValid(f"Schema '{conf['schema']}' not valid ({e})")
-
-                self.workflows[name]["schema"] = schema
 
 
 def init_periodic_tasks():
@@ -352,11 +341,11 @@ celery_workflow = CeleryWorkflow()
 import sys
 
 
-def init_celery():
+def init_celery(schema):
     if ('makemigrations' in sys.argv or 'migrate' in sys.argv or 'migrate_all_schemes' in sys.argv):
         _l.info("Celery is not inited. Probably Migration context")
     else:
-        _l.info("==== Load Tasks & Workflow ====")
+        _l.info(f'==== Load Tasks & Workflow for {schema} ====')
 
         celery_workflow.init_app()
 
@@ -374,9 +363,38 @@ def init_celery():
             _l.error("Could not init periodic tasks traceback: %s" % traceback.format_exc())
 
 
+def get_all_tenant_schemas():
+    # List to hold tenant schemas
+    tenant_schemas = []
+
+    # SQL to fetch all non-system schema names
+    # ('pg_catalog', 'information_schema', 'public') # do later in 1.9.0. where is not public schemes left
+    sql = """
+    SELECT schema_name
+    FROM information_schema.schemata
+    WHERE schema_name NOT IN ('pg_catalog', 'information_schema')
+    AND schema_name NOT LIKE 'pg_toast%'
+    AND schema_name NOT LIKE 'pg_temp_%'
+    """
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        tenant_schemas = [row[0] for row in cursor.fetchall()]
+
+    return tenant_schemas
+
+
 try:
 
-    init_celery()
+    for schema in get_all_tenant_schemas():
+
+        with connection.cursor() as cursor:
+            cursor.execute(f"SET search_path TO {schema};")
+
+        init_celery(schema)
+
+        with connection.cursor() as cursor:
+            cursor.execute("SET search_path TO public;")
 
 except Exception as e:
     _l.error("Could not init_celery exception: %s" % e)
