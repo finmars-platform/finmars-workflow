@@ -1,15 +1,15 @@
 import json
 import os
 import shutil
+import sys
 import traceback
-from json.decoder import JSONDecodeError
 from pathlib import Path
 
 import yaml
 from django.db import connection
 from pluginbase import PluginBase
 
-from workflow.exceptions import SchemaNotFound, SchemaNotValid, WorkflowNotFound
+from workflow.exceptions import WorkflowNotFound
 from workflow.models import Space
 from workflow.storage import get_storage
 from workflow.utils import build_celery_schedule, construct_path
@@ -28,123 +28,96 @@ class CeleryWorkflow:
 
         self.workflows = {}
 
-    def init_app(self):
+    @staticmethod
+    def get_all_tenant_schemas():
+        # List to hold tenant schemas
+        tenant_schemas = []
 
+        # SQL to fetch all non-system schema names
+        # ('pg_catalog', 'information_schema', 'public') # do later in 1.9.0. where is not public schemes left
+        sql = """
+        SELECT schema_name
+        FROM information_schema.schemata
+        WHERE schema_name NOT IN ('pg_catalog', 'information_schema')
+        AND schema_name NOT LIKE 'pg_toast%'
+        AND schema_name NOT LIKE 'pg_temp_%'
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            tenant_schemas = [row[0] for row in cursor.fetchall()]
+
+        return tenant_schemas
+
+    def load_all_workflows(self):
+
+        schemas = self.get_all_tenant_schemas()
+        for schema in schemas:
+
+            with connection.cursor() as cursor:
+                cursor.execute(f"SET search_path TO {schema};")
+
+            _l.info(f'Sync storage files for schema: {schema}')
+
+            self.sync_remote_storage_to_local_storage_for_schema()
+
+            _l.info(f'Loading workflows for schema: {schema}')
+
+            self.load_workflows_for_schema(schema)
+
+            with connection.cursor() as cursor:
+                cursor.execute("SET search_path TO public;")
+
+        # Initialize periodic tasks after loading all workflows
+        self.init_periodic_tasks()
+
+    def load_workflows_for_schema(self, schema):
         try:
 
             space = Space.objects.all().first()
+            # Construct the root path for workflows
+            local_workflows_folder_path = construct_path(settings.MEDIA_ROOT, 'local', space.space_code, 'workflows')
 
-            _l.info('CeleryWorkflow.init_app for space %s' % space.space_code)
+            # Use Pathlib to simplify path manipulations
+            root_path = Path(local_workflows_folder_path)
 
-            root_workflows_folder_path = construct_path('/', space.space_code, 'workflows')
+            _l.info('local_workflows_folder_path %s' % local_workflows_folder_path)
 
-            configuration_directories, _ = storage.listdir(root_workflows_folder_path)
+            # Iterate through all files in the /workflows directory and subdirectories
+            for workflow_file in root_path.glob('**/*'):
 
-            # self.workflows = {}
+                _l.info('workflow_file %s' % workflow_file)
 
-            # _l.info('files %s' % files)
+                if workflow_file.suffix in ['.yaml', '.yml', '.json']:
+                    try:
+                        with open(str(workflow_file), 'r') as f:
+                            if workflow_file.suffix in ['.yaml', '.yml']:
+                                config = yaml.load(f, Loader=yaml.SafeLoader)
+                            elif workflow_file.suffix == '.json':
+                                config = json.load(f)
+                            else:
+                                _l.warning(f"Unsupported file format: {workflow_file}")
+                                continue
 
-            # We are going through
-            # workflows/[configuration_code]/[user_code]/
-            # [configuration_code] splits to pieces
-            # e.g. com.finmars.local
-            # workflows/com/[organization_name][module_name]/[user_code]/
+                        user_code = config['workflow']['user_code']
 
-            # and looking for workflow.yaml files
+                        config['workflow']['realm_code'] = space.realm_code
+                        config['workflow']['space_code'] = space.space_code
 
-            # _l.info("init_app.going to check %s folder" % root_workflows_folder_path)
+                        self.workflows[space.space_code + '.' + user_code] = config
+                        _l.info(f"Loaded workflow for user code: {space.space_code}.{user_code}")
 
-            for configuration_directory in configuration_directories:
-
-                organization_folder_path = construct_path(root_workflows_folder_path, configuration_directory)
-                # _l.info(f"init_app.going to check {organization_folder_path} folder")
-
-                organization_directories, _ = storage.listdir(organization_folder_path)
-
-                for organization_directory in organization_directories:
-
-                    module_folder_path = construct_path(organization_folder_path, organization_directory)
-                    # _l.info(f"init_app.going to check {module_folder_path} folder")
-
-                    modules_directories, _ = storage.listdir(module_folder_path)
-
-                    # _l.info('init_app.modules_directories %s' % modules_directories)
-
-                    for module_directory in modules_directories:
-
-                        workflow_folder_path = construct_path(module_folder_path, module_directory)
-
-                        workflow_directories, _ = storage.listdir(workflow_folder_path)
-
-                        # _l.info('init_app.workflow_directories %s' % workflow_directories)
-
-                        for workflow_directory in workflow_directories:
-
-                            # Check for YAML configuration first
-                            workflow_yaml_path = construct_path(
-                                construct_path(workflow_folder_path, workflow_directory), 'workflow.yaml')
-                            workflow_json_path = construct_path(
-                                construct_path(workflow_folder_path, workflow_directory), 'workflow.json')
-
-                            # _l.info("init_app.Trying to load workflow config file:  %s" % workflow_yaml_path)
-
-                            try:
-
-                                f = storage.open(workflow_yaml_path).read()
-
-                                yaml_config = yaml.load(f, Loader=yaml.SafeLoader)
-
-                                # _l.info('config_user_code %s' % yaml_config['workflow']['user_code'])
-
-                                self.workflows[yaml_config['workflow']['user_code']] = yaml_config
-
-                                # _l.info("init_app.loaded: %s" % workflow_yaml_path)
-                            except Exception as e:
-
-                                # _l.error("init_app. could not load %s" % workflow_yaml_path)
-                                # _l.error("init_app. could not load error %s" % e)
-
-                                workflow_yaml_path = construct_path(
-                                    construct_path(workflow_folder_path, workflow_directory), 'workflow.yml')
-
-                                try:
-
-                                    f = storage.open(workflow_yaml_path).read()
-
-                                    yaml_config = yaml.load(f, Loader=yaml.SafeLoader)
-
-                                    # _l.info('config_user_code %s' % yaml_config['workflow']['user_code'])
-
-                                    self.workflows[yaml_config['workflow']['user_code']] = yaml_config
-
-                                    # _l.info("init_app.loaded: %s" % workflow_yaml_path)
-
-                                except Exception as e:
-
-                                    # _l.error("init_app. could not load %s" % workflow_yaml_path)
-                                    # _l.error("init_app. could not load error %s" % e)
-
-                                    # If YAML fails, try JSON
-                                    try:
-                                        f = storage.open(workflow_json_path).read()
-                                        config = json.loads(f)
-                                        self.workflows[config['workflow']['user_code']] = config
-                                        # _l.info("init_app.loaded: %s" % workflow_json_path)
-                                    except Exception as e:
-                                        _l.error("init_app. could not load %s" % workflow_json_path)
-                                        _l.error("init_app. could not load error %s" % e)
-
-            # _l.info("init_app.workflows are loaded")
-
-            # _l.info('self.workflows %s' % self.workflows)
+                    except Exception as e:
+                        _l.error(f"Could not load workflow config file: {workflow_file} - {e}")
+                else:
+                    _l.info(f"Skipped unsupported file format: {workflow_file}")
 
             if self.workflows:
-                self.load_user_tasks_from_storage_to_local_filesystem()
+                _l.info('workflows %s' % self.workflows)
                 self.import_user_tasks()
 
         except Exception as e:
-            _l.error("CeleryWorkflow.init_app error %s" % e)
-            _l.error("CeleryWorkflow.init_app traceback %s" % traceback.format_exc())
+            _l.error(f"Error loading workflows for schema {schema}: {e}")
 
     def get_by_user_code(self, user_code):
         workflow = self.workflows.get(user_code)
@@ -178,23 +151,30 @@ class CeleryWorkflow:
         except KeyError:
             return "workflow"
 
-    def load_user_tasks_from_storage_to_local_filesystem(self):
+    def sync_remote_storage_to_local_storage_for_schema(self):
 
         space = Space.objects.all().first()
 
+        remote_workflows_folder_path = construct_path(space.space_code, 'workflows')
+        local_workflows_folder_path = construct_path(settings.MEDIA_ROOT, space.space_code, 'workflows')
+
         try:
+
             # Remove local-synced Tasks
-            shutil.rmtree(settings.MEDIA_ROOT + '/tasks/')
+            shutil.rmtree(local_workflows_folder_path, ignore_errors=True)
         except Exception as e:
-            _l.error('load_user_tasks_from_storage_to_local_filesystem.e %s' % e)
+            _l.error('sync_remote_storage_to_local_storage.e %s' % e)
 
-        workflows_folder_path = construct_path('/', space.space_code, 'workflows')
 
-        configuration_directories, _ = storage.listdir(workflows_folder_path)
+        _l.info('remote_workflows_folder_path %s' % remote_workflows_folder_path)
+
+        configuration_directories, _ = storage.listdir(remote_workflows_folder_path)
+
+        count = 0
 
         for configuration_directory in configuration_directories:
 
-            organization_folder_path = construct_path(workflows_folder_path, configuration_directory)
+            organization_folder_path = construct_path(remote_workflows_folder_path, configuration_directory)
 
             organization_directories, _ = storage.listdir(organization_folder_path)
 
@@ -216,25 +196,35 @@ class CeleryWorkflow:
 
                         _, files = storage.listdir(file_folder_path)
 
+                        # _l.info("sync_remote_storage_to_local_storage_for_schema.files %s" % files)
+
                         for filename in files:
+                            try:
+                                filepath = remote_workflows_folder_path + '/' + configuration_directory + '/' + organization_directory + '/' + module_directory + '/' + workflow_directory + '/' + filename
 
-                            if '.py' in filename:
-                                filepath = workflows_folder_path + '/' + configuration_directory + '/' + organization_directory + '/' + module_directory + '/' + workflow_directory + '/' + filename
+                                # Log the file syncing
+                                # _l.info(f"Syncing file: {filepath}")
 
-                                # _l.info("load_user_tasks_from_storage_to_local_filesystem.Going to sync file %s " % filepath)
+                                if filename.endswith('.yaml') or filename.endswith('.yml') or filename.endswith('.json') or filename.endswith('.py'):
 
-                                with storage.open(filepath) as f:
-                                    f_content = f.read()
+                                    with storage.open(filepath) as f:
+                                        f_content = f.read()
 
-                                    os.makedirs(os.path.dirname(
-                                        os.path.join(settings.MEDIA_ROOT, 'tasks', filepath.lstrip('/'))),
-                                                exist_ok=True)
+                                        # Probably some error here, refactor later
+                                        # Should pointing just to space_code directory, not to tasks
+                                        local_path = os.path.join(settings.MEDIA_ROOT, 'local', filepath.lstrip('/'))
+                                        os.makedirs(os.path.dirname(local_path), exist_ok=True)
 
-                                    with open(os.path.join(settings.MEDIA_ROOT, 'tasks', filepath.lstrip('/')),
-                                              'wb') as new_file:
-                                        new_file.write(f_content)
+                                        with open(local_path, 'wb') as new_file:
+                                            new_file.write(f_content)
 
-                                # _l.info("load_user_tasks_from_storage_to_local_filesystem.Going to sync file %s DONE " % filepath)
+                                        count = count + 1
+
+                            except Exception as e:
+                                _l.error(f"Could not sync file: {filename} - {e}")
+                                    # _l.info("load_user_tasks_from_storage_to_local_filesystem.Going to sync file %s DONE " % filepath)
+
+        _l.info("sync_remote_storage_to_local_storage_for_schema.Done syncing %s files" % count)
 
     def import_user_tasks(self):
         self.plugin_base = PluginBase(package="workflow.foobar")
@@ -245,7 +235,7 @@ class CeleryWorkflow:
             searchpath=[str(folder)]
         )
 
-        tasks = Path(folder / "tasks").glob("**/*.py")
+        tasks = Path(folder / "local").glob("**/*.py")
 
         # _l.info('tasks %s' % tasks)
 
@@ -272,127 +262,75 @@ class CeleryWorkflow:
 
         _l.info("Tasks are loaded")
 
+    def cancel_all_existing_tasks(self):
+        from workflow.models import Task
+        from workflow.models import Workflow
+        tasks = Task.objects.filter(status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT])
+        workflows = Workflow.objects.filter(status__in=[Workflow.STATUS_PROGRESS, Workflow.STATUS_INIT])
 
-def init_periodic_tasks():
-    for user_code, config in celery_workflow.workflows.items():
+        for task in tasks:
+            task.status = Task.STATUS_CANCELED
 
-        # A dict is built for the periodic cleaning if the retention is valid
+            try:  # just in case if rabbitmq still holds a task
+                if task.celery_task_id:
+                    celery_app.control.revoke(task.celery_task_id, terminate=True)
 
-        workflow = config['workflow']
+            except Exception as e:
+                _l.error("Something went wrong %s" % e)
 
-        is_manager = workflow.get('is_manager', False)
+            task.mark_task_as_finished()
 
-        if "periodic" in workflow:
-            periodic_conf = workflow.get("periodic")
-            periodic_payload = periodic_conf.get("payload", "{}")
-            schedule_str, schedule_value = build_celery_schedule(
-                user_code, periodic_conf
-            )
+            task.save()
 
-            celery_app.conf.beat_schedule.update(
-                {
-                    f"periodic-{user_code}-{schedule_str}": {
-                        "task": "workflow.tasks.workflows.execute",
-                        "schedule": schedule_value,
-                        "args": (
-                            user_code,
-                            json.loads(periodic_payload),
-                            is_manager
-                        ),
-                        'options': {'queue': 'workflow'},
+        for workflow in workflows:
+            workflow.status = Workflow.STATUS_CANCELED
+            workflow.save()
+
+        _l.info("Canceled %s tasks " % len(tasks))
+
+    def init_periodic_tasks(self):
+
+        for user_code, config in celery_workflow.workflows.items():
+
+            # A dict is built for the periodic cleaning if the retention is valid
+
+            workflow = config['workflow']
+
+            is_manager = workflow.get('is_manager', False)
+
+            if "periodic" in workflow:
+                periodic_conf = workflow.get("periodic")
+                periodic_payload = periodic_conf.get("payload", "{}")
+                schedule_str, schedule_value = build_celery_schedule(
+                    user_code, periodic_conf
+                )
+
+                celery_app.conf.beat_schedule.update(
+                    {
+                        f"periodic-{user_code}-{schedule_str}": {
+                            "task": "workflow.tasks.workflows.execute",
+                            "schedule": schedule_value,
+                            "args": (
+                                user_code,
+                                json.loads(periodic_payload),
+                                is_manager
+                            ),
+                            'options': {'queue': 'workflow'},
+                        }
                     }
-                }
-            )
+                )
 
-    _l.info('Schedule %s' % celery_app.conf.beat_schedule)
-
-
-def cancel_existing_tasks():
-    from workflow.models import Task
-    from workflow.models import Workflow
-    tasks = Task.objects.filter(status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT])
-    workflows = Workflow.objects.filter(status__in=[Workflow.STATUS_PROGRESS, Workflow.STATUS_INIT])
-
-    for task in tasks:
-        task.status = Task.STATUS_CANCELED
-
-        try:  # just in case if rabbitmq still holds a task
-            if task.celery_task_id:
-                celery_app.control.revoke(task.celery_task_id, terminate=True)
-
-        except Exception as e:
-            _l.error("Something went wrong %s" % e)
-
-        task.mark_task_as_finished()
-
-        task.save()
-
-    for workflow in workflows:
-        workflow.status = Workflow.STATUS_CANCELED
-        workflow.save()
-
-    _l.info("Canceled %s tasks " % len(tasks))
-
-
-celery_workflow = CeleryWorkflow()
-
-import sys
-
-
-def init_celery(schema):
-    if ('makemigrations' in sys.argv or 'migrate' in sys.argv or 'migrate_all_schemes' in sys.argv):
-        _l.info("Celery is not inited. Probably Migration context")
-    else:
-        _l.info(f'==== Load Tasks & Workflow for {schema} ====')
-
-        celery_workflow.init_app()
-
-        try:
-            _l.info("==== Cancel Existing Tasks ====")
-            # cancel_existing_tasks() # IMPORTANT do not execute it here, it breaks running tasks, when worker respawned
-        except Exception as e:
-            _l.error("Could not cancel_existing_tasks exception: %s" % e)
-            _l.error("Could not cancel_existing_tasks traceback: %s" % traceback.format_exc())
-        try:
-            _l.info("==== Init Periodic Tasks ====")
-            init_periodic_tasks()
-        except Exception as e:
-            _l.error("Could not init periodic tasks exception: %s" % e)
-            _l.error("Could not init periodic tasks traceback: %s" % traceback.format_exc())
-
-
-def get_all_tenant_schemas():
-    # List to hold tenant schemas
-    tenant_schemas = []
-
-    # SQL to fetch all non-system schema names
-    # ('pg_catalog', 'information_schema', 'public') # do later in 1.9.0. where is not public schemes left
-    sql = """
-    SELECT schema_name
-    FROM information_schema.schemata
-    WHERE schema_name NOT IN ('pg_catalog', 'information_schema')
-    AND schema_name NOT LIKE 'pg_toast%'
-    AND schema_name NOT LIKE 'pg_temp_%'
-    """
-
-    with connection.cursor() as cursor:
-        cursor.execute(sql)
-        tenant_schemas = [row[0] for row in cursor.fetchall()]
-
-    return tenant_schemas
+        _l.info('Schedule %s' % celery_app.conf.beat_schedule)
 
 
 try:
 
-    for schema in get_all_tenant_schemas():
+    if ('makemigrations' in sys.argv or 'migrate' in sys.argv or 'migrate_all_schemes' in sys.argv):
+        _l.info("Celery is not inited. Probably Migration context")
+    else:
 
-        with connection.cursor() as cursor:
-            cursor.execute(f"SET search_path TO {schema};")
-
-        init_celery(schema)
-
-        with connection.cursor() as cursor:
-            cursor.execute("SET search_path TO public;")
+        celery_workflow = CeleryWorkflow()
+        celery_workflow.load_all_workflows()
 
 except Exception as e:
     _l.error("Could not init_celery exception: %s" % e)

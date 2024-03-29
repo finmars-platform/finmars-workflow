@@ -78,6 +78,8 @@ class WorkflowViewSet(ModelViewSet):
             request.data["payload"],
         )
 
+        user_code = f'{request.space_code}.{user_code}'
+
         data, _ = execute_workflow(request.user.username, user_code, payload, request.realm_code, request.space_code)
 
         _l.info('data %s' % data)
@@ -156,7 +158,7 @@ class RefreshStorageViewSet(ViewSet):
         except Exception as e:
             _l.info("Could not restart celery")
 
-        celery_workflow.init_app()
+        celery_workflow.load_all_workflows()
 
         return Response({'status': 'ok'})
 
@@ -167,7 +169,7 @@ class DefinitionViewSet(ViewSet):
         workflow_definitions = []
 
         for user_code, definition in sorted(celery_workflow.workflows.items()):
-            _l.info('DefinitionViewSet.definition %s' % definition)
+            # _l.info('DefinitionViewSet.definition %s' % definition)
 
             workflow_definitions.append(
                 {"user_code": user_code, **definition['workflow']}
