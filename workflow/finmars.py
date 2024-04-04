@@ -41,11 +41,30 @@ def get_access_token():
 
     return new_token
 
+def get_domain():
+
+    return settings.DOMAIN_NAME
 
 def get_space():
     space = Space.objects.all().first()
 
     return space
+
+def get_space_code():
+    space = Space.objects.all().first()
+
+    return space.space_code
+
+def get_base_path():
+    # TODO http or https?
+    return 'https://' + get_domain() + '/' + get_realm_code() + '/' + get_space_code()
+
+
+def get_realm_code():
+    space = Space.objects.all().first()
+
+    return space.realm_code
+
 
 
 def create_logger(name, log_format=None):
