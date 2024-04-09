@@ -80,6 +80,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "workflow.middleware.RealmAndSpaceMiddleware",  # do not delete, required for all requests
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -88,7 +89,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
-    "workflow.middleware.RealmAndSpaceMiddleware",  # do not delete, required for all requests
+
 
     'corsheaders.middleware.CorsMiddleware',
 
