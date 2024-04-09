@@ -27,6 +27,10 @@ class WorkflowConfig(AppConfig):
 
         _l.info("Bootstrapping Workflow Application")
 
+        current_space_code = get_current_search_path()
+
+        _l.info("bootstrap: Current search path: %s" % current_space_code)
+
         self.create_space_if_not_exist()
         self.create_finmars_bot()
 
