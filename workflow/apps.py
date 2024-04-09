@@ -46,11 +46,6 @@ class WorkflowConfig(AppConfig):
             space = Space.objects.create(space_code=space_code, name=space_code, realm_code=settings.REALM_CODE)
             _l.info("bootstrap.creating_new_space: %s " % space_code)
 
-        # TODO remove later (probably in 1.9.0)
-        if settings.BASE_API_URL:
-            space.space_code = settings.BASE_API_URL
-            space.save()
-
     def create_finmars_bot(self):
 
         from workflow.models import User
