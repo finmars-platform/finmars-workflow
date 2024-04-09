@@ -1,7 +1,7 @@
 import logging
 
 from workflow.builder import WorkflowBuilder
-from workflow.celery_workflow import celery_workflow
+
 from workflow.models import Workflow, User, Space
 
 _l = logging.getLogger('workflow')
@@ -9,6 +9,8 @@ _l = logging.getLogger('workflow')
 
 def execute_workflow(username, user_code, payload={}, realm_code=None, space_code=None):
     user = User.objects.get(username=username)
+
+    from workflow.celery_workflow import celery_workflow
 
     # Check if the workflow exists
     try:

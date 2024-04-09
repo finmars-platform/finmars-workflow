@@ -3,7 +3,7 @@ import logging
 from celery import chain, group
 from celery.utils import uuid
 
-from workflow.celery_workflow import celery_workflow
+
 from workflow.exceptions import WorkflowSyntaxError
 from workflow.models import Workflow, Task
 from workflow.tasks.workflows import start, end, failure_hooks_launcher
@@ -16,6 +16,8 @@ class WorkflowBuilder(object):
     def __init__(self, workflow_id):
         self.workflow_id = workflow_id
         self._workflow = None
+
+        from workflow.celery_workflow import celery_workflow
 
         self.queue = celery_workflow.get_queue(str(self.workflow))
         self.custom_queues = {}

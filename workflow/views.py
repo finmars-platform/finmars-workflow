@@ -16,7 +16,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet
 
-from workflow.celery_workflow import celery_workflow
+
 from workflow.filters import WorkflowQueryFilter
 from workflow.models import Workflow, Task
 from workflow.serializers import WorkflowSerializer, TaskSerializer, PingSerializer, WorkflowLightSerializer
@@ -158,6 +158,7 @@ class RefreshStorageViewSet(ViewSet):
         except Exception as e:
             _l.info("Could not restart celery")
 
+        from workflow.celery_workflow import celery_workflow
         celery_workflow.load_all_workflows()
 
         return Response({'status': 'ok'})
@@ -167,6 +168,8 @@ class DefinitionViewSet(ViewSet):
 
     def list(self, request, *args, **kwargs):
         workflow_definitions = []
+
+        from workflow.celery_workflow import celery_workflow
 
         for user_code, definition in sorted(celery_workflow.workflows.items()):
             # _l.info('DefinitionViewSet.definition %s' % definition)
