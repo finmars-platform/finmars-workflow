@@ -23,7 +23,7 @@ REALM_CODE = ENV_STR("REALM_CODE", "realm00000")
 BASE_API_URL = ENV_STR("BASE_API_URL", "space00000") # DEPRECATED, remove in 1.9.0
 
 AUTHORIZER_URL = ENV_STR('AUTHORIZER_URL', None)
-FLOWER_URL = ENV_STR('FLOWER_URL', '/' + BASE_API_URL + '/workflow/flower')
+FLOWER_URL = ENV_STR('FLOWER_URL', '/' + REALM_CODE + '/workflow/flower')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = ENV_BOOL('DEBUG', False)
 USE_FILESYSTEM_STORAGE = ENV_BOOL('USE_FILESYSTEM_STORAGE', False)
