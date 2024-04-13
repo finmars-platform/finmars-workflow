@@ -189,6 +189,8 @@ class Workflow(TimeStampedModel):
         from workflow.workflows import execute_workflow
         system_workflow_manager = get_system_workflow_manager()
 
+        user_code = f'{self.space.space_code}.{user_code}'
+
         new_workflow = system_workflow_manager.get_by_user_code(user_code)
 
         is_manager = new_workflow.get('is_manager', False)
