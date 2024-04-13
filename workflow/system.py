@@ -78,7 +78,7 @@ class SystemWorkflowManager:
             # Iterate through all files in the /workflows directory and subdirectories
             for workflow_file in root_path.glob('**/*'):
 
-                _l.info('workflow_file %s' % workflow_file)
+                _l.debug('workflow_file %s' % workflow_file)
 
                 if workflow_file.suffix in ['.yaml', '.yml', '.json']:
                     try:
@@ -97,12 +97,12 @@ class SystemWorkflowManager:
                         config['workflow']['space_code'] = space.space_code
 
                         self.workflows[space.space_code + '.' + user_code] = config
-                        _l.info(f"Loaded workflow for user code: {space.space_code}.{user_code}")
+                        _l.debug(f"Loaded workflow for user code: {space.space_code}.{user_code}")
 
                     except Exception as e:
                         _l.error(f"Could not load workflow config file: {workflow_file} - {e}")
                 else:
-                    _l.info(f"Skipped unsupported file format: {workflow_file}")
+                    _l.debug(f"Skipped unsupported file format: {workflow_file}")
 
             if self.workflows:
                 # _l.info('workflows %s' % self.workflows)

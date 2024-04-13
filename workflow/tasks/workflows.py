@@ -8,7 +8,7 @@ from django.db import connection
 
 from workflow.models import Task
 from workflow.models import Workflow, User
-from workflow.utils import schema_exists
+from workflow.utils import schema_exists, set_schema_from_context
 from workflow_app import celery_app
 
 logger = get_task_logger(__name__)
@@ -25,23 +25,7 @@ def ping(self):
 def start(self, workflow_id, *args, **kwargs):
 
     context = kwargs.get('context')
-    if context:
-        if context.get('space_code'):
-
-            if schema_exists(context.get('space_code')):
-
-                space_code = context.get('space_code')
-                with connection.cursor() as cursor:
-                    cursor.execute(f"SET search_path TO {space_code};")
-                    logger.info(f"task_prerun.context {space_code}")
-            else:  # REMOVE IN 1.9.0, PROBABLY SECURITY ISSUE
-                with connection.cursor() as cursor:
-                    cursor.execute(f"SET search_path TO public;")
-        else:
-            raise Exception('No space_code in context')
-    else:
-        raise Exception('No context in kwargs')
-
+    set_schema_from_context(context)
 
     logger.info(f"Opening the workflow {workflow_id}")
     workflow = Workflow.objects.get(id=workflow_id)
@@ -56,22 +40,7 @@ def end(self, workflow_id, *args, **kwargs):
     time.sleep(0.5)
 
     context = kwargs.get('context')
-    if context:
-        if context.get('space_code'):
-
-            if schema_exists(context.get('space_code')):
-
-                space_code = context.get('space_code')
-                with connection.cursor() as cursor:
-                    cursor.execute(f"SET search_path TO {space_code};")
-                    logger.info(f"task_prerun.context {space_code}")
-            else:  # REMOVE IN 1.9.0, PROBABLY SECURITY ISSUE
-                with connection.cursor() as cursor:
-                    cursor.execute(f"SET search_path TO public;")
-        else:
-            raise Exception('No space_code in context')
-    else:
-        raise Exception('No context in kwargs')
+    set_schema_from_context(context)
 
     logger.info(f"Closing the workflow {workflow_id}")
     workflow = Workflow.objects.get(id=workflow_id)
@@ -86,22 +55,7 @@ def mark_as_canceled_init_tasks(self, workflow_id, *args, **kwargs):
     logger.info(f"Mark as cancelled pending tasks of the workflow {workflow_id}")
 
     context = kwargs.get('context')
-    if context:
-        if context.get('space_code'):
-
-            if schema_exists(context.get('space_code')):
-
-                space_code = context.get('space_code')
-                with connection.cursor() as cursor:
-                    cursor.execute(f"SET search_path TO {space_code};")
-                    logger.info(f"task_prerun.context {space_code}")
-            else:  # REMOVE IN 1.9.0, PROBABLY SECURITY ISSUE
-                with connection.cursor() as cursor:
-                    cursor.execute(f"SET search_path TO public;")
-        else:
-            raise Exception('No space_code in context')
-    else:
-        raise Exception('No context in kwargs')
+    set_schema_from_context(context)
 
     tasks = Task.objects.filter(workflow_id=workflow_id, status=Task.STATUS_INIT)
     for task in tasks:
@@ -115,22 +69,7 @@ def failure_hooks_launcher(self, workflow_id, queue, tasks_names, payload, *args
     logger.info('failure_hooks_launcher %s' % workflow_id)
 
     context = kwargs.get('context')
-    if context:
-        if context.get('space_code'):
-
-            if schema_exists(context.get('space_code')):
-
-                space_code = context.get('space_code')
-                with connection.cursor() as cursor:
-                    cursor.execute(f"SET search_path TO {space_code};")
-                    logger.info(f"task_prerun.context {space_code}")
-            else:  # REMOVE IN 1.9.0, PROBABLY SECURITY ISSUE
-                with connection.cursor() as cursor:
-                    cursor.execute(f"SET search_path TO public;")
-        else:
-            raise Exception('No space_code in context')
-    else:
-        raise Exception('No context in kwargs')
+    set_schema_from_context(context)
 
     canvas = []
 
@@ -192,22 +131,8 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
         logger.info("periodic.execute %s" % user_code)
 
         context = kwargs.get('context')
-        if context:
-            if context.get('space_code'):
 
-                if schema_exists(context.get('space_code')):
-
-                    space_code = context.get('space_code')
-                    with connection.cursor() as cursor:
-                        cursor.execute(f"SET search_path TO {space_code};")
-                        logger.info(f"task_prerun.context {space_code}")
-                else:  # REMOVE IN 1.9.0, PROBABLY SECURITY ISSUE
-                    with connection.cursor() as cursor:
-                        cursor.execute(f"SET search_path TO public;")
-            else:
-                raise Exception('No space_code in context')
-        else:
-            raise Exception('No context in kwargs')
+        set_schema_from_context(context)
 
         finmars_bot = User.objects.get(username='finmars_bot')
 

@@ -4,7 +4,7 @@ from celery.utils.log import get_task_logger
 from django.db import connection
 
 from workflow.models import Task, Workflow
-from workflow.utils import send_alert, schema_exists
+from workflow.utils import send_alert, schema_exists, set_schema_from_context
 from workflow_app import celery_app
 
 logger = get_task_logger(__name__)
@@ -123,6 +123,9 @@ class BaseTask(_Task):
         logger.info("BaseTask.before_start.task_id %s" % task_id)
         logger.info("BaseTask.before_start.kwargs: %s" % kwargs)
 
+        context = kwargs.get('context')
+        set_schema_from_context(context)
+
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_PROGRESS
         task.save()
@@ -139,6 +142,9 @@ class BaseTask(_Task):
 
         logger.info("BaseTask.on_failure.task_id: %s" % task_id)
         logger.info("BaseTask.on_failure.kwargs: %s" % kwargs)
+
+        context = kwargs.get('context')
+        set_schema_from_context(context)
 
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_ERROR
@@ -160,6 +166,9 @@ class BaseTask(_Task):
 
         logger.info("BaseTask.on_success.task_id %s" % task_id)
         logger.info("BaseTask.on_success.kwargs: %s" % kwargs)
+
+        context = kwargs.get('context')
+        set_schema_from_context(context)
 
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_SUCCESS

@@ -175,3 +175,22 @@ def is_special_execution_context():
     """Check if the current execution context is for special operations like migrations or tests."""
     special_commands = {'test', 'makemigrations', 'migrate', 'migrate_all_schemes', 'clearsessions', 'collectstatic', 'sync_remote_storage_to_local_storage_all_spaces'}
     return any(cmd in sys.argv for cmd in special_commands)
+
+
+def set_schema_from_context(context):
+
+    if context:
+        if context.get('space_code'):
+
+            if schema_exists(context.get('space_code')):
+
+                space_code = context.get('space_code')
+                with connection.cursor() as cursor:
+                    cursor.execute(f"SET search_path TO {space_code};")
+
+            else:
+                raise Exception('No space_code in database schemas')
+        else:
+            raise Exception('No space_code in context')
+    else:
+        raise Exception('No context in kwargs')
