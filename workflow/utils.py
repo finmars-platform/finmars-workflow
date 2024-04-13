@@ -3,6 +3,7 @@ import os
 
 from celery.schedules import crontab
 from jsonschema.validators import validator_for
+from django.db import connection
 
 from workflow.exceptions import WorkflowSyntaxError
 
@@ -134,3 +135,13 @@ def send_alert(workflow):
 
 def construct_path(*args):
     return os.path.join(*args)
+
+
+def schema_exists(schema_name):
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT schema_name
+            FROM information_schema.schemata
+            WHERE schema_name = %s;
+        """, [schema_name])
+        return cursor.fetchone() is not None

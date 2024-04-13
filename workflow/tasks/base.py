@@ -1,21 +1,46 @@
 from celery import Task as _Task
-from celery.signals import task_prerun
+from celery.signals import task_prerun, task_postrun
 from celery.utils.log import get_task_logger
+from django.db import connection
 
-from workflow.models import Task, Workflow, Space
-from workflow.utils import send_alert
+from workflow.models import Task, Workflow
+from workflow.utils import send_alert, schema_exists
 from workflow_app import celery_app
-from django.db.models import F
 
 logger = get_task_logger(__name__)
 
 
+# EXTREMELY IMPORTANT CODE
+# DO NOT MODIFY IT
+# IT SETS CONTEXT FOR SHARED WORKERS TO WORK WITH DIFFERENT SCHEMAS
+# 2024-03-24 szhitenev
+# ALL TASKS MUST BE PROVIDED WITH CONTEXT WITH space_code
 @task_prerun.connect
 def workflow_prerun(task_id, task, *args, **kwargs):
     ignored_tasks = ("workflow.tasks", "celery.")
 
     if task.name.startswith(ignored_tasks):
         return
+
+    logger.info(f"task_prerun.task {task}")
+
+    context = kwargs.get('context')
+    if context:
+        if context.get('space_code'):
+
+            if schema_exists(context.get('space_code')):
+
+                space_code = context.get('space_code')
+                with connection.cursor() as cursor:
+                    cursor.execute(f"SET search_path TO {space_code};")
+                    logger.info(f"task_prerun.context {space_code}")
+            else:  # REMOVE IN 1.9.0, PROBABLY SECURITY ISSUE
+                with connection.cursor() as cursor:
+                    cursor.execute(f"SET search_path TO public;")
+        else:
+            raise Exception('No space_code in context')
+    else:
+        raise Exception('No context in kwargs')
 
     with celery_app.app.app_context():
         print('task_id %s' % task_id)
@@ -24,6 +49,12 @@ def workflow_prerun(task_id, task, *args, **kwargs):
         task.status = Task.STATUS_PROGRESS
         task.save()
         logger.info(f"Task {task_id} is now in progress")
+
+
+@task_postrun.connect
+def cleanup(task_id, **kwargs):
+    with connection.cursor() as cursor:
+        cursor.execute("SET search_path TO public;")
 
 
 # @task_postrun.connect

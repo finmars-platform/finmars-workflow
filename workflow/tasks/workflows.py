@@ -4,9 +4,11 @@ import traceback
 from celery import chain
 from celery.utils import uuid
 from celery.utils.log import get_task_logger
+from django.db import connection
 
 from workflow.models import Task
 from workflow.models import Workflow, User
+from workflow.utils import schema_exists
 from workflow_app import celery_app
 
 logger = get_task_logger(__name__)
@@ -21,6 +23,26 @@ def ping(self):
 
 @celery_app.task(bind=True)
 def start(self, workflow_id, *args, **kwargs):
+
+    context = kwargs.get('context')
+    if context:
+        if context.get('space_code'):
+
+            if schema_exists(context.get('space_code')):
+
+                space_code = context.get('space_code')
+                with connection.cursor() as cursor:
+                    cursor.execute(f"SET search_path TO {space_code};")
+                    logger.info(f"task_prerun.context {space_code}")
+            else:  # REMOVE IN 1.9.0, PROBABLY SECURITY ISSUE
+                with connection.cursor() as cursor:
+                    cursor.execute(f"SET search_path TO public;")
+        else:
+            raise Exception('No space_code in context')
+    else:
+        raise Exception('No context in kwargs')
+
+
     logger.info(f"Opening the workflow {workflow_id}")
     workflow = Workflow.objects.get(id=workflow_id)
 
@@ -33,6 +55,24 @@ def end(self, workflow_id, *args, **kwargs):
     # Waiting for the workflow status to be marked in error if a task failed
     time.sleep(0.5)
 
+    context = kwargs.get('context')
+    if context:
+        if context.get('space_code'):
+
+            if schema_exists(context.get('space_code')):
+
+                space_code = context.get('space_code')
+                with connection.cursor() as cursor:
+                    cursor.execute(f"SET search_path TO {space_code};")
+                    logger.info(f"task_prerun.context {space_code}")
+            else:  # REMOVE IN 1.9.0, PROBABLY SECURITY ISSUE
+                with connection.cursor() as cursor:
+                    cursor.execute(f"SET search_path TO public;")
+        else:
+            raise Exception('No space_code in context')
+    else:
+        raise Exception('No context in kwargs')
+
     logger.info(f"Closing the workflow {workflow_id}")
     workflow = Workflow.objects.get(id=workflow_id)
 
@@ -44,6 +84,25 @@ def end(self, workflow_id, *args, **kwargs):
 @celery_app.task(bind=True)
 def mark_as_canceled_init_tasks(self, workflow_id, *args, **kwargs):
     logger.info(f"Mark as cancelled pending tasks of the workflow {workflow_id}")
+
+    context = kwargs.get('context')
+    if context:
+        if context.get('space_code'):
+
+            if schema_exists(context.get('space_code')):
+
+                space_code = context.get('space_code')
+                with connection.cursor() as cursor:
+                    cursor.execute(f"SET search_path TO {space_code};")
+                    logger.info(f"task_prerun.context {space_code}")
+            else:  # REMOVE IN 1.9.0, PROBABLY SECURITY ISSUE
+                with connection.cursor() as cursor:
+                    cursor.execute(f"SET search_path TO public;")
+        else:
+            raise Exception('No space_code in context')
+    else:
+        raise Exception('No context in kwargs')
+
     tasks = Task.objects.filter(workflow_id=workflow_id, status=Task.STATUS_INIT)
     for task in tasks:
         task.status = Task.STATUS_CANCELED
@@ -54,6 +113,24 @@ def mark_as_canceled_init_tasks(self, workflow_id, *args, **kwargs):
 @celery_app.task(bind=True)
 def failure_hooks_launcher(self, workflow_id, queue, tasks_names, payload, *args, **kwargs):
     logger.info('failure_hooks_launcher %s' % workflow_id)
+
+    context = kwargs.get('context')
+    if context:
+        if context.get('space_code'):
+
+            if schema_exists(context.get('space_code')):
+
+                space_code = context.get('space_code')
+                with connection.cursor() as cursor:
+                    cursor.execute(f"SET search_path TO {space_code};")
+                    logger.info(f"task_prerun.context {space_code}")
+            else:  # REMOVE IN 1.9.0, PROBABLY SECURITY ISSUE
+                with connection.cursor() as cursor:
+                    cursor.execute(f"SET search_path TO public;")
+        else:
+            raise Exception('No space_code in context')
+    else:
+        raise Exception('No context in kwargs')
 
     canvas = []
 
@@ -113,6 +190,24 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
     try:
 
         logger.info("periodic.execute %s" % user_code)
+
+        context = kwargs.get('context')
+        if context:
+            if context.get('space_code'):
+
+                if schema_exists(context.get('space_code')):
+
+                    space_code = context.get('space_code')
+                    with connection.cursor() as cursor:
+                        cursor.execute(f"SET search_path TO {space_code};")
+                        logger.info(f"task_prerun.context {space_code}")
+                else:  # REMOVE IN 1.9.0, PROBABLY SECURITY ISSUE
+                    with connection.cursor() as cursor:
+                        cursor.execute(f"SET search_path TO public;")
+            else:
+                raise Exception('No space_code in context')
+        else:
+            raise Exception('No context in kwargs')
 
         finmars_bot = User.objects.get(username='finmars_bot')
 

@@ -1,13 +1,7 @@
 from django.db import connection
 
-def schema_exists(schema_name):
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT schema_name
-            FROM information_schema.schemata
-            WHERE schema_name = %s;
-        """, [schema_name])
-        return cursor.fetchone() is not None
+from workflow.utils import schema_exists
+
 
 # Very Important Middleware
 # It sets the PostgreSQL search path to the tenant's schema
