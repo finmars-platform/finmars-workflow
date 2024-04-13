@@ -10,11 +10,12 @@ _l = logging.getLogger('workflow')
 def execute_workflow(username, user_code, payload={}, realm_code=None, space_code=None):
     user = User.objects.get(username=username)
 
-    from workflow.celery_workflow import celery_workflow
+    from workflow.system import get_system_workflow_manager
+    system_workflow_manager = get_system_workflow_manager()
 
     # Check if the workflow exists
     try:
-        wf = celery_workflow.get_by_user_code(user_code)
+        wf = system_workflow_manager.get_by_user_code(user_code)
     except Exception:
         raise Exception(f"Workflow {user_code} not found")
 

@@ -10,27 +10,30 @@ from workflow_app import celery_app
 
 _l = logging.getLogger('workflow')
 
+from workflow.system import get_system_workflow_manager
+system_workflow_manager = get_system_workflow_manager()
+
+
 
 class WorkflowBuilder(object):
     def __init__(self, workflow_id):
         self.workflow_id = workflow_id
         self._workflow = None
 
-        from workflow.celery_workflow import celery_workflow
 
-        self.queue = celery_workflow.get_queue(str(self.workflow))
+        self.queue = system_workflow_manager.get_queue(str(self.workflow))
         self.custom_queues = {}
 
-        self.tasks = celery_workflow.get_tasks(str(self.workflow))
+        self.tasks = system_workflow_manager.get_tasks(str(self.workflow))
 
         self.canvas = []
 
-        self.failure_hook = celery_workflow.get_failure_hook_task(str(self.workflow))
+        self.failure_hook = system_workflow_manager.get_failure_hook_task(str(self.workflow))
         self.failure_hook_canvas = []
 
-        self.success_hook = celery_workflow.get_success_hook_task(str(self.workflow))
+        self.success_hook = system_workflow_manager.get_success_hook_task(str(self.workflow))
 
-        self.before_start_hook = celery_workflow.get_before_start_hook_task(str(self.workflow))
+        self.before_start_hook = system_workflow_manager.get_before_start_hook_task(str(self.workflow))
 
         _l.info('self.success_hook %s' % self.success_hook)
         _l.info('self.before_start_hook %s' % self.before_start_hook)

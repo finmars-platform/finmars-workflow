@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 
 from celery.schedules import crontab
 from jsonschema.validators import validator_for
@@ -93,7 +94,7 @@ def send_alert(workflow):
 
     if workflow.status == Workflow.STATUS_ERROR:
 
-        _l.info("Going to report Error to Finmars")
+        # _l.info("Going to report Error to Finmars")
 
         try:
 
@@ -112,6 +113,8 @@ def send_alert(workflow):
 
             if error_task:
                 error_description = str(error_task.error_message)
+
+            _l.info("Going to report Error to Finmars")
 
             data = {
                 "expression": "send_system_message(type='error', title='Workflow Failed. " + str(
@@ -145,3 +148,30 @@ def schema_exists(schema_name):
             WHERE schema_name = %s;
         """, [schema_name])
         return cursor.fetchone() is not None
+
+
+def get_all_tenant_schemas():
+    # List to hold tenant schemas
+    tenant_schemas = []
+
+    # SQL to fetch all non-system schema names
+    # ('pg_catalog', 'information_schema', 'public') # do later in 1.9.0. where is not public schemes left
+    sql = """
+        SELECT schema_name
+        FROM information_schema.schemata
+        WHERE schema_name NOT IN ('pg_catalog', 'information_schema')
+        AND schema_name NOT LIKE 'pg_toast%'
+        AND schema_name NOT LIKE 'pg_temp_%'
+        """
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        tenant_schemas = [row[0] for row in cursor.fetchall()]
+
+    return tenant_schemas
+
+
+def is_special_execution_context():
+    """Check if the current execution context is for special operations like migrations or tests."""
+    special_commands = {'test', 'makemigrations', 'migrate', 'migrate_all_schemes', 'clearsessions', 'collectstatic', 'sync_remote_storage_to_local_storage_all_spaces'}
+    return any(cmd in sys.argv for cmd in special_commands)

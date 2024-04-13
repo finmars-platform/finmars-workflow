@@ -29,6 +29,9 @@ chmod 777 /var/app/app-data
 
 echo "Migrating"
 python /var/app/manage.py migrate_all_schemes
+
+echo "Sync remote storage to local storage"
+python /var/app/manage.py sync_remote_storage_to_local_storage_all_spaces
 #echo "Create cache table"
 #
 #/var/app-venv/bin/python /var/app/manage.py createcachetable

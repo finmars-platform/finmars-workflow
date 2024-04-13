@@ -12,7 +12,7 @@ from pluginbase import PluginBase
 from workflow.exceptions import WorkflowNotFound
 from workflow.models import Space
 from workflow.storage import get_storage
-from workflow.utils import build_celery_schedule, construct_path
+from workflow.utils import build_celery_schedule, construct_path, get_all_tenant_schemas
 from workflow_app import celery_app
 from workflow_app import settings
 from django.db import connection
@@ -26,48 +26,17 @@ import logging
 
 _l = logging.getLogger('workflow')
 
-
-
-
-
-
-class CeleryWorkflow:
+class SystemWorkflowManager:
     def __init__(self):
-
         self.workflows = {}
 
-    @staticmethod
-    def get_all_tenant_schemas():
-        # List to hold tenant schemas
-        tenant_schemas = []
+    def register_workflows_all_schemas(self):
 
-        # SQL to fetch all non-system schema names
-        # ('pg_catalog', 'information_schema', 'public') # do later in 1.9.0. where is not public schemes left
-        sql = """
-        SELECT schema_name
-        FROM information_schema.schemata
-        WHERE schema_name NOT IN ('pg_catalog', 'information_schema')
-        AND schema_name NOT LIKE 'pg_toast%'
-        AND schema_name NOT LIKE 'pg_temp_%'
-        """
-
-        with connection.cursor() as cursor:
-            cursor.execute(sql)
-            tenant_schemas = [row[0] for row in cursor.fetchall()]
-
-        return tenant_schemas
-
-    def load_all_workflows(self):
-
-        schemas = self.get_all_tenant_schemas()
+        schemas = get_all_tenant_schemas()
         for schema in schemas:
 
             with connection.cursor() as cursor:
                 cursor.execute(f"SET search_path TO {schema};")
-
-            _l.info(f'Sync storage files for schema: {schema}')
-
-            self.sync_remote_storage_to_local_storage_for_schema()
 
             _l.info(f'Loading workflows for schema: {schema}')
 
@@ -78,6 +47,21 @@ class CeleryWorkflow:
 
         # Initialize periodic tasks after loading all workflows
         self.init_periodic_tasks()
+
+    def sync_remote_storage_to_local_storage_all_schemas(self):
+
+        schemas = get_all_tenant_schemas()
+        for schema in schemas:
+
+            with connection.cursor() as cursor:
+                cursor.execute(f"SET search_path TO {schema};")
+
+            _l.info(f'Sync storage files for schema: {schema}')
+
+            self.sync_remote_storage_to_local_storage_for_schema()
+
+            with connection.cursor() as cursor:
+                cursor.execute("SET search_path TO public;")
 
     def load_workflows_for_schema(self, schema):
         try:
@@ -121,7 +105,7 @@ class CeleryWorkflow:
                     _l.info(f"Skipped unsupported file format: {workflow_file}")
 
             if self.workflows:
-                _l.info('workflows %s' % self.workflows)
+                # _l.info('workflows %s' % self.workflows)
                 self.import_user_tasks()
 
         except Exception as e:
@@ -298,7 +282,7 @@ class CeleryWorkflow:
 
     def init_periodic_tasks(self):
 
-        for user_code, config in celery_workflow.workflows.items():
+        for user_code, config in self.workflows.items():
 
             # A dict is built for the periodic cleaning if the retention is valid
 
@@ -331,17 +315,12 @@ class CeleryWorkflow:
         _l.info('Schedule %s' % celery_app.conf.beat_schedule)
 
 
-try:
+system_workflow_manager = None
 
-    if ('makemigrations' in sys.argv or 'migrate' in sys.argv or 'migrate_all_schemes' in sys.argv):
-        _l.info("Celery is not inited. Probably Migration context")
-    else:
+def get_system_workflow_manager():
+    global system_workflow_manager
 
-        celery_workflow = CeleryWorkflow()
-        celery_workflow.load_all_workflows()
+    if system_workflow_manager is None:
+        system_workflow_manager = SystemWorkflowManager()
 
-except Exception as e:
-    _l.error("Could not init_celery exception: %s" % e)
-    _l.error("Could not init_celery traceback: %s" % traceback.format_exc())
-
-    raise Exception(e)
+    return system_workflow_manager

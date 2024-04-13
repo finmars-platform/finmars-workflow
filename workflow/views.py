@@ -26,6 +26,9 @@ from workflow.user_sessions import create_session, execute_code, sessions
 
 _l = logging.getLogger('workflow')
 
+from workflow.system import get_system_workflow_manager
+system_workflow_manager = get_system_workflow_manager()
+
 
 class WorkflowFilterSet(FilterSet):
     name = django_filters.CharFilter()
@@ -145,10 +148,17 @@ class RefreshStorageViewSet(ViewSet):
     def list(self, request, *args, **kwargs):
 
         try:
-            c = pexpect.spawn("supervisorctl restart celery", timeout=240)
+
+            c = pexpect.spawn("supervisorctl stop celery", timeout=240)
+            c = pexpect.spawn("supervisorctl stop celerybeat", timeout=240)
+
+            c = pexpect.spawn("python /var/app/manage.py sync_remote_storage_to_local_storage_all_spaces", timeout=240)
+
+            c = pexpect.spawn("supervisorctl start celery", timeout=240)
             result = c.read()
             _l.info('RefreshStorageViewSet.celery result %s' % result)
-            c = pexpect.spawn("supervisorctl restart celerybeat", timeout=240)
+            c = pexpect.spawn("supervisorctl start celerybeat", timeout=240)
+
             result = c.read()
             _l.info('RefreshStorageViewSet.celerybeat result %s' % result)
 
@@ -158,8 +168,7 @@ class RefreshStorageViewSet(ViewSet):
         except Exception as e:
             _l.info("Could not restart celery")
 
-        from workflow.celery_workflow import celery_workflow
-        celery_workflow.load_all_workflows()
+        system_workflow_manager.register_workflows_all_schemas()
 
         return Response({'status': 'ok'})
 
@@ -169,9 +178,9 @@ class DefinitionViewSet(ViewSet):
     def list(self, request, *args, **kwargs):
         workflow_definitions = []
 
-        from workflow.celery_workflow import celery_workflow
+        system_workflow_manager.register_workflows_all_schemas()
 
-        for user_code, definition in sorted(celery_workflow.workflows.items()):
+        for user_code, definition in sorted(system_workflow_manager.workflows.items()):
             # _l.info('DefinitionViewSet.definition %s' % definition)
 
             workflow_definitions.append(

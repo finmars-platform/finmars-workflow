@@ -119,6 +119,10 @@ class BaseTask(_Task):
         return is_running
 
     def before_start(self, task_id, args, kwargs):
+
+        logger.info("BaseTask.before_start.task_id %s" % task_id)
+        logger.info("BaseTask.before_start.kwargs: %s" % kwargs)
+
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_PROGRESS
         task.save()
@@ -132,6 +136,10 @@ class BaseTask(_Task):
         super(BaseTask, self).before_start(task_id, args, kwargs)
 
     def on_failure(self, exc, task_id, args, kwargs, einfo):
+
+        logger.info("BaseTask.on_failure.task_id: %s" % task_id)
+        logger.info("BaseTask.on_failure.kwargs: %s" % kwargs)
+
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_ERROR
         task.result = {"exception": str(exc), "traceback": einfo.traceback}
@@ -149,6 +157,10 @@ class BaseTask(_Task):
         super(BaseTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
     def on_success(self, retval, task_id, args, kwargs):
+
+        logger.info("BaseTask.on_success.task_id %s" % task_id)
+        logger.info("BaseTask.on_success.kwargs: %s" % kwargs)
+
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_SUCCESS
         if retval:

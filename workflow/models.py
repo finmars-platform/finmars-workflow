@@ -11,6 +11,7 @@ from django.utils.translation import gettext_lazy
 
 from workflow.storage import get_storage
 
+
 LANGUAGE_MAX_LENGTH = 5
 TIMEZONE_MAX_LENGTH = 20
 TIMEZONE_CHOICES = sorted(list((k, k) for k in pytz.all_timezones))
@@ -25,6 +26,7 @@ import logging
 _l = logging.getLogger('workflow')
 
 storage = get_storage()
+
 
 
 class User(AbstractUser):
@@ -81,7 +83,8 @@ class Space(TimeStampedModel):
                                   verbose_name=gettext_lazy('realm_code'))
 
     space_code = models.CharField(max_length=255,
-                            verbose_name=gettext_lazy('space_code'))
+                                  verbose_name=gettext_lazy('space_code'))
+
 
 class Workflow(TimeStampedModel):
     STATUS_INIT = 'init'
@@ -182,10 +185,11 @@ class Workflow(TimeStampedModel):
         if not self.is_manager:
             raise Exception("Workflow is not manager. Can't run new workflow.")
 
-        from workflow.celery_workflow import celery_workflow
+        from workflow.system import get_system_workflow_manager
         from workflow.workflows import execute_workflow
+        system_workflow_manager = get_system_workflow_manager()
 
-        new_workflow = celery_workflow.get_by_user_code(user_code)
+        new_workflow = system_workflow_manager.get_by_user_code(user_code)
 
         is_manager = new_workflow.get('is_manager', False)
 

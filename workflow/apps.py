@@ -34,6 +34,7 @@ class WorkflowConfig(AppConfig):
         self.create_space_if_not_exist()
         self.create_finmars_bot()
 
+
     def create_space_if_not_exist(self):
 
         from workflow.models import Space

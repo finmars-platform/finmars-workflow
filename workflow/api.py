@@ -15,6 +15,7 @@ def task(*task_args, **task_kwargs):
         original_name = task_kwargs.get('name', func.__name__)
         prefixed_name = f"{space.space_code}.{original_name}"
         task_kwargs['name'] = prefixed_name
+        task_kwargs['base'] = BaseTask # Extremely important, never forget to replace BaseTask
 
         # Register the function as a Celery task with the updated name
         task = celery_app.task(*task_args, **task_kwargs)(func)
