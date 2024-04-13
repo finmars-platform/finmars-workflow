@@ -200,7 +200,7 @@ class Workflow(TimeStampedModel):
 
         _l.info('run_new_workflow. Going to execute: %s', user_code)
 
-        data, _ = execute_workflow(self.owner.username, user_code, payload)
+        data, _ = execute_workflow(self.owner.username, user_code, payload, self.space.realm_code, self.space.space_code)
 
         return data
 
