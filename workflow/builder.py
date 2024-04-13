@@ -164,7 +164,10 @@ class WorkflowBuilder(object):
         if not self.canvas:
             self.build()
 
-        canvas = chain(*self.canvas, task_id=uuid())
+        canvas = chain(*self.canvas, task_id=uuid(), context={
+            "realm_code": self.workflow.space.realm_code,
+            "space_code": self.workflow.space.space_code,
+        })
 
         self.build_hooks()
 

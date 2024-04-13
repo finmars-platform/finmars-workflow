@@ -20,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DJANGO_LOG_LEVEL = ENV_STR('DJANGO_LOG_LEVEL', 'INFO')
 
 REALM_CODE = ENV_STR("REALM_CODE", "realm00000")
-BASE_API_URL = ENV_STR("BASE_API_URL", "space00000") # DEPRECATED, remove in 1.9.0
+BASE_API_URL = ENV_STR("BASE_API_URL", "space00000")  # DEPRECATED, remove in 1.9.0
 
 AUTHORIZER_URL = ENV_STR('AUTHORIZER_URL', None)
 FLOWER_URL = ENV_STR('FLOWER_URL', '/' + REALM_CODE + '/workflow/flower')
@@ -88,8 +88,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
-
 
     'corsheaders.middleware.CorsMiddleware',
 
@@ -293,7 +291,7 @@ LOGGING = {
     'version': 1,
     'formatters': {
         'verbose': {
-            'format': '[' + HOST_LOCATION + '] [workflow] [%(levelname)s] [%(asctime)s] [%(processName)s] [%(name)s] [%(module)s:%(lineno)d] - %(message)s',
+            'format': '[' + HOST_LOCATION + '] [' + REALM_CODE + '] [workflow] [%(levelname)s] [%(asctime)s] [%(processName)s] [%(name)s] [%(module)s:%(lineno)d] - %(message)s',
         },
     },
     'handlers': {
@@ -383,11 +381,11 @@ RABBITMQ_PASSWORD = ENV_STR('RABBITMQ_PASSWORD', 'guest')
 RABBITMQ_VHOST = ENV_STR('RABBITMQ_VHOST', '')
 
 CELERY_BROKER_URL = 'amqp://%s:%s@%s:%s/%s' % (
-RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_HOST, RABBITMQ_PORT, RABBITMQ_VHOST)
+    RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_HOST, RABBITMQ_PORT, RABBITMQ_VHOST)
 
 CELERY_RESULT_BACKEND = 'db+postgresql+psycopg2://%s:%s@%s:%s/%s' % (
-ENV_STR('DB_USER', None), ENV_STR('DB_PASSWORD', None), ENV_STR('DB_HOST', None), ENV_INT('DB_PORT', 5432),
-ENV_STR('DB_NAME', None))
+    ENV_STR('DB_USER', None), ENV_STR('DB_PASSWORD', None), ENV_STR('DB_HOST', None), ENV_INT('DB_PORT', 5432),
+    ENV_STR('DB_NAME', None))
 CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'UTC'
 
