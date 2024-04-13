@@ -3,7 +3,6 @@ import logging
 from celery import chain, group
 from celery.utils import uuid
 
-
 from workflow.exceptions import WorkflowSyntaxError
 from workflow.models import Workflow, Task
 from workflow.tasks.workflows import start, end, failure_hooks_launcher
@@ -134,8 +133,15 @@ class WorkflowBuilder(object):
 
             self.previous = initial_previous
 
-        self.canvas.insert(0, start.si(self.workflow.id).set(queue=self.queue))  # Workflow Start would be always first
-        self.canvas.append(end.si(self.workflow.id).set(queue=self.queue))
+        self.canvas.insert(0, start.si(self.workflow.id, context={
+            "realm_code": self.workflow.space.realm_code,
+            "space_code": self.workflow.space.space_code,
+        }).set(queue=self.queue))  # Workflow Start would be always first
+
+        self.canvas.append(end.si(self.workflow.id, context={
+            "realm_code": self.workflow.space.realm_code,
+            "space_code": self.workflow.space.space_code,
+        }).set(queue=self.queue))
 
     def build_hooks(self):
         initial_previous = self.previous
@@ -148,6 +154,10 @@ class WorkflowBuilder(object):
                     self.queue,
                     [self.failure_hook],
                     self.workflow.payload,
+                    context={
+                        "realm_code": self.workflow.space.realm_code,
+                        "space_code": self.workflow.space.space_code,
+                    }
                 ).set(queue=self.queue),
             ]
 
@@ -164,10 +174,7 @@ class WorkflowBuilder(object):
         if not self.canvas:
             self.build()
 
-        canvas = chain(*self.canvas, task_id=uuid(), context={
-            "realm_code": self.workflow.space.realm_code,
-            "space_code": self.workflow.space.space_code,
-        })
+        canvas = chain(*self.canvas, task_id=uuid())
 
         self.build_hooks()
 
