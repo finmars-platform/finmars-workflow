@@ -7,6 +7,7 @@ from celery.signals import task_postrun, task_prerun
 from django.conf import settings
 from django.db import connection
 
+
 _l = logging.getLogger('workflow')
 
 app = Celery('workflow')

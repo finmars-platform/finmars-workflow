@@ -15,6 +15,7 @@ from workflow.storage import get_storage
 from workflow.utils import build_celery_schedule, construct_path
 from workflow_app import celery_app
 from workflow_app import settings
+from django.db import connection
 
 
 
