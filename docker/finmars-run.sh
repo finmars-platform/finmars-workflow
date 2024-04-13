@@ -28,7 +28,7 @@ chmod 777 /var/app/app-data
 ############################################
 
 echo "Migrating"
-python /var/app/manage.py migrate
+python /var/app/manage.py migrate_all_schemes
 #echo "Create cache table"
 #
 #/var/app-venv/bin/python /var/app/manage.py createcachetable
