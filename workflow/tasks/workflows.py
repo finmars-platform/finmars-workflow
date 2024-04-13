@@ -139,7 +139,7 @@ def failure_hooks_launcher(self, workflow_id, queue, tasks_names, payload, *args
 
         # We create the Celery task specifying its UID
         signature = celery_app.tasks.get(task_name).subtask(
-            kwargs={"workflow_id": workflow_id, "payload": payload},
+            kwargs={"workflow_id": workflow_id, "payload": payload, "context": context},
             queue='workflow',
             task_id=task_id,
         )

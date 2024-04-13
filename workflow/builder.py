@@ -63,7 +63,11 @@ class WorkflowBuilder(object):
         _l.info('WorkflowBuilder.celery_app.backend %s' % celery_app.backend)
 
         signature = celery_app.tasks.get(task_name).subtask(
-            kwargs={"workflow_id": self.workflow_id, "payload": self.workflow.payload},
+            kwargs={"workflow_id": self.workflow_id, "payload": self.workflow.payload, "context": {
+                "realm_code": self.workflow.space.realm_code,
+                "space_code": self.workflow.space.space_code,
+
+            }},
             queue=queue,
             task_id=task_id,
         )
