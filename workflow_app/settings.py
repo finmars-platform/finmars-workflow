@@ -242,10 +242,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 40,
     'DEFAULT_PAGINATION_CLASS': 'workflow.pagination.PageNumberPaginationExt',
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        # 'rest_framework.authentication.SessionAuthentication',
-        # 'rest_framework.authentication.BasicAuthentication',
-        # 'rest_framework.authentication.TokenAuthentication',
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'workflow.authentication.JWTAuthentication',
         "workflow.authentication.KeycloakAuthentication",
     ),
     # 'EXCEPTION_HANDLER': 'authorizer.utils.finmars_exception_handler',
