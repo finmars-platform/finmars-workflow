@@ -6,6 +6,7 @@ import logging
 import os
 import time
 from datetime import timedelta
+import jwt
 
 import pandas as pd
 import requests
@@ -13,6 +14,7 @@ from django.core.files.base import ContentFile
 from flatten_json import flatten
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from workflow.authentication import FinmarsRefreshToken
 from workflow.models import User, Space
 from workflow_app import settings
 
@@ -34,12 +36,54 @@ class DjangoStorageHandler(logging.Handler):
         # with storage.open(self.log_file, 'a') as log_file:
         #     log_file.write(log_entry + '\n')
 
+# DEPRECATED, remove in 1.9.0
+def get_access_token(ttl_minutes=60, *args, **kwargs):
 
-def get_access_token():
     bot = User.objects.get(username="finmars_bot")
-    new_token = RefreshToken.for_user(bot)
 
-    return new_token
+    # Define the expiration time +1 hour from now
+    expiration_time = datetime.datetime.utcnow() + datetime.timedelta(minutes=ttl_minutes)
+
+    # Define the payload with the expiration time and username
+    payload = {
+        'username': bot.username,
+        'realm_code': bot.space.realm_code,
+        'space_code': bot.space.realm_code,
+        'exp': expiration_time,
+        'iat': datetime.datetime.utcnow()  # Issued at time
+    }
+
+    # Encode the JWT token
+    jwt_token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+
+    token = FinmarsRefreshToken(jwt_token)
+
+    return token
+
+# This one is good
+def get_refresh_token(ttl_minutes=60, *args, **kwargs):
+
+    bot = User.objects.get(username="finmars_bot")
+
+    # Define the expiration time +1 hour from now
+    expiration_time = datetime.datetime.utcnow() + datetime.timedelta(minutes=ttl_minutes)
+
+    # Define the payload with the expiration time and username
+    payload = {
+        'username': bot.username,
+        'realm_code': bot.space.realm_code,
+        'space_code': bot.space.realm_code,
+        'exp': expiration_time,
+        'iat': datetime.datetime.utcnow()  # Issued at time
+    }
+
+    # Encode the JWT token
+    jwt_token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+
+    token = FinmarsRefreshToken(jwt_token)
+
+    return token
+
 
 def get_domain():
 
@@ -87,7 +131,7 @@ def create_logger(name, log_format=None):
 
 
 def execute_expression(expression):
-    refresh = get_access_token()
+    refresh = get_refresh_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -140,7 +184,7 @@ def execute_expression_procedure(payload):
 
 
 def execute_data_procedure(payload):
-    refresh = get_access_token()
+    refresh = get_refresh_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -165,7 +209,7 @@ def execute_data_procedure(payload):
 
 
 def get_data_procedure_instance(id):
-    refresh = get_access_token()
+    refresh = get_refresh_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -188,7 +232,7 @@ def get_data_procedure_instance(id):
 
 
 def execute_pricing_procedure(payload):
-    refresh = get_access_token()
+    refresh = get_refresh_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -213,7 +257,7 @@ def execute_pricing_procedure(payload):
 
 
 def execute_task(task_name, payload={}):
-    refresh = get_access_token()
+    refresh = get_refresh_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -241,7 +285,7 @@ def execute_task(task_name, payload={}):
 
 
 def get_task(id):
-    refresh = get_access_token()
+    refresh = get_refresh_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -321,7 +365,7 @@ def wait_procedure_to_complete(procedure_instance_id=None, retries=5, retry_inte
 
 
 def execute_transaction_import(payload):
-    refresh = get_access_token()
+    refresh = get_refresh_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -345,7 +389,7 @@ def execute_transaction_import(payload):
 
 
 def execute_simple_import(payload):
-    refresh = get_access_token()
+    refresh = get_refresh_token()
 
     # _l.info('refresh %s' % refresh.access_token)
 
@@ -370,7 +414,7 @@ def execute_simple_import(payload):
 
 
 def request_api(path, method='get', data=None):
-    refresh = get_access_token()
+    refresh = get_refresh_token()
 
     headers = {'Content-type': 'application/json', 'Accept': 'application/json',
                'Authorization': f'Bearer {refresh.access_token}'}
@@ -656,7 +700,7 @@ class Utils():
 class Vault():
 
     def get_secret(self, path):
-        refresh = get_access_token()  # TODO refactor, should be permission check
+        refresh = get_refresh_token()  # TODO refactor, should be permission check
 
         # _l.info('refresh %s' % refresh.access_token)
 

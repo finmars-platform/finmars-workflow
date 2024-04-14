@@ -219,3 +219,8 @@ class JWTAuthentication(TokenAuthentication):
             raise exceptions.AuthenticationFailed(e)
 
         return user, key
+
+
+class FinmarsRefreshToken:
+    def __init__(self, jwt_token):
+        self.access_token = jwt_token
