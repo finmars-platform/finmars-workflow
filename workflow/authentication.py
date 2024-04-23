@@ -9,6 +9,7 @@ from rest_framework.authentication import TokenAuthentication, get_authorization
 
 from workflow.keycloak import KeycloakConnect
 from workflow.models import User
+from workflow.utils import generate_random_string
 
 _l = logging.getLogger('workflow')
 
@@ -119,28 +120,28 @@ class KeycloakAuthentication(TokenAuthentication):
         except Exception as e:
             # _l.error("User not found %s" % e)
 
-            raise exceptions.AuthenticationFailed(e)
-
+            # raise exceptions.AuthenticationFailed(e)
+            # TODO come up with more sophisticated way to create users in workflow
             # Security hole, we should not create user on a fly
             # Was in use when we have poor invites implementation
             # Now is not need
-            # try:
-            #     user = User.objects.create_user(username=userinfo['preferred_username'],
-            #                                     password=generate_random_string(12))
-            #
-            # except Exception as e:
-            #
-            #     try:
-            #         # TODO
-            #         # Do not remove this thing
-            #         # Because we create user on a fly
-            #         # It could be 2 request at same time trying to create new user
-            #         # So, we trying to lookup again if first request already created it
-            #         user = User.objects.get(username=userinfo['preferred_username'])
-            #
-            #     except Exception as e:
-            #         # _l.error("Error create new user %s" % e)
-            #         raise exceptions.AuthenticationFailed(e)
+            try:
+                user = User.objects.create_user(username=userinfo['preferred_username'],
+                                                password=generate_random_string(12))
+
+            except Exception as e:
+
+                try:
+                    # TODO
+                    # Do not remove this thing
+                    # Because we create user on a fly
+                    # It could be 2 request at same time trying to create new user
+                    # So, we trying to lookup again if first request already created it
+                    user = User.objects.get(username=userinfo['preferred_username'])
+
+                except Exception as e:
+                    # _l.error("Error create new user %s" % e)
+                    raise exceptions.AuthenticationFailed(e)
 
         return user, key
 

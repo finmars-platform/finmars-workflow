@@ -1,6 +1,8 @@
 import logging
 import os
 import sys
+import random
+import string
 
 from celery.schedules import crontab
 from jsonschema.validators import validator_for
@@ -194,3 +196,9 @@ def set_schema_from_context(context):
             raise Exception('No space_code in context')
     else:
         raise Exception('No context in kwargs')
+
+
+
+
+def generate_random_string(N):
+    return ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(N))
