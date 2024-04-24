@@ -155,7 +155,7 @@ class SystemWorkflowManager:
             _l.info(f"Removing local workflows directory: {local_workflows_folder_path}")
             try:
                 shutil.rmtree(local_workflows_folder_path)
-                _l.info("Successfully removed local workflows directory.")
+                _l.info("====[CLEAR DIRECTORY]==== Successfully removed local workflows directory.")
             except Exception as e:
                 _l.error(f"Failed to remove local workflows directory: {e}")
         else:
