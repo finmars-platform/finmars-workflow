@@ -1,5 +1,6 @@
 import logging
 import os
+import traceback
 
 import django_filters
 import pexpect
@@ -151,6 +152,7 @@ class RefreshStorageViewSet(ViewSet):
 
             c = pexpect.spawn("supervisorctl stop celery", timeout=240)
             c = pexpect.spawn("supervisorctl stop celerybeat", timeout=240)
+            c = pexpect.spawn("supervisorctl stop flower", timeout=240)
 
             c = pexpect.spawn("python /var/app/manage.py sync_remote_storage_to_local_storage_all_spaces", timeout=240)
 
@@ -162,13 +164,17 @@ class RefreshStorageViewSet(ViewSet):
             result = c.read()
             _l.info('RefreshStorageViewSet.celerybeat result %s' % result)
 
-            c = pexpect.spawn("supervisorctl restart flower", timeout=240)
+            c = pexpect.spawn("supervisorctl start flower", timeout=240)
             result = c.read()
             _l.info('RefreshStorageViewSet.flower result %s' % result)
-        except Exception as e:
-            _l.info("Could not restart celery")
 
-        system_workflow_manager.register_workflows_all_schemas()
+            system_workflow_manager.register_workflows_all_schemas()
+
+        except Exception as e:
+            _l.info("Could not restart celery.exception %s" % e)
+            _l.info("Could not restart celery.traceback %s" % traceback.format_exc())
+
+
 
         return Response({'status': 'ok'})
 
