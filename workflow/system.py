@@ -148,7 +148,7 @@ class SystemWorkflowManager:
         space = Space.objects.all().first()
 
         remote_workflows_folder_path = construct_path(space.space_code, 'workflows')
-        local_workflows_folder_path = construct_path(settings.MEDIA_ROOT, space.space_code, 'workflows')
+        local_workflows_folder_path = construct_path(settings.MEDIA_ROOT, 'local',  space.space_code, 'workflows')
 
         try:
 
