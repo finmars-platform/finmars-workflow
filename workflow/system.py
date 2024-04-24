@@ -151,9 +151,9 @@ class SystemWorkflowManager:
         local_workflows_folder_path = construct_path(settings.MEDIA_ROOT, 'local',  space.space_code, 'workflows')
 
         try:
-
+            _l.info("removing local_workflows_folder_path %s" % local_workflows_folder_path)
             # Remove local-synced Tasks
-            shutil.rmtree(local_workflows_folder_path, ignore_errors=True)
+            shutil.rmtree(local_workflows_folder_path, ignore_errors=False)
         except Exception as e:
             _l.error('sync_remote_storage_to_local_storage.e %s' % e)
 
