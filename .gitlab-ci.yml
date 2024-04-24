@@ -94,10 +94,17 @@ Push Version:
       echo "$JSON_PAYLOAD"
       echo "-------------------------"
 
-      status_code=$(curl -o /dev/null -s -w "%{http_code}" --request POST https://license.finmars.com/api/v1/version/ --header "Content-Type: application/json" --data "$JSON_PAYLOAD")
+      response=$(curl -s -w "\n%{http_code}" --request POST https://license.finmars.com/api/v1/version/ --header "Content-Type: application/json" --data "$JSON_PAYLOAD")
+      
+      # Extract the status code from the last line of output
+      status_code=$(echo "$response" | tail -n1)
+      
+      # Remove the last line (status code) to isolate the response body
+      response_body=$(echo "$response" | head -n-1)
       
       if [[ "$status_code" -ne "201" ]]; then
         echo "Build failed. Status Code: $status_code"
+        echo "Response Body: $response_body"
         exit 1
       else
         echo "Build succeeded."
