@@ -150,13 +150,16 @@ class SystemWorkflowManager:
         remote_workflows_folder_path = construct_path(space.space_code, 'workflows')
         local_workflows_folder_path = construct_path(settings.MEDIA_ROOT, 'local',  space.space_code, 'workflows')
 
-        try:
-            _l.info("removing local_workflows_folder_path %s" % local_workflows_folder_path)
-            # Remove local-synced Tasks
-            shutil.rmtree(local_workflows_folder_path, ignore_errors=False)
-        except Exception as e:
-            _l.error('sync_remote_storage_to_local_storage.e %s' % e)
-
+        # Check if the local workflows directory exists before attempting to remove it
+        if os.path.exists(local_workflows_folder_path):
+            _l.info(f"Removing local workflows directory: {local_workflows_folder_path}")
+            try:
+                shutil.rmtree(local_workflows_folder_path)
+                _l.info("Successfully removed local workflows directory.")
+            except Exception as e:
+                _l.error(f"Failed to remove local workflows directory: {e}")
+        else:
+            _l.info(f"Local workflows directory does not exist, no need to remove: {local_workflows_folder_path}")
 
         _l.info('remote_workflows_folder_path %s' % remote_workflows_folder_path)
 
