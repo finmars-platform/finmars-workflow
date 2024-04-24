@@ -156,6 +156,9 @@ class RefreshStorageViewSet(ViewSet):
 
             c = pexpect.spawn("python /var/app/manage.py sync_remote_storage_to_local_storage_all_spaces", timeout=240)
 
+            result = c.read()
+            _l.info('RefreshStorageViewSet.clear result %s' % result)
+
             c = pexpect.spawn("supervisorctl start celery", timeout=240)
             result = c.read()
             _l.info('RefreshStorageViewSet.celery result %s' % result)
