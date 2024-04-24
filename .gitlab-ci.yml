@@ -74,7 +74,7 @@ Push Version:
   stage: pushVersion
   image: python:3.9
   before_script:
-    - apt install curl git
+    - apt install curl git jq
   script:
     - |
       
@@ -86,10 +86,15 @@ Push Version:
           CHANNEL="unknown"
       fi
 
-      # Create the JSON payload
       NOTES=$(git log -1 --pretty=%B)
-      JSON_PAYLOAD="{ \"app\": \"$CI_PROJECT_NAME\", \"version\": \"$IMAGE_TAG\", \"build_number\": $CI_PIPELINE_ID, \"notes\": \"$NOTES\", \"channel\": \"$CHANNEL\"  }"
-
+      JSON_PAYLOAD=$(jq -n \
+        --arg app "$CI_PROJECT_NAME" \
+        --arg version "$IMAGE_TAG" \
+        --arg build_number "$CI_PIPELINE_ID" \
+        --arg notes "$NOTES" \
+        --arg channel "$CHANNEL" \
+        '{app: $app, version: $version, build_number: $build_number, notes: $notes, channel: $channel}')
+      
       echo "----- Build Payload -----"
       echo "$JSON_PAYLOAD"
       echo "-------------------------"
