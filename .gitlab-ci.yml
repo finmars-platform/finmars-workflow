@@ -74,7 +74,8 @@ Push Version:
   stage: pushVersion
   image: python:3.9
   before_script:
-    - apt install curl git jq
+    - apt-get update
+    - apt install curl git jq -y
   script:
     - |
       
