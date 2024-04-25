@@ -624,9 +624,9 @@ class Utils():
         space = get_space()
 
         if file_path[0] == '/':
-            file_path = os.path.join(settings.MEDIA_ROOT + '/tasks/' + space.space_code + file_path)
+            file_path = os.path.join(settings.WORKFLOW_STORAGE_ROOT + '/tasks/' + space.space_code + file_path)
         else:
-            file_path = os.path.join(settings.MEDIA_ROOT + '/tasks/' + space.space_code + '/' + file_path)
+            file_path = os.path.join(settings.WORKFLOW_STORAGE_ROOT + '/tasks/' + space.space_code + '/' + file_path)
 
         _l.info('import_from_storage.file_path %s' % file_path)
 
