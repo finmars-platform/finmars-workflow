@@ -30,9 +30,6 @@ RUN mkdir -p /var/app/app-data/import/configs/ /var/app/app-data/import/files/ \
 # Copy supervisor configs
 COPY docker/supervisor/*.conf /etc/supervisor/conf.d/
 
-# Copy uwsgi config
-COPY docker/uwsgi-www.ini /etc/uwsgi/apps-enabled/workflow.ini
-
 # Change permission of the shell script
 RUN chmod +x /var/app/docker/finmars-run.sh
 
