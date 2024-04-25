@@ -29,6 +29,9 @@ DEBUG = ENV_BOOL('DEBUG', False)
 USE_FILESYSTEM_STORAGE = ENV_BOOL('USE_FILESYSTEM_STORAGE', False)
 MEDIA_ROOT = os.path.join(BASE_DIR, 'finmars_data')
 
+WORKFLOW_STORAGE_ROOT = os.path.join(BASE_DIR, 'workflow_storage') # folder that contains files synced from remote storage
+
+
 # Very Important MasterUserConfigs encrypted by this key
 # Also Session (if enabled) are using it
 SECRET_KEY = ENV_STR('SECRET_KEY', None)

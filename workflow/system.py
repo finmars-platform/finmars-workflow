@@ -68,7 +68,7 @@ class SystemWorkflowManager:
 
             space = Space.objects.all().first()
             # Construct the root path for workflows
-            local_workflows_folder_path = construct_path(settings.MEDIA_ROOT, 'local', space.space_code, 'workflows')
+            local_workflows_folder_path = construct_path(settings.WORKFLOW_STORAGE_ROOT, 'local', space.space_code, 'workflows')
 
             # Use Pathlib to simplify path manipulations
             root_path = Path(local_workflows_folder_path)
@@ -148,7 +148,7 @@ class SystemWorkflowManager:
         space = Space.objects.all().first()
 
         remote_workflows_folder_path = construct_path(space.space_code, 'workflows')
-        local_workflows_folder_path = construct_path(settings.MEDIA_ROOT, 'local',  space.space_code, 'workflows')
+        local_workflows_folder_path = construct_path(settings.WORKFLOW_STORAGE_ROOT, 'local',  space.space_code, 'workflows')
 
         # Check if the local workflows directory exists before attempting to remove it
         if os.path.exists(local_workflows_folder_path):
@@ -207,7 +207,7 @@ class SystemWorkflowManager:
 
                                         # Probably some error here, refactor later
                                         # Should pointing just to space_code directory, not to tasks
-                                        local_path = os.path.join(settings.MEDIA_ROOT, 'local', filepath.lstrip('/'))
+                                        local_path = os.path.join(settings.WORKFLOW_STORAGE_ROOT, 'local', filepath.lstrip('/'))
                                         os.makedirs(os.path.dirname(local_path), exist_ok=True)
 
                                         with open(local_path, 'wb') as new_file:
@@ -224,7 +224,7 @@ class SystemWorkflowManager:
     def import_user_tasks(self):
         self.plugin_base = PluginBase(package="workflow.foobar")
 
-        folder = Path(settings.MEDIA_ROOT).resolve()
+        folder = Path(settings.WORKFLOW_STORAGE_ROOT).resolve()
 
         self.plugin_source = self.plugin_base.make_plugin_source(
             searchpath=[str(folder)]
