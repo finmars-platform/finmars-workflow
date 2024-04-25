@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'drf_yasg',
     'django_filters',
     'corsheaders',
 
@@ -470,6 +471,12 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
+
+REDOC_SETTINGS = {
+    "LAZY_RENDERING": True,
+    "NATIVE_SCROLLBARS": True,
+}
+
 # SENTRY
 
 import sentry_sdk

@@ -29,11 +29,18 @@ Start Postgres Database and Redis in docker
 
 **Activate VENV**
 
+create DB schema space00000
+
 `./local-development/run_migrate.sh`
+
+`./local-development/run_sync_remote_storage_to_local_storage_all_spaces.sh`
 
 Start Celery Server
 
 `./local-development/run_celery.sh`
+
+If you are going to debug a specific workflow/task - check logs for 
+"Could not load workflow" to make sure your task is loaded successfully
 
 Run scripts
 
