@@ -22,7 +22,7 @@ class Command(BaseCommand):
             with connection.cursor() as cursor:
                 cursor.execute(f"SET search_path TO {schema};")
 
-                system_workflow_manager.register_workflows_all_schemas()
+                system_workflow_manager.register_workflows()
 
                 self.stdout.write("Going to cancel tasks")
                 system_workflow_manager.cancel_all_existing_tasks()

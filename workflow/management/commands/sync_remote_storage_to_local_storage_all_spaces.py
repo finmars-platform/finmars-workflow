@@ -10,5 +10,4 @@ class Command(BaseCommand):
     help = "Sync all workflows from all Spaces in realm to local file storage."
 
     def handle(self, *args, **options):
-
-        system_workflow_manager.sync_remote_storage_to_local_storage_all_schemas()
+        system_workflow_manager.sync_remote_storage_to_local_storage()
