@@ -95,7 +95,7 @@ class BaseTask(_Task):
         if not self.task.log:
             self.task.log = ''
 
-        self.task.log = self.task.log + message + '\n'
+        self.task.log = self.task.log + str(message) + '\n'
         self.task.save()
 
     def is_workflow_already_running(self, workflow_user_code):

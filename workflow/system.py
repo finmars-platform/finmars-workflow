@@ -1,3 +1,4 @@
+import importlib
 import json
 import os
 import shutil
@@ -240,26 +241,40 @@ class SystemWorkflowManager:
 
         # _l.info('tasks %s' % tasks)
 
-        with self.plugin_source:
-            for task in tasks:
+        for task in tasks:
+            if task.stem == "__init__":
+                continue
+            module_name = str(task.relative_to(folder)).replace("/", ".").rsplit('.', 1)[0]
 
-                try:
+            try:
+                # Load the module with a specific and isolated namespace
+                spec = importlib.util.spec_from_file_location(module_name, task)
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[module_name] = module  # Optional: register to sys.modules if needed globally
+                spec.loader.exec_module(module)
+            except Exception as e:
+                _l.info(f"Could not load user script {task}. Error {e}")
 
-                    if task.stem == "__init__":
-                        continue
-
-                    name = str(task.relative_to(folder))[:-3].replace("/", ".")
-
-                    # _l.info('name %s' % name)
-
-                    __import__(
-                        self.plugin_source.base.package + "." + name,
-                        globals(),
-                        {},
-                        ["__name__"],
-                    )
-                except Exception as e:
-                    _l.info("Could not load user script %s. Error %s" % (task, e))
+        # with self.plugin_source:
+        #     for task in tasks:
+        #
+        #         try:
+        #
+        #             if task.stem == "__init__":
+        #                 continue
+        #
+        #             name = str(task.relative_to(folder))[:-3].replace("/", ".")
+        #
+        #             # _l.info('name %s' % name)
+        #
+        #             __import__(
+        #                 self.plugin_source.base.package + "." + name,
+        #                 globals(),
+        #                 {},
+        #                 ["__name__"],
+        #             )
+        #         except Exception as e:
+        #             _l.info("Could not load user script %s. Error %s" % (task, e))
 
         _l.info("Tasks are loaded")
 
