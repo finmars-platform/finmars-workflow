@@ -17,17 +17,16 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet
 
-
 from workflow.filters import WorkflowQueryFilter
 from workflow.models import Workflow, Task
 from workflow.serializers import WorkflowSerializer, TaskSerializer, PingSerializer, WorkflowLightSerializer
-from workflow.workflows import execute_workflow
-
 from workflow.user_sessions import create_session, execute_code, sessions
+from workflow.workflows import execute_workflow
 
 _l = logging.getLogger('workflow')
 
 from workflow.system import get_system_workflow_manager
+
 system_workflow_manager = get_system_workflow_manager()
 
 
@@ -56,7 +55,6 @@ class WorkflowViewSet(ModelViewSet):
         WorkflowQueryFilter
     ]
 
-
     ordering_fields = [
         'name', 'user_code', 'created', 'modified', 'status', 'owner'
     ]
@@ -76,7 +74,6 @@ class WorkflowViewSet(ModelViewSet):
 
     @action(detail=False, methods=['POST'], url_path='run-workflow')
     def run_workflow(self, request, pk=None, *args, **kwargs):
-
         user_code, payload = (
             request.data["user_code"],
             request.data["payload"],
@@ -93,7 +90,8 @@ class WorkflowViewSet(ModelViewSet):
     @action(detail=True, methods=('POST',), url_path='relaunch')
     def relaunch(self, request, pk=None, *args, **kwargs):
         obj = Workflow.objects.get(id=pk)
-        data, _ = execute_workflow(request.user.username, obj.user_code, obj.payload)
+        data, _ = execute_workflow(request.user.username, obj.user_code, obj.payload, request.realm_code,
+                                   request.space_code)
 
         return Response(data)
 
@@ -183,8 +181,6 @@ class RefreshStorageViewSet(ViewSet):
             _l.info("Could not restart celery.exception %s" % e)
             _l.info("Could not restart celery.traceback %s" % traceback.format_exc())
 
-
-
         return Response({'status': 'ok'})
 
 
@@ -221,6 +217,7 @@ class LogFileViewSet(ViewSet):
             log_content = log_file.read()
 
         return HttpResponse(log_content, content_type="text/plain")
+
 
 class CodeExecutionViewSet(ViewSet):
 
