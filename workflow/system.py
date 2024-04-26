@@ -224,13 +224,19 @@ class SystemWorkflowManager:
     def import_user_tasks(self):
         self.plugin_base = PluginBase(package="workflow.foobar")
 
-        folder = Path(settings.WORKFLOW_STORAGE_ROOT).resolve()
+        space = Space.objects.all().first()
+
+        local_workflows_folder_path = construct_path(settings.WORKFLOW_STORAGE_ROOT, 'local',  space.space_code, 'workflows')
+
+        folder = Path(local_workflows_folder_path).resolve()
+
+        _l.info('import_user_tasks %s' % local_workflows_folder_path)
 
         self.plugin_source = self.plugin_base.make_plugin_source(
             searchpath=[str(folder)]
         )
 
-        tasks = Path(folder / "local").glob("**/*.py")
+        tasks = Path(folder).glob("**/*.py")
 
         # _l.info('tasks %s' % tasks)
 
