@@ -74,8 +74,8 @@ def get_refresh_token(ttl_minutes=60, *args, **kwargs):
     # Define the payload with the expiration time and username
     payload = {
         'username': bot.username,
-        'realm_code': bot.realm_code,
-        'space_code': bot.realm_code,
+        'realm_code': space.realm_code,
+        'space_code': space.realm_code,
         'exp': expiration_time,
         'iat': datetime.datetime.utcnow()  # Issued at time
     }
