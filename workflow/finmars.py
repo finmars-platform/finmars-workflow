@@ -6,13 +6,12 @@ import logging
 import os
 import time
 from datetime import timedelta
-import jwt
 
+import jwt
 import pandas as pd
 import requests
 from django.core.files.base import ContentFile
 from flatten_json import flatten
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from workflow.authentication import FinmarsRefreshToken
 from workflow.models import User, Space
@@ -36,19 +35,21 @@ class DjangoStorageHandler(logging.Handler):
         # with storage.open(self.log_file, 'a') as log_file:
         #     log_file.write(log_entry + '\n')
 
+
 # DEPRECATED, remove in 1.9.0
 def get_access_token(ttl_minutes=60, *args, **kwargs):
-
     bot = User.objects.get(username="finmars_bot")
 
     # Define the expiration time +1 hour from now
     expiration_time = datetime.datetime.utcnow() + datetime.timedelta(minutes=ttl_minutes)
 
+    space = Space.objects.all().first()
+
     # Define the payload with the expiration time and username
     payload = {
         'username': bot.username,
-        'realm_code': bot.space.realm_code,
-        'space_code': bot.space.realm_code,
+        'realm_code': space.realm_code,
+        'space_code': space.realm_code,
         'exp': expiration_time,
         'iat': datetime.datetime.utcnow()  # Issued at time
     }
@@ -60,19 +61,21 @@ def get_access_token(ttl_minutes=60, *args, **kwargs):
 
     return token
 
+
 # This one is good
 def get_refresh_token(ttl_minutes=60, *args, **kwargs):
-
     bot = User.objects.get(username="finmars_bot")
 
     # Define the expiration time +1 hour from now
     expiration_time = datetime.datetime.utcnow() + datetime.timedelta(minutes=ttl_minutes)
 
+    space = Space.objects.all().first()
+
     # Define the payload with the expiration time and username
     payload = {
         'username': bot.username,
-        'realm_code': bot.space.realm_code,
-        'space_code': bot.space.realm_code,
+        'realm_code': bot.realm_code,
+        'space_code': bot.realm_code,
         'exp': expiration_time,
         'iat': datetime.datetime.utcnow()  # Issued at time
     }
@@ -86,18 +89,20 @@ def get_refresh_token(ttl_minutes=60, *args, **kwargs):
 
 
 def get_domain():
-
     return settings.DOMAIN_NAME
+
 
 def get_space():
     space = Space.objects.all().first()
 
     return space
 
+
 def get_space_code():
     space = Space.objects.all().first()
 
     return space.space_code
+
 
 def get_base_path():
     # TODO http or https?
@@ -108,7 +113,6 @@ def get_realm_code():
     space = Space.objects.all().first()
 
     return space.realm_code
-
 
 
 def create_logger(name, log_format=None):
