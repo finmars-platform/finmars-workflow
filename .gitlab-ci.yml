@@ -1,6 +1,7 @@
 # https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/
 
 stages:
+  - test
   - versioning
   - build
   - push
@@ -16,6 +17,10 @@ default:
     - echo -n $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin registry.finmars.com
 
 variables:
+  POSTGRES_DB: test_finmars
+  POSTGRES_USER: test_finmars_user
+  POSTGRES_PASSWORD: test_finmars_password
+
   # When using dind service, you must instruct docker to talk with the
   # daemon started inside of the service. The daemon is available with
   # a network connection instead of the default /var/run/docker.sock socket.
@@ -33,6 +38,47 @@ variables:
   # This instructs Docker not to start over TLS.
   DOCKER_TLS_CERTDIR: ""
 
+
+Test:
+  stage: test
+  image:
+    name: python:3.10-bullseye  # adjust the Python version as necessary
+    pull_policy: if-not-present # available: always, if-not-present,
+
+  services:
+    - name: postgres:15
+      pull_policy: if-not-present # available: always, if-not-present,
+
+  variables:
+    DB_HOST: postgres
+    DB_NAME: test_finmars
+    DB_USER: test_finmars_user
+    DB_PASSWORD: test_finmars_password
+    DB_PORT: 5432
+    USE_FILESYSTEM_STORAGE: 'True'
+
+  before_script:
+    - |
+      apt-get update && apt-get install -y --no-install-recommends \
+      gcc \
+      musl-dev \
+      python3-dev \
+      libpq-dev \
+      libgnutls28-dev \
+      git \
+      && rm -rf /var/lib/apt/lists/*
+    - python -m pip install --upgrade pip
+    - pip install -r requirements.txt
+    - pip install coverage==7.2.7
+    - mkdir /var/log/finmars
+    - mkdir /var/log/finmars/workflow
+  script:
+#    - coverage run manage.py test --parallel=6
+    - coverage run manage.py test
+    - coverage combine && coverage report && coverage html
+  artifacts:
+    paths:
+      - ./coverage_html_report
 
 # This new job will handle the versioning mechanism
 Versioning:
