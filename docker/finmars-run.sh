@@ -87,7 +87,7 @@ python /var/app/manage.py cancel_existing_tasks
 
 echo "Run server"
 
-uwsgi /etc/uwsgi/apps-enabled/workflow.ini
+gunicorn --config /var/app/workflow_app/gunicorn-prod.py workflow_app.wsgi
 #python director.py webserver
 
 echo "Initialized"
