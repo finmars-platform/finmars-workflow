@@ -158,7 +158,9 @@ class RefreshStorageViewSet(ViewSet):
             result = c.read()
             _l.info('RefreshStorageViewSet.stop flower result %s' % result)
 
-            c = pexpect.spawn("python /var/app/manage.py sync_remote_storage_to_local_storage_all_spaces", timeout=240)
+            #c = pexpect.spawn("python /var/app/manage.py sync_remote_storage_to_local_storage", timeout=240)
+            system_workflow_manager.sync_remote_storage_to_local_storage(request.space_code)
+
 
             result = c.read()
             _l.info('RefreshStorageViewSet.clear result %s' % result)
@@ -175,7 +177,7 @@ class RefreshStorageViewSet(ViewSet):
             result = c.read()
             _l.info('RefreshStorageViewSet.flower result %s' % result)
 
-            system_workflow_manager.register_workflows_all_schemas()
+            system_workflow_manager.register_workflows(request.space_code)
 
         except Exception as e:
             _l.info("Could not restart celery.exception %s" % e)
@@ -189,7 +191,7 @@ class DefinitionViewSet(ViewSet):
     def list(self, request, *args, **kwargs):
         workflow_definitions = []
 
-        system_workflow_manager.register_workflows_all_schemas()
+        system_workflow_manager.register_workflows()
 
         for user_code, definition in sorted(system_workflow_manager.workflows.items()):
             # _l.info('DefinitionViewSet.definition %s' % definition)

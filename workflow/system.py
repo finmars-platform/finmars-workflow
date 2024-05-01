@@ -31,9 +31,15 @@ class SystemWorkflowManager:
     def __init__(self):
         self.workflows = {}
 
-    def register_workflows_all_schemas(self):
+    def register_workflows(self, space_code=None):
 
         schemas = get_all_tenant_schemas()
+
+        if space_code:
+            if space_code.lower() not in schemas:
+                raise Exception(f"Schema '{space_code}' does not exist")
+            schemas = [space_code]
+
         for schema in schemas:
 
             with connection.cursor() as cursor:
@@ -49,9 +55,15 @@ class SystemWorkflowManager:
         # Initialize periodic tasks after loading all workflows
         self.init_periodic_tasks()
 
-    def sync_remote_storage_to_local_storage_all_schemas(self):
+    def sync_remote_storage_to_local_storage(self, space_code=None):
 
         schemas = get_all_tenant_schemas()
+
+        if space_code:
+            if space_code.lower() not in schemas:
+                raise Exception(f"Schema '{space_code}' does not exist")
+            schemas = [space_code]
+
         for schema in schemas:
 
             with connection.cursor() as cursor:

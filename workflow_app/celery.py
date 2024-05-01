@@ -27,7 +27,7 @@ def configure_worker(sender=None, conf=None, **kwargs):
     from workflow.system import get_system_workflow_manager
     system_workflow_manager = get_system_workflow_manager()
 
-    system_workflow_manager.register_workflows_all_schemas()
+    system_workflow_manager.register_workflows()
 
 
 # app.autodiscover_tasks()
