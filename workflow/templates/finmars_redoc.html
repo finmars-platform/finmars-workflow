@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Page</title>
+    <link rel="stylesheet" href="{% static 'css/redoc.css' %}">
+</head>
+<body>
+
+<div class="logo">
+    <a href="https://finmars.com"><img src="{% static 'img/logo.png' %}" alt="Logo"></a>
+</div>
+
+<div class="content">
+
+    <div>
+        <h3>API Reference</h3>
+        <p><span class="color-orange">Finmars</span> API is organized around REST. Our API has predictable
+            resource-oriented URLs, accepts form-encoded request bodies, returns JSON-encoded responses, and uses
+            standard HTTP response codes, authentication, and verbs.</p>
+    </div>
+
+    <div class="documentation-block">
+
+        <h4 class="documentation-header">Workflow API</h4>
+
+                <div class="documentation-endpoint-block">
+                    <a href="/{{realm_code}}/{{space_code}}/docs/api">API reference</a>
+                </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

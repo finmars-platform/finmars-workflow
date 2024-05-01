@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.urls import re_path, include
 from django.views.generic import TemplateView
 from rest_framework import routers
+from django.conf import settings
+from workflow_app.openapi import get_redoc_urlpatterns
 
 from workflow.views import WorkflowViewSet, TaskViewSet, PingViewSet, DefinitionViewSet, RefreshStorageViewSet, \
     LogFileViewSet, CodeExecutionViewSet
@@ -51,3 +53,6 @@ urlpatterns = [
             TemplateView.as_view(template_name='index.html'))
 
 ]
+
+if "drf_yasg" in settings.INSTALLED_APPS:
+    urlpatterns = urlpatterns + get_redoc_urlpatterns()
