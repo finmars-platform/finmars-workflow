@@ -1,0 +1,11 @@
+[run]
+branch=True
+concurrency=multiprocessing
+source=workflow
+
+[report]
+ignore_errors = True
+
+[html]
+directory = coverage_html_report
+title = Finmars Backend Coverage Report
