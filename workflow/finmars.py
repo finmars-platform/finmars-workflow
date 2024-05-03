@@ -37,7 +37,7 @@ class DjangoStorageHandler(logging.Handler):
 
 
 # DEPRECATED, remove in 1.9.0
-def get_access_token(ttl_minutes=60, *args, **kwargs):
+def get_access_token(ttl_minutes=60 * 8, *args, **kwargs):
     bot = User.objects.get(username="finmars_bot")
 
     # Define the expiration time +1 hour from now
@@ -63,7 +63,7 @@ def get_access_token(ttl_minutes=60, *args, **kwargs):
 
 
 # This one is good
-def get_refresh_token(ttl_minutes=60, *args, **kwargs):
+def get_refresh_token(ttl_minutes=60 * 8, *args, **kwargs):
     bot = User.objects.get(username="finmars_bot")
 
     # Define the expiration time +1 hour from now
