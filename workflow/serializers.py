@@ -57,3 +57,7 @@ class PingSerializer(serializers.Serializer):
     is_authenticated = serializers.BooleanField(read_only=True)
     is_anonymous = serializers.BooleanField(read_only=True)
     now = serializers.DateTimeField(read_only=True)
+
+
+class BulkSerializer(serializers.Serializer):
+    ids = serializers.ListField(child=serializers.IntegerField())
