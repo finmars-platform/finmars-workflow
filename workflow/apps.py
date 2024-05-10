@@ -14,7 +14,7 @@ def get_current_search_path():
     with connection.cursor() as cursor:
         cursor.execute("SHOW search_path;")
         search_path = cursor.fetchone()
-        return search_path[0] if search_path else None
+        return search_path[0].replace('"$user", ', '') if search_path else None
 
 
 class WorkflowConfig(AppConfig):

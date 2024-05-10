@@ -1,5 +1,6 @@
 from celery import Task as _Task
-from celery.signals import task_prerun, task_postrun
+from celery.signals import task_prerun, task_postrun, task_failure, task_internal_error
+from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
 from celery.utils.log import get_task_logger
 from django.db import connection
 
@@ -8,7 +9,6 @@ from workflow.utils import send_alert, schema_exists, set_schema_from_context
 from workflow_app import celery_app
 
 logger = get_task_logger(__name__)
-
 
 # EXTREMELY IMPORTANT CODE
 # DO NOT MODIFY IT
@@ -55,6 +55,36 @@ def workflow_prerun(task_id, task, *args, **kwargs):
 def cleanup(task_id, **kwargs):
     with connection.cursor() as cursor:
         cursor.execute("SET search_path TO public;")
+
+
+@task_failure.connect
+@task_internal_error.connect
+def on_failure(task_id, exception, args, einfo, **kwargs):
+    logger.info("task_failure.task_id: %s" % task_id)
+    logger.info("task_failure.kwargs: %s" % kwargs['kwargs'])
+
+    context = kwargs['kwargs'].get('context')
+    set_schema_from_context(context)
+
+    task = Task.objects.get(celery_task_id=task_id)
+    workflow = Workflow.objects.get(id=task.workflow_id)
+
+    if isinstance(exception, (TimeLimitExceeded, SoftTimeLimitExceeded)):
+        workflow.status = Workflow.STATUS_TIMEOUT
+        task.status = Task.STATUS_TIMEOUT
+    else:
+        workflow.status = Workflow.STATUS_ERROR
+        task.status = Task.STATUS_ERROR
+
+    task.result = {"exception": str(exception), "traceback": einfo.traceback}
+    task.error_message = str(exception)
+    task.mark_task_as_finished()
+
+    task.save()
+    workflow.save()
+
+    send_alert(workflow)
+    logger.info(f"Task {task_id} is now in error")
 
 
 # @task_postrun.connect
@@ -137,30 +167,6 @@ class BaseTask(_Task):
 
         logger.info(f"Task {task_id} is now in progress")
         super(BaseTask, self).before_start(task_id, args, kwargs)
-
-    def on_failure(self, exc, task_id, args, kwargs, einfo):
-
-        logger.info("BaseTask.on_failure.task_id: %s" % task_id)
-        logger.info("BaseTask.on_failure.kwargs: %s" % kwargs)
-
-        context = kwargs.get('context')
-        set_schema_from_context(context)
-
-        task = Task.objects.get(celery_task_id=task_id)
-        task.status = Task.STATUS_ERROR
-        task.result = {"exception": str(exc), "traceback": einfo.traceback}
-        task.error_message = str(exc)
-        task.mark_task_as_finished()
-        task.save()
-
-        workflow = Workflow.objects.get(id=task.workflow_id)
-        workflow.status = Workflow.STATUS_ERROR
-        workflow.save()
-
-        send_alert(workflow)
-
-        logger.info(f"Task {task_id} is now in error")
-        super(BaseTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
     def on_success(self, retval, task_id, args, kwargs):
 
