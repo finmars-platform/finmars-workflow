@@ -19,7 +19,15 @@ from rest_framework.viewsets import ModelViewSet, ViewSet
 
 from workflow.filters import WorkflowQueryFilter
 from workflow.models import Workflow, Task
-from workflow.serializers import WorkflowSerializer, TaskSerializer, PingSerializer, WorkflowLightSerializer
+from workflow.serializers import (
+    WorkflowSerializer,
+    TaskSerializer,
+    PingSerializer,
+    WorkflowLightSerializer,
+    BulkSerializer
+)
+from workflow.workflows import execute_workflow
+
 from workflow.user_sessions import create_session, execute_code, sessions
 from workflow.workflows import execute_workflow
 
@@ -101,6 +109,32 @@ class WorkflowViewSet(ModelViewSet):
         workflow.cancel()
 
         return Response(workflow.to_dict())
+
+    @action(detail=False, methods=('POST',), url_path='bulk-cancel')
+    def bulk_cancel(self, request, *args, **kwargs):
+        serializer = BulkSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        workflows = Workflow.objects.filter(id__in=data['ids'],
+                                            status__in=[Workflow.STATUS_PROGRESS, Workflow.STATUS_PENDING])
+        for workflow in workflows:
+            workflow.cancel()
+
+        return Response({'status': 'ok'})
+
+    @action(detail=False, methods=('POST',), url_path='bulk-delete')
+    def bulk_delete(self, request, *args, **kwargs):
+        serializer = BulkSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        workflows = Workflow.objects.filter(id__in=data['ids'])
+        for workflow in workflows:
+            workflow.cancel()
+            workflow.delete()
+
+        return Response({'status': 'ok'})
 
 
 class TaskViewSet(ModelViewSet):
