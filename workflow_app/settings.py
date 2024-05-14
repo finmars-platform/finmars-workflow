@@ -82,6 +82,11 @@ INSTALLED_APPS = [
     'finmars_standardized_errors',
 ]
 
+# this settings MUST be before MIDDLEWARE prop
+CORS_ALLOW_CREDENTIALS = ENV_BOOL("CORS_ALLOW_CREDENTIALS", True)
+CORS_ORIGIN_ALLOW_ALL = ENV_BOOL("CORS_ORIGIN_ALLOW_ALL", True)
+CORS_ALLOW_ALL_ORIGINS = ENV_BOOL("CORS_ALLOW_ALL_ORIGINS", True)
+
 MIDDLEWARE = [
     "workflow.middleware.RealmAndSpaceMiddleware",  # do not delete, required for all requests
     'django.middleware.security.SecurityMiddleware',
@@ -205,37 +210,54 @@ LANGUAGES = [
     # ('ru', 'Russian'),
 ]
 
+# TODO Refactor csrf protection later
+
+CSRF_COOKIE_DOMAIN = os.environ.get("CSRF_COOKIE_DOMAIN", ".finmars.com")
+
+CSRF_TRUSTED_ORIGINS = [
+    "capacitor://localhost",
+    "http://localhost",
+    "http://127.0.0.1",
+    "http://0.0.0.0",
+    f"http://{DOMAIN_NAME}",
+    f"https://{DOMAIN_NAME}",
+]
+
+if os.environ.get("CSRF_TRUSTED_ORIGINS", ""):
+    CSRF_TRUSTED_ORIGINS += os.environ.get("CSRF_TRUSTED_ORIGINS").split(",")
+
 # =================
 # = CSRF SETTINGS =
 # =================
 # TODO Refactor this block
 
-ENV_CSRF_TRUSTED_ORIGINS = ENV_STR('ENV_CSRF_TRUSTED_ORIGINS', None)
+# ENV_CSRF_TRUSTED_ORIGINS = ENV_STR('ENV_CSRF_TRUSTED_ORIGINS', None)
 
-if SERVER_TYPE == "production":
-    CORS_URLS_REGEX = r'^/workflow/.*$'
-    # CORS_REPLACE_HTTPS_REFERER = True
-    CORS_ALLOW_CREDENTIALS = True
-    CORS_PREFLIGHT_MAX_AGE = 300
-    USE_X_FORWARDED_HOST = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_REDIRECT_EXEMPT = ['healthcheck']
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    CSRF_COOKIE_SAMESITE = 'Strict'
-
-if SERVER_TYPE == "development":
-    CORS_ORIGIN_ALLOW_ALL = True
-    CORS_URLS_REGEX = r'^/workflow/.*$'
-    USE_X_FORWARDED_HOST = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    CORS_ALLOW_CREDENTIALS = True
-
-if SERVER_TYPE == "local":
-    CORS_URLS_REGEX = r'^/workflow/.*$'
-    CORS_ALLOW_CREDENTIALS = True
-    CORS_ORIGIN_ALLOW_ALL = True
+# TODO warning about security in future
+# if SERVER_TYPE == "production":
+#     CORS_URLS_REGEX = r'^/workflow/.*$'
+#     # CORS_REPLACE_HTTPS_REFERER = True
+#     CORS_ALLOW_CREDENTIALS = True
+#     CORS_PREFLIGHT_MAX_AGE = 300
+#     USE_X_FORWARDED_HOST = True
+#     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+#     SECURE_REDIRECT_EXEMPT = ['healthcheck']
+#     SECURE_SSL_REDIRECT = True
+#     SESSION_COOKIE_SECURE = True
+#     CSRF_COOKIE_SECURE = True
+#     CSRF_COOKIE_SAMESITE = 'Strict'
+#
+# if SERVER_TYPE == "development":
+#     CORS_ORIGIN_ALLOW_ALL = True
+#     CORS_URLS_REGEX = r'^/workflow/.*$'
+#     USE_X_FORWARDED_HOST = True
+#     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+#     CORS_ALLOW_CREDENTIALS = True
+#
+# if SERVER_TYPE == "local":
+#     CORS_URLS_REGEX = r'^/workflow/.*$'
+#     CORS_ALLOW_CREDENTIALS = True
+#     CORS_ORIGIN_ALLOW_ALL = True
 
 # ==================
 # = REST_FRAMEWORK =
