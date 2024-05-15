@@ -17,7 +17,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet
 
-from workflow.filters import WorkflowQueryFilter
+
+from workflow.filters import WorkflowQueryFilter, WholeWordsSearchFilter
 from workflow.models import Workflow, Task
 from workflow.serializers import (
     WorkflowSerializer,
@@ -41,7 +42,7 @@ system_workflow_manager = get_system_workflow_manager()
 class WorkflowFilterSet(FilterSet):
     name = django_filters.CharFilter()
     user_code = django_filters.CharFilter()
-    status = django_filters.CharFilter()
+    status = django_filters.MultipleChoiceFilter(field_name='status', choices=Workflow.STATUS_CHOICES)
     created = django_filters.DateFromToRangeFilter()
 
     class Meta:
@@ -60,9 +61,10 @@ class WorkflowViewSet(ModelViewSet):
     filter_class = WorkflowFilterSet
     filter_backends = ModelViewSet.filter_backends + [
         OrderingFilter,
-        WorkflowQueryFilter
+        WorkflowQueryFilter,
+        WholeWordsSearchFilter,
     ]
-
+    search_fields = ['payload_data']
     ordering_fields = [
         'name', 'user_code', 'created', 'modified', 'status', 'owner'
     ]
