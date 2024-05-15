@@ -270,6 +270,7 @@ REST_FRAMEWORK = {
         'anon': '20/min',
         'user': '500/min',
     },
+    'SEARCH_PARAM': 'payload',
 
     # 'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S %Z',
     # 'DATETIME_INPUT_FORMATS': (ISO_8601, '%c', '%Y-%m-%d %H:%M:%S %Z'),

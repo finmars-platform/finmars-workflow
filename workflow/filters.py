@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta
 
 from django.db.models import Q
-from rest_framework.filters import BaseFilterBackend
+from rest_framework.filters import BaseFilterBackend, SearchFilter
 
 _l = logging.getLogger('workflow')
 
@@ -40,3 +40,12 @@ class WorkflowQueryFilter(BaseFilterBackend):
             return queryset.filter(options)
 
         return queryset
+
+
+class WholeWordsSearchFilter(SearchFilter):
+    def get_search_terms(self, request):
+        terms = super().get_search_terms(request)
+        for i in range(len(terms)):
+            if terms[i]:
+                terms[i] = f'\\m{terms[i]}\\M'
+        return terms
