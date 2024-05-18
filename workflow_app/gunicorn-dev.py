@@ -6,7 +6,7 @@ loglevel = "info"
 workers = 4
 threads = 4
 # The socket to bind
-bind = "0.0.0.0:8000"
+bind = "0.0.0.0:8084"
 # Restart workers when code changes (development only!)
 reload = True
 # PID file so you can easily fetch process ID
