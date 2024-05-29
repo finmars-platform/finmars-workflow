@@ -16,7 +16,7 @@ logger = get_task_logger(__name__)
 # 2024-03-24 szhitenev
 # ALL TASKS MUST BE PROVIDED WITH CONTEXT WITH space_code
 @task_prerun.connect
-def workflow_prerun(task_id, task, *args, **kwargs):
+def workflow_prerun(task_id, task, sender, *args, **kwargs):
     ignored_tasks = ("workflow.tasks", "celery.")
 
     if task.name.startswith(ignored_tasks):
@@ -47,6 +47,7 @@ def workflow_prerun(task_id, task, *args, **kwargs):
 
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_PROGRESS
+        task.worker_name = sender.request.hostname
         task.save()
         logger.info(f"Task {task_id} is now in progress")
 
@@ -158,6 +159,7 @@ class BaseTask(_Task):
 
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_PROGRESS
+        task.worker_name = self.request.hostname
         task.save()
 
         workflow = Workflow.objects.get(id=task.workflow_id)

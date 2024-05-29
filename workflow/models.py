@@ -233,6 +233,7 @@ class Task(TimeStampedModel):
     source_code = models.CharField(null=True, max_length=255)
     status = models.CharField(null=True, max_length=255, default=STATUS_INIT, choices=STATUS_CHOICES,
                               verbose_name='status')
+    worker_name = models.CharField(null=True, max_length=255, verbose_name="worker name")
     type = models.CharField(max_length=50, blank=True, null=True)
 
     payload_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('payload data'))
