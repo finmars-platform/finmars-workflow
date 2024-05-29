@@ -262,9 +262,9 @@ class RefreshStorageViewSet(ViewSet):
 
         try:
 
-            c = pexpect.spawn("supervisorctl stop celery", timeout=240)
-            result = c.read()
-            _l.info('RefreshStorageViewSet.stop celery result %s' % result)
+            #c = pexpect.spawn("supervisorctl stop celery", timeout=240)
+            #result = c.read()
+            #_l.info('RefreshStorageViewSet.stop celery result %s' % result)
             c = pexpect.spawn("supervisorctl stop celerybeat", timeout=240)
             result = c.read()
             _l.info('RefreshStorageViewSet.stop celerybeat result %s' % result)
@@ -275,13 +275,12 @@ class RefreshStorageViewSet(ViewSet):
             #c = pexpect.spawn("python /var/app/manage.py sync_remote_storage_to_local_storage", timeout=240)
             system_workflow_manager.sync_remote_storage_to_local_storage(request.space_code)
 
-
             result = c.read()
             _l.info('RefreshStorageViewSet.clear result %s' % result)
 
-            c = pexpect.spawn("supervisorctl start celery", timeout=240)
-            result = c.read()
-            _l.info('RefreshStorageViewSet.celery result %s' % result)
+            #c = pexpect.spawn("supervisorctl start celery", timeout=240)
+            #result = c.read()
+            #_l.info('RefreshStorageViewSet.celery result %s' % result)
             c = pexpect.spawn("supervisorctl start celerybeat", timeout=240)
 
             result = c.read()
@@ -292,6 +291,12 @@ class RefreshStorageViewSet(ViewSet):
             _l.info('RefreshStorageViewSet.flower result %s' % result)
 
             system_workflow_manager.register_workflows(request.space_code)
+            system_workflow_manager.init_periodic_tasks()
+
+            workers = CeleryWorker.objects.all()
+            for worker in workers:
+                if worker.get_status(request.realm_code) == "deployed":
+                    worker.restart(request.realm_code)
 
         except Exception as e:
             _l.info("Could not restart celery.exception %s" % e)
