@@ -1,7 +1,8 @@
+import json
 from rest_framework import serializers
 
 from workflow.fields import SpaceField
-from workflow.models import Workflow, Task
+from workflow.models import Workflow, Task, CeleryWorker
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -61,3 +62,21 @@ class PingSerializer(serializers.Serializer):
 
 class BulkSerializer(serializers.Serializer):
     ids = serializers.ListField(child=serializers.IntegerField())
+
+
+class CeleryWorkerSerializer(serializers.ModelSerializer):
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CeleryWorker
+        fields = ["id", "worker_name", "worker_type", "notes", "memory_limit", "queue", "status"]
+
+    def get_status(self, instance):
+
+        try:
+            return json.loads(instance.status)
+        except Exception as e:
+            return {
+                "status": "unknown",
+                "error_message": None
+            }

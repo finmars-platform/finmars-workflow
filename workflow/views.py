@@ -12,20 +12,22 @@ from django_filters.rest_framework import FilterSet
 from rest_framework import status
 from rest_framework.authentication import get_authorization_header
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet
 
 
-from workflow.filters import WorkflowQueryFilter, WholeWordsSearchFilter
-from workflow.models import Workflow, Task
+from workflow.filters import WorkflowQueryFilter, WholeWordsSearchFilter, CharFilter
+from workflow.models import Workflow, Task, CeleryWorker
 from workflow.serializers import (
     WorkflowSerializer,
     TaskSerializer,
     PingSerializer,
     WorkflowLightSerializer,
-    BulkSerializer
+    BulkSerializer,
+    CeleryWorkerSerializer,
 )
 from workflow.workflows import execute_workflow
 
@@ -149,6 +151,82 @@ class TaskViewSet(ModelViewSet):
     ]
     filter_backends = ModelViewSet.filter_backends + [
     ]
+
+
+class CeleryWorkerFilterSet(FilterSet):
+    id = CharFilter()
+    worker_name = CharFilter()
+    queue = CharFilter()
+    worker_type = CharFilter()
+    notes = CharFilter()
+
+    class Meta:
+        model = CeleryWorker
+        fields = []
+
+
+class CeleryWorkerViewSet(ModelViewSet):
+    queryset = CeleryWorker.objects.all()
+    serializer_class = CeleryWorkerSerializer
+    filter_class = CeleryWorkerFilterSet
+    filter_backends = []
+
+    def update(self, request, *args, **kwargs):
+        # Workers could not be updated for now,
+        # Consider delete and creating new
+        raise PermissionDenied()
+
+    @action(detail=True, methods=["PUT"], url_path="create-worker")
+    def create_worker(self, request, pk=None, realm_code=None, space_code=None):
+        worker = self.get_object()
+
+        worker.create_worker(request.realm_code)
+
+        return Response({"status": "ok"})
+
+    @action(detail=True, methods=["PUT"], url_path="start")
+    def start(self, request, pk=None, realm_code=None, space_code=None):
+        worker = self.get_object()
+
+        worker.start(request.realm_code)
+
+        return Response({"status": "ok"})
+
+    @action(detail=True, methods=["PUT"], url_path="stop")
+    def stop(self, request, pk=None, realm_code=None, space_code=None):
+        worker = self.get_object()
+
+        worker.stop(request.realm_code)
+
+        return Response({"status": "ok"})
+
+    @action(detail=True, methods=["PUT"], url_path="restart")
+    def restart(self, request, pk=None, realm_code=None, space_code=None):
+        worker = self.get_object()
+
+        worker.restart(request.realm_code)
+
+        return Response({"status": "ok"})
+
+    @action(detail=True, methods=["GET"], url_path="status")
+    def status(self, request, pk=None, realm_code=None, space_code=None):
+        worker = self.get_object()
+
+        worker.get_status(request.realm_code)
+
+        return Response({"status": "ok"})
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            self.perform_destroy(instance, request)
+        except Exception as e:
+            pass
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def perform_destroy(self, instance, request):
+        instance.delete_worker(request.realm_code)
+        return super().perform_destroy(instance)
 
 
 class PingViewSet(ViewSet):

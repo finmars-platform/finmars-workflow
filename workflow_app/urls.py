@@ -22,12 +22,13 @@ from django.conf import settings
 from workflow_app.openapi import get_redoc_urlpatterns
 
 from workflow.views import WorkflowViewSet, TaskViewSet, PingViewSet, DefinitionViewSet, RefreshStorageViewSet, \
-    LogFileViewSet, CodeExecutionViewSet
+    LogFileViewSet, CodeExecutionViewSet, CeleryWorkerViewSet
 
 router = routers.DefaultRouter()
 
 router.register(r'workflow', WorkflowViewSet, 'workflow')
 router.register(r'task', TaskViewSet, "task")
+router.register(r"worker", CeleryWorkerViewSet, "worker")
 router.register(r'ping', PingViewSet, "ping")
 router.register(r'refresh-storage', RefreshStorageViewSet, "refresh-storage")
 router.register(r'definition', DefinitionViewSet, "ping")
@@ -45,9 +46,9 @@ urlpatterns = [
 
     # New Approach
     re_path(r'^(?P<realm_code>[^/]+)/(?P<space_code>[^/]+)/workflow/api/', include(router.urls)),
-    re_path(r'^(?P<realm_code>[^/]+)/(?P<space_code>[^/]+)/workflow/admin/docs/',
-            include('django.contrib.admindocs.urls')),
-    re_path(r'^(?P<realm_code>[^/]+)/(?P<space_code>[^/]+)/workflow/admin/', admin.site.urls),
+    #re_path(r'^(?P<realm_code>[^/]+)/(?P<space_code>[^/]+)/workflow/admin/docs/',
+    #        include('django.contrib.admindocs.urls')),
+    re_path(rf"^{settings.REALM_CODE}/(?:space\w{{5}})/workflow/admin/", admin.site.urls),
 
     re_path(r'^(?P<realm_code>[^/]+)/(?P<space_code>[^/]+)/workflow/$',
             TemplateView.as_view(template_name='index.html'))
