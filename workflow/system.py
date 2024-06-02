@@ -52,9 +52,6 @@ class SystemWorkflowManager:
             with connection.cursor() as cursor:
                 cursor.execute("SET search_path TO public;")
 
-        # Initialize periodic tasks after loading all workflows
-        self.init_periodic_tasks()
-
     def sync_remote_storage_to_local_storage(self, space_code=None):
 
         schemas = get_all_tenant_schemas()
@@ -290,11 +287,13 @@ class SystemWorkflowManager:
 
         _l.info("Tasks are loaded")
 
-    def cancel_all_existing_tasks(self):
+    def cancel_all_existing_tasks(self, worker_name):
         from workflow.models import Task
         from workflow.models import Workflow
-        tasks = Task.objects.filter(status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT])
-        workflows = Workflow.objects.filter(status__in=[Workflow.STATUS_PROGRESS, Workflow.STATUS_INIT])
+        tasks = Task.objects.filter(status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT], worker_name=worker_name)
+        workflow_ids = [task.workflow_id for task in tasks]
+        workflows = Workflow.objects.filter(status__in=[Workflow.STATUS_PROGRESS, Workflow.STATUS_INIT],
+                                            workflow_id__in=workflow_ids)
 
         for task in tasks:
             task.status = Task.STATUS_CANCELED

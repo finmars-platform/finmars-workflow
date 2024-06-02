@@ -10,6 +10,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy
 
 from workflow.storage import get_storage
+from workflow.finmars_authorizer import AuthorizerService
 
 
 LANGUAGE_MAX_LENGTH = 5
@@ -232,6 +233,7 @@ class Task(TimeStampedModel):
     source_code = models.CharField(null=True, max_length=255)
     status = models.CharField(null=True, max_length=255, default=STATUS_INIT, choices=STATUS_CHOICES,
                               verbose_name='status')
+    worker_name = models.CharField(null=True, max_length=255, verbose_name="worker name")
     type = models.CharField(max_length=50, blank=True, null=True)
 
     payload_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('payload data'))
@@ -338,3 +340,74 @@ class Task(TimeStampedModel):
         self.progress = progress
 
         self.save()
+
+
+class CeleryWorker(TimeStampedModel):
+    worker_name = models.CharField(
+        unique=True,
+        max_length=255,
+        verbose_name="worker name",
+        help_text="Name that will be used in celery worker command",
+    )
+    worker_type = models.CharField(
+        default="worker",
+        max_length=255,
+        verbose_name="worker type",
+        help_text="worker or scheduler",
+    )
+    status = models.TextField(
+        null=True,
+        blank=True,
+        default="unknown",
+        verbose_name="status",
+        help_text="Status of worker container",
+    )
+    notes = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name=gettext_lazy("notes"),
+    )
+    memory_limit = models.CharField(
+        null=True,
+        max_length=255,
+        verbose_name="Memory Limit",
+        help_text="Memory limit for celery worker e.g. 2Gi",
+    )
+    queue = models.TextField(
+        null=True,
+        blank=True,
+        default="workflow",
+        verbose_name=gettext_lazy("Queue"),
+        help_text="Comma separated list of queues that worker will listen to",
+    )
+
+    def create_worker(self, realm_code):
+        authorizer_service = AuthorizerService()
+        authorizer_service.create_worker(self, realm_code)
+
+    def start(self, realm_code):
+        authorizer_service = AuthorizerService()
+        authorizer_service.start_worker(self, realm_code)
+
+    def stop(self, realm_code):
+        authorizer_service = AuthorizerService()
+        authorizer_service.stop_worker(self, realm_code)
+
+    def restart(self, realm_code):
+        authorizer_service = AuthorizerService()
+        authorizer_service.restart_worker(self, realm_code)
+
+    def get_status(self, realm_code):
+        authorizer_service = AuthorizerService()
+        status = authorizer_service.get_worker_status(self, realm_code)
+
+        try:
+            self.status = json.dumps(status)
+        except Exception as e:
+            self.status = json.dumps({"status": "unknown", "error_message": str(e)})
+
+        self.save()
+
+    def delete_worker(self, realm_code):
+        authorizer_service = AuthorizerService()
+        authorizer_service.delete_worker(self, realm_code)

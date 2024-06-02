@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from workflow.models import User, Task, Workflow, Space
+from workflow.models import User, Task, Workflow, Space, CeleryWorker
 from workflow_app import settings
 
 admin.site.site_header = 'Workflow Admin'
@@ -54,3 +54,17 @@ class WorkflowAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Workflow, WorkflowAdmin)
+
+
+class CeleryWorkerAdmin(admin.ModelAdmin):
+    model = CeleryWorker
+    list_display = [
+        "id",
+        "worker_name",
+        "queue",
+        "memory_limit",
+        "status"
+    ]
+
+
+admin.site.register(CeleryWorker, CeleryWorkerAdmin)

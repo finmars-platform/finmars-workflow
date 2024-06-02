@@ -56,6 +56,7 @@ Test:
     DB_PASSWORD: test_finmars_password
     DB_PORT: 5432
     USE_FILESYSTEM_STORAGE: 'True'
+    SECRET_KEY: test
 
   before_script:
     - |
