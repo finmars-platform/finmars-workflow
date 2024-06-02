@@ -62,6 +62,7 @@ def cleanup(task_id, **kwargs):
 def on_failure(task_id, exception, args, einfo, **kwargs):
     logger.info("task_failure.task_id: %s" % task_id)
     logger.info("task_failure.kwargs: %s" % kwargs['kwargs'])
+    logger.info("task_failure.exception: %s" % exception)
 
     context = kwargs['kwargs'].get('context')
     set_schema_from_context(context)
