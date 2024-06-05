@@ -293,7 +293,7 @@ class SystemWorkflowManager:
         tasks = Task.objects.filter(status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT], worker_name=worker_name)
         workflow_ids = [task.workflow_id for task in tasks]
         workflows = Workflow.objects.filter(status__in=[Workflow.STATUS_PROGRESS, Workflow.STATUS_INIT],
-                                            workflow_id__in=workflow_ids)
+                                            id__in=workflow_ids)
 
         for task in tasks:
             task.status = Task.STATUS_CANCELED
