@@ -39,8 +39,8 @@ urlpatterns = [
 
     # Old Approach (delete in 1.9.0)
     re_path(r'^(?P<space_code>[^/]+)/workflow/api/', include(router.urls)),
-    re_path(r'^(?P<space_code>[^/]+)/workflow/admin/docs/', include('django.contrib.admindocs.urls')),
-    re_path(r'^(?P<space_code>[^/]+)/workflow/admin/', admin.site.urls),
+    #re_path(r'^(?P<space_code>[^/]+)/workflow/admin/docs/', include('django.contrib.admindocs.urls')),
+    #re_path(r'^(?P<space_code>[^/]+)/workflow/admin/', admin.site.urls),
 
     re_path(r'^(?P<space_code>[^/]+)/workflow/$', TemplateView.as_view(template_name='index.html')),
 
