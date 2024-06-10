@@ -95,7 +95,7 @@ elif [ "$INSTANCE_TYPE" = "worker" ]; then
 
   echo "Start celery"
   # cd /var/app && nohup celery --app workflow_app --broker=amqp://guest:guest@$RABBITMQ_HOST:5672// flower --concurrency=2 --auto_refresh=False --broker_api=http://guest:guest@$RABBITMQ_HOST:15672/api/  --url-prefix=$BASE_API_URL/workflow/flower --port=5566 &
-  cd /var/app && celery --app workflow_app worker --concurrency=1 --loglevel=INFO --soft-time-limit=3000 -n "$WORKER_NAME" -Q "$QUEUES" --max-tasks-per-child=1
+  cd /var/app && celery --app workflow_app worker --concurrency=1 --loglevel=INFO --soft-time-limit=3000 -n "$WORKER_NAME" -Q "$QUEUES" --max-tasks-per-child=1 --prefetch-multiplier=1
 
 else
   echo "Missing or unsupported value for INSTANCE_TYPE environment variable. Exiting."
