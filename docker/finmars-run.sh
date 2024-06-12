@@ -70,9 +70,6 @@ if [ "$INSTANCE_TYPE" = "workflow" ]; then
 
   python /var/app/manage.py generate_super_user
 
-  echo "Init periodic tasks"
-  python /var/app/manage.py init_periodic_tasks
-
   echo "Run server"
   gunicorn --config /var/app/workflow_app/gunicorn-prod.py workflow_app.wsgi
   #python director.py webserver

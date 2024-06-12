@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import logging
 import sys
-from celery.signals import worker_init
+from celery.signals import worker_init, beat_init
 from celery import Celery
 from django.conf import settings
 
@@ -29,5 +29,13 @@ def configure_worker(sender=None, conf=None, **kwargs):
 
     system_workflow_manager.register_workflows()
 
+
+@beat_init.connect
+def configure_beat(**kwargs):
+    from workflow.system import get_system_workflow_manager
+    system_workflow_manager = get_system_workflow_manager()
+
+    system_workflow_manager.register_workflows()
+    system_workflow_manager.init_periodic_tasks()
 
 # app.autodiscover_tasks()
