@@ -37,5 +37,6 @@ def configure_beat(**kwargs):
 
     system_workflow_manager.register_workflows()
     system_workflow_manager.init_periodic_tasks()
+    kwargs['sender'].scheduler.setup_schedule()
 
 # app.autodiscover_tasks()
