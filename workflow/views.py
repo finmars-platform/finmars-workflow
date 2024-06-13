@@ -311,7 +311,7 @@ class DefinitionViewSet(ViewSet):
         for user_code, definition in sorted(system_workflow_manager.workflows.items()):
             # _l.info('DefinitionViewSet.definition %s' % definition)
 
-            if definition["space_code"] == request.space_code:
+            if definition["workflow"]["space_code"] == request.space_code:
                 workflow_definitions.append(
                     {"user_code": user_code, **definition['workflow']}
                 )
