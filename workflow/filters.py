@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta
 
 from django.db.models import Q
+import django_filters
 from rest_framework.filters import BaseFilterBackend, SearchFilter
 
 _l = logging.getLogger('workflow')
@@ -49,3 +50,9 @@ class WholeWordsSearchFilter(SearchFilter):
             if terms[i]:
                 terms[i] = f'\\m{terms[i]}\\M'
         return terms
+
+
+class CharFilter(django_filters.CharFilter):
+    def __init__(self, *args, **kwargs):
+        kwargs["lookup_expr"] = "icontains"
+        super().__init__(*args, **kwargs)

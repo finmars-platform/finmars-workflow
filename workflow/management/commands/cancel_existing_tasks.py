@@ -1,3 +1,6 @@
+import os
+
+from celery.utils.nodenames import default_nodename
 from django.core.management import BaseCommand
 from django.db import connection
 
@@ -14,18 +17,15 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-
             for schema in get_all_tenant_schemas():
-                self.stdout.write(self.style.SUCCESS(f"Applying migrations to {schema}..."))
+                # Set the search path to the tenant's schema
+                with connection.cursor() as cursor:
+                    cursor.execute(f"SET search_path TO {schema};")
 
-            # Set the search path to the tenant's schema
-            with connection.cursor() as cursor:
-                cursor.execute(f"SET search_path TO {schema};")
+                worker_name = default_nodename(os.getenv('WORKER_NAME'))
 
-                system_workflow_manager.register_workflows()
-
-                self.stdout.write("Going to cancel tasks")
-                system_workflow_manager.cancel_all_existing_tasks()
+                self.stdout.write(f"Going to cancel tasks in {schema}")
+                system_workflow_manager.cancel_all_existing_tasks(worker_name)
 
             # Optionally, reset the search path to default after migrating
             with connection.cursor() as cursor:
