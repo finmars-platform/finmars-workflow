@@ -64,7 +64,7 @@ sqlalchemy==1.4.46
 flower==2.0.0
 mkdocs==1.4.2
 mkdocs-material==9.0.8
-pandas==2.0.3
+pandas==2.2.2
 PyJWT==2.6.0
 flatten_json==0.1.13
 sentry-sdk==1.28.1
