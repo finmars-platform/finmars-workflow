@@ -4,7 +4,7 @@ import traceback
 
 import django_filters
 import pexpect
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -20,7 +20,7 @@ from rest_framework.viewsets import ModelViewSet, ViewSet
 
 
 from workflow.filters import WorkflowQueryFilter, WholeWordsSearchFilter, CharFilter
-from workflow.models import Workflow, Task, CeleryWorker
+from workflow.models import Workflow, Task
 from workflow.serializers import (
     WorkflowSerializer,
     TaskSerializer,
@@ -33,6 +33,7 @@ from workflow.workflows import execute_workflow
 
 from workflow.user_sessions import create_session, execute_code, sessions
 from workflow.workflows import execute_workflow
+from workflow.finmars_authorizer import AuthorizerService
 
 _l = logging.getLogger('workflow')
 
@@ -153,80 +154,56 @@ class TaskViewSet(ModelViewSet):
     ]
 
 
-class CeleryWorkerFilterSet(FilterSet):
-    id = CharFilter()
-    worker_name = CharFilter()
-    queue = CharFilter()
-    worker_type = CharFilter()
-    notes = CharFilter()
+class CeleryWorkerViewSet(ViewSet):
+    authorizer_service = AuthorizerService()
 
-    class Meta:
-        model = CeleryWorker
-        fields = []
+    def list(self, request, *args, **kwargs):
+        response = self.authorizer_service.get_workers(self.request.realm_code)
+        serializer = CeleryWorkerSerializer(response, many=True)
+        return Response(serializer.data)
 
-
-class CeleryWorkerViewSet(ModelViewSet):
-    queryset = CeleryWorker.objects.all()
-    serializer_class = CeleryWorkerSerializer
-    filter_class = CeleryWorkerFilterSet
-    filter_backends = []
+    def create(self, request, *args, **kwargs):
+        serializer = CeleryWorkerSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            worker = serializer.data
+            self.authorizer_service.create_worker(worker, request.realm_code)
+            return Response(worker, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
         # Workers could not be updated for now,
         # Consider delete and creating new
         raise PermissionDenied()
 
-    @action(detail=True, methods=["PUT"], url_path="create-worker")
-    def create_worker(self, request, pk=None, realm_code=None, space_code=None):
-        worker = self.get_object()
-
-        worker.create_worker(request.realm_code)
-
-        return Response({"status": "ok"})
-
     @action(detail=True, methods=["PUT"], url_path="start")
-    def start(self, request, pk=None, realm_code=None, space_code=None):
-        worker = self.get_object()
-
-        worker.start(request.realm_code)
+    def start(self, request, pk=None, *args, **kwargs):
+        self.authorizer_service.start_worker(pk, request.realm_code)
 
         return Response({"status": "ok"})
 
     @action(detail=True, methods=["PUT"], url_path="stop")
-    def stop(self, request, pk=None, realm_code=None, space_code=None):
-        worker = self.get_object()
-
-        worker.stop(request.realm_code)
+    def stop(self, request, pk=None, *args, **kwargs):
+        self.authorizer_service.stop_worker(pk, request.realm_code)
 
         return Response({"status": "ok"})
 
     @action(detail=True, methods=["PUT"], url_path="restart")
-    def restart(self, request, pk=None, realm_code=None, space_code=None):
-        worker = self.get_object()
-
-        worker.restart(request.realm_code)
+    def restart(self, request, pk=None, *args, **kwargs):
+        self.authorizer_service.restart_worker(pk, request.realm_code)
 
         return Response({"status": "ok"})
 
     @action(detail=True, methods=["GET"], url_path="status")
-    def status(self, request, pk=None, realm_code=None, space_code=None):
-        worker = self.get_object()
-
-        worker.get_status(request.realm_code)
+    def status(self, request, pk=None, *args, **kwargs):
+        self.authorizer_service.get_worker_status(pk, request.realm_code)
 
         return Response({"status": "ok"})
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request, pk=None, *args, **kwargs):
         try:
-            instance = self.get_object()
-            self.perform_destroy(instance, request)
+            self.authorizer_service.delete_worker(pk, request.realm_code)
         except Exception as e:
             pass
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-    def perform_destroy(self, instance, request):
-        instance.delete_worker(request.realm_code)
-        return super().perform_destroy(instance)
 
 
 class PingViewSet(ViewSet):
@@ -289,10 +266,17 @@ class RefreshStorageViewSet(ViewSet):
 
             system_workflow_manager.register_workflows(request.space_code)
 
-            workers = CeleryWorker.objects.all()
+            authorizer_service = AuthorizerService()
+            workers = authorizer_service.get_workers(request.realm_code)
+            _l.info('RefreshStorageViewSet.restarting %s workers' % len(workers))
+
             for worker in workers:
-                if worker.get_status(request.realm_code) == "deployed":
-                    worker.restart(request.realm_code)
+                if worker["status"]["status"] == "deployed":
+                    _l.info('RefreshStorageViewSet.restarting worker %s' % worker["worker_name"])
+                    authorizer_service.restart_worker(worker, request.realm_code)
+                else:
+                    _l.info('RefreshStorageViewSet.worker %s is in status %s - cannot restart' % (
+                        worker["worker_name"], worker["status"]["status"]))
 
         except Exception as e:
             _l.info("Could not restart celery.exception %s" % e)
