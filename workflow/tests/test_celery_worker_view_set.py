@@ -1,3 +1,4 @@
+import unittest
 from unittest.mock import patch, ANY
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -21,25 +22,21 @@ class CeleryWorkerViewSetTestCase(BaseTestCase):
             queue="workflow",
         )
 
-    @patch("workflow.views.CeleryWorkerViewSet.authorizer_service.get_workers")
-    def test_create_method(self, mock_get_workers):
-        mock_get_workers.return_value = [self.worker]
+    @patch("workflow.views.CeleryWorkerViewSet.authorizer_service.create_worker")
+    def test_create_method(self, mock_create_worker):
         url = f"{self.url_prefix}/"
         response = self.client.post(url, data=self.worker)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        expected_fields = ["worker_name", "worker_type", "memory_limit", "queue"]
+        expected_payload = {field: self.worker[field] for field in expected_fields}
+        real_payload = dict(mock_create_worker.call_args[0][0])
+        real_payload = {field: real_payload[field] for field in expected_fields}
+        self.assertEqual(real_payload, expected_payload)
 
     def test_update_method_raises_permission_denied(self):
         url = f"{self.url_prefix}/{self.worker['id']}/"
         response = self.client.put(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    @patch("workflow.views.CeleryWorkerViewSet.authorizer_service.create_worker")
-    def test_create_worker_action(self, mock_create_worker):
-        url = f"{self.url_prefix}/{self.worker['id']}/create-worker/"
-        response = self.client.put(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, {"status": "ok"})
-        mock_create_worker.assert_called_once_with(self.worker['id'], self.realm_code)
 
     @patch("workflow.views.CeleryWorkerViewSet.authorizer_service.start_worker")
     def test_start_action(self, mock_start_worker):

@@ -166,7 +166,7 @@ class CeleryWorkerViewSet(ViewSet):
         serializer = CeleryWorkerSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             worker = serializer.data
-            self.authorizer_service.create_worker(worker["id"], request.realm_code)
+            self.authorizer_service.create_worker(worker, request.realm_code)
             return Response(worker, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
@@ -268,10 +268,15 @@ class RefreshStorageViewSet(ViewSet):
 
             authorizer_service = AuthorizerService()
             workers = authorizer_service.get_workers(request.realm_code)
+            _l.info('RefreshStorageViewSet.restarting %s workers' % len(workers))
 
             for worker in workers:
                 if worker["status"]["status"] == "deployed":
+                    _l.info('RefreshStorageViewSet.restarting worker %s' % worker["worker_name"])
                     authorizer_service.restart_worker(worker, request.realm_code)
+                else:
+                    _l.info('RefreshStorageViewSet.worker %s is in status %s - cannot restart' % (
+                        worker["worker_name"], worker["status"]["status"]))
 
         except Exception as e:
             _l.info("Could not restart celery.exception %s" % e)
