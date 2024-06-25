@@ -342,7 +342,13 @@ class SystemWorkflowManager:
                                 json.loads(periodic_payload),
                                 is_manager
                             ),
-                            'options': {'queue': 'workflow'},
+                            "kwargs": {
+                                "context": {
+                                    "realm_code": workflow["realm_code"],
+                                    "space_code": workflow["space_code"],
+                                }
+                            },
+                            "options": {"queue": "workflow"},
                         }
                     }
                 )

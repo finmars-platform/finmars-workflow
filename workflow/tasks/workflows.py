@@ -6,8 +6,7 @@ from celery.utils import uuid
 from celery.utils.log import get_task_logger
 from django.db import connection
 
-from workflow.models import Task
-from workflow.models import Workflow, User
+from workflow.models import Task, Workflow, User, Space
 from workflow.utils import schema_exists, set_schema_from_context
 from workflow_app import celery_app
 
@@ -135,8 +134,10 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
         set_schema_from_context(context)
 
         finmars_bot = User.objects.get(username='finmars_bot')
+        space = Space.objects.get(space_code=context.get('space_code'))
 
-        c_obj = Workflow(owner=finmars_bot, user_code=user_code, payload=payload, periodic=True, is_manager=is_manager)
+        c_obj = Workflow(owner=finmars_bot, space=space, user_code=user_code, payload=payload, periodic=True,
+                         is_manager=is_manager)
         c_obj.save()
 
         # Build the workflow and execute it
