@@ -4,6 +4,8 @@ import traceback
 
 import django_filters
 import pexpect
+from django.core.management import call_command
+from django.db import connection
 from django.http import HttpResponse, Http404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -345,3 +347,20 @@ class CodeExecutionViewSet(ViewSet):
         except Exception as e:
             # Catch any errors during code execution
             return Response({"error": str(e)}, status=400)
+
+
+class RealmMigrateSchemeView(ViewSet):
+    permission_classes = [AllowAny, ]
+    authentication_classes = []
+
+    def create(self, request, *args, **kwargs):
+        try:
+            # Assume search_path is set by RealmAndSpaceMiddleware
+            call_command("migrate")
+
+            return Response({"status": "ok"})
+        except Exception as e:
+            _l.error(f"RealmMigrateSchemeView.exception: {str(e)}")
+            _l.error(f"RealmMigrateSchemeView.traceback: {traceback.format_exc()}")
+
+            return Response({"status": "error", "message": str(e)})
