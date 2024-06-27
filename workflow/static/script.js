@@ -79,6 +79,10 @@ const router = new VueRouter({
             path: '/definitions'
         },
         {
+            name: 'workers',
+            path: '/workers'
+        },
+        {
             name: 'worfklow',
             path: '/item/:id'
         }
@@ -88,6 +92,7 @@ const router = new VueRouter({
 const store = new Vuex.Store({
     state: {
         definitions: [],
+        workers: [],
         workflows: [],
         workflowsCount: 0,
         workflowNames: [],
@@ -141,6 +146,21 @@ const store = new Vuex.Store({
                 commit('changeLoadingState', false)
             })
         },
+        listWorkers({
+                            commit
+                        }) {
+
+            const headers = {
+                'Authorization': 'Token ' + getCookie('access_token'),
+                'Accept': 'application/json',
+                'Content-type': 'application/json'
+            };
+
+            axios({method: 'get', url: API_URL + "/worker/", headers: headers}).then((response) => {
+                commit('updateWorkers', response.data)
+                commit('changeLoadingState', false)
+            })
+        },
         getWorkflow({commit}, workflow_id) {
 
             const headers = {
@@ -177,6 +197,7 @@ const store = new Vuex.Store({
                 .then((response) => {
                     dispatch("listWorkflows");
                     dispatch("listDefinitions");
+                    dispatch("listWorkers");
 
                     toastr.success("Storage refreshed")
 
@@ -241,6 +262,9 @@ const store = new Vuex.Store({
         },
         updateDefinitions(state, definitions) {
             state.definitions = definitions
+        },
+        updateWorkers(state, workers) {
+            state.workers = workers
         },
         updateSelectedWorkflow(state, workflow) {
             state.taskIndex = null;
@@ -444,6 +468,7 @@ new Vue({
         },
         ...Vuex.mapState([
             "definitions",
+            "workers",
             "workflows",
             "workflowsCount",
             "workflowNames",
@@ -471,7 +496,7 @@ new Vue({
     vuetify: new Vuetify(),
     data: () => ({
                 // navigation
-        isHome: false,
+        page: 'home',
         drawer: false,
         group: null,
         docLink: DOCUMENTATION_LINK,
@@ -631,9 +656,21 @@ new Vue({
                     )
                 );
         },
+        formattedTime(seconds) {
+          if (!parseFloat(seconds)) {
+              return 'N/A';
+          }
+          const days = Math.floor(seconds / 86400);
+          const hours = Math.floor((seconds % 86400) / 3600);
+          const minutes = Math.floor(((seconds % 86400) % 3600) / 60);
+          const remainingSeconds = ((seconds % 86400) % 3600) % 60;
+
+          return `${days}d ${hours}h ${minutes}m ${remainingSeconds}s`;
+        },
     },
     created() {
-        this.isHome = true;
+        this.page = 'home';
+        this.$store.dispatch('listWorkers');
         this.$store.dispatch('listDefinitions');
         this.$store.dispatch('listWorkflows');
 
@@ -651,8 +688,10 @@ new Vue({
         }
 
 
-        if (this.$route.name == "definitions") {
-            this.isHome = false;
+        if (this.$route.name === "definitions") {
+            this.page = 'definitions';
+        } else if (this.$route.name === "workers") {
+            this.page = 'workers';
         }
 
     },

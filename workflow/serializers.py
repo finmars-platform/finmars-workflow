@@ -78,7 +78,7 @@ class CeleryWorkerSerializer(serializers.Serializer):
 
     def get_status(self, instance):
         try:
-            return json.loads(instance["status"])
+            return instance["status"]
         except Exception as e:
             return {
                 "status": "unknown",
