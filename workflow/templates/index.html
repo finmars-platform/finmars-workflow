@@ -114,7 +114,7 @@
             <v-app-bar app clipped-right color="director" dark>
                 <v-app-bar-nav-icon @click="drawer = true, moveUp()"></v-app-bar-nav-icon>
                 <router-link to="/" tag="span" style="cursor: pointer">
-                    <v-toolbar-title @click="isHome = true"
+                    <v-toolbar-title @click="page = 'home'"
                     >Finmars Workflow
                     </v-toolbar-title
                     >
@@ -166,7 +166,7 @@
                             active-class="grey--text text--accent-4"
                     >
                         <router-link to="/">
-                            <button style="margin-left: 1em" @click="isHome = true">
+                            <button style="margin-left: 1em" @click="page = 'home'">
                                 <v-list-item>
                                     <v-list-item-icon>
                                         <v-icon>mdi-home</v-icon>
@@ -179,13 +179,26 @@
                         <router-link to="/definitions">
                             <button
                                     style="margin-left: 1em"
-                                    @click="isHome = false"
+                                    @click="page = 'definitions'"
                             >
                                 <v-list-item>
                                     <v-list-item-icon>
                                         <v-icon>mdi-format-list-bulleted</v-icon>
                                     </v-list-item-icon>
                                     <v-list-item-title>Definitions</v-list-item-title>
+                                </v-list-item>
+                            </button>
+                        </router-link>
+                        <router-link to="/workers">
+                            <button
+                                    style="margin-left: 1em"
+                                    @click="page = 'workers'"
+                            >
+                                <v-list-item>
+                                    <v-list-item-icon>
+                                        <v-icon>mdi-lan</v-icon>
+                                    </v-list-item-icon>
+                                    <v-list-item-title>Workers</v-list-item-title>
                                 </v-list-item>
                             </button>
                         </router-link>
@@ -216,7 +229,7 @@
             <!-- Drawer Ends-->
 
             <!-- Home Begins -->
-            <v-main v-if="isHome==true">
+            <v-main v-if="page==='home'">
                 <v-container v-if="!$route.params.id">
                     <v-row>
                         <v-col cols="12" md="8">
@@ -721,7 +734,7 @@
             <!-- Home Ends -->
 
             <!-- Definitions Begins -->
-            <v-main v-if="isHome==false">
+            <v-main v-if="page=='definitions'">
                 <!-- snackbar success -->
                 <v-snackbar
                         v-model="snackbar"
@@ -857,6 +870,43 @@
                 </v-card>
             </v-dialog>
             <!-- Definitions Ends -->
+
+            <!-- Workers Begins -->
+            <v-main v-if="page=='workers'">
+                <v-container>
+                    <v-row>
+                        <v-col cols="12" md="8">
+                            <v-card class="pa-4" outlined>
+                                <div>Workers</div>
+                                <v-card-text>
+                                    <v-simple-table>
+                                        <template v-slot:default>
+                                            <thead>
+                                            <tr>
+                                                <th class="text-left">Name</th>
+                                                <th class="text-left">Status</th>
+                                                <th class="text-left">Uptime</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr
+                                                    v-for="item in workers"
+                                                    :key="item.worker_name"
+                                            >
+                                                <td>{{ item.worker_name }}</td>
+                                                <td>{{ item.status.status }}</td>
+                                                <td>{{ formattedTime(item.status.uptime) }}</td>
+                                            </tr>
+                                            </tbody>
+                                        </template>
+                                    </v-simple-table>
+                                </v-card-text>
+                            </v-card>
+                        </v-col>
+                    </v-row>
+                </v-container>
+            </v-main>
+            <!-- Workers Ends -->
         </v-app>
 
     </div>
