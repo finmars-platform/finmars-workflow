@@ -29,6 +29,7 @@ from workflow.serializers import (
     PingSerializer,
     WorkflowLightSerializer,
     BulkSerializer,
+    RunWorkflowSerializer,
     CeleryWorkerSerializer,
 )
 from workflow.workflows import execute_workflow
@@ -87,11 +88,13 @@ class WorkflowViewSet(ModelViewSet):
 
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=False, methods=['POST'], url_path='run-workflow')
+    @action(detail=False, methods=['POST'], url_path='run-workflow', serializer_class=RunWorkflowSerializer)
     def run_workflow(self, request, pk=None, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         user_code, payload = (
-            request.data["user_code"],
-            request.data["payload"],
+            serializer.data["user_code"],
+            serializer.data["payload"],
         )
 
         user_code = f'{request.space_code}.{user_code}'
@@ -117,10 +120,10 @@ class WorkflowViewSet(ModelViewSet):
 
         return Response(workflow.to_dict())
 
-    @action(detail=False, methods=('POST',), url_path='bulk-cancel')
+    @action(detail=False, methods=('POST',), url_path='bulk-cancel', serializer_class=BulkSerializer)
     def bulk_cancel(self, request, *args, **kwargs):
-        serializer = BulkSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer = self.get_serializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=False)
 
         data = serializer.validated_data
         workflows = Workflow.objects.filter(id__in=data['ids'],
@@ -130,9 +133,9 @@ class WorkflowViewSet(ModelViewSet):
 
         return Response({'status': 'ok'})
 
-    @action(detail=False, methods=('POST',), url_path='bulk-delete')
+    @action(detail=False, methods=('POST',), url_path='bulk-delete', serializer_class=BulkSerializer)
     def bulk_delete(self, request, *args, **kwargs):
-        serializer = BulkSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data

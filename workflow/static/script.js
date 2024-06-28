@@ -500,6 +500,7 @@ new Vue({
         drawer: false,
         group: null,
         docLink: DOCUMENTATION_LINK,
+        apiDocLink: API_DOCUMENTATION_LINK,
         logLink: LOG_LINK,
         // definitions
         multiLine: true,

@@ -64,6 +64,11 @@ class BulkSerializer(serializers.Serializer):
     ids = serializers.ListField(child=serializers.IntegerField())
 
 
+class RunWorkflowSerializer(serializers.Serializer):
+    user_code = serializers.CharField(required=True)
+    payload = serializers.CharField(allow_blank=True)
+
+
 class CeleryWorkerSerializer(serializers.Serializer):
     worker_name = serializers.CharField(required=True)
     worker_type = serializers.CharField(default="worker")

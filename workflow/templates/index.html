@@ -83,6 +83,7 @@
         const API_URL = "api";
         const FLOWER_URL = '{{ FLOWER_URL }}';
         const DOCUMENTATION_LINK = '{{ DOCUMENTATION_LINK }}';
+        const API_DOCUMENTATION_LINK = '{{ API_DOCUMENTATION_LINK }}';
         const LOG_LINK = '{{ LOG_LINK }}';
     </script>
 
@@ -209,6 +210,16 @@
                                         <v-icon>mdi-book-open-variant</v-icon>
                                     </v-list-item-icon>
                                     <v-list-item-title>Documentation</v-list-item-title>
+                                </v-list-item>
+                            </button>
+                        </a>
+                        <a :href="apiDocLink" class="text-decoration-none" target="_blank">
+                            <button style="margin-left: 1em">
+                                <v-list-item>
+                                    <v-list-item-icon>
+                                        <v-icon>mdi-book-open-variant</v-icon>
+                                    </v-list-item-icon>
+                                    <v-list-item-title>API Documentation</v-list-item-title>
                                 </v-list-item>
                             </button>
                         </a>
