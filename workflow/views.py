@@ -90,11 +90,9 @@ class WorkflowViewSet(ModelViewSet):
 
     @action(detail=False, methods=['POST'], url_path='run-workflow', serializer_class=RunWorkflowSerializer)
     def run_workflow(self, request, pk=None, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
         user_code, payload = (
-            serializer.data["user_code"],
-            serializer.data["payload"],
+            request.data["user_code"],
+            request.data["payload"],
         )
 
         user_code = f'{request.space_code}.{user_code}'
