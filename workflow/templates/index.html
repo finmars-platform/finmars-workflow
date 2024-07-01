@@ -59,6 +59,10 @@
 
     <link
             rel="stylesheet"
+            href="{% static 'base-theme.css' %}"
+    />
+    <link
+            rel="stylesheet"
             href="{% static 'css/vuetify.css' %}"
     />
     <link
@@ -84,6 +88,7 @@
         const FLOWER_URL = '{{ FLOWER_URL }}';
         const DOCUMENTATION_LINK = '{{ DOCUMENTATION_LINK }}';
         const LOG_LINK = '{{ LOG_LINK }}';
+        const ENV_CSRF_TRUSTED_ORIGINS = '{{ ENV_CSRF_TRUSTED_ORIGINS }}';
     </script>
 
     <script src="{% static 'scripts/jquery.min.js' %}"></script>
@@ -111,7 +116,7 @@
 <div id="app" v-cloak>
     <div id="app" v-cloak>
         <v-app id="inspire">
-            <v-app-bar app clipped-right color="director" dark>
+            <v-app-bar app clipped-right color="director">
                 <v-app-bar-nav-icon @click="drawer = true, moveUp()"></v-app-bar-nav-icon>
                 <router-link to="/" tag="span" style="cursor: pointer">
                     <v-toolbar-title @click="isHome = true"
@@ -131,6 +136,7 @@
                                 v-on="on"
                                 v-bind="attrs"
                                 @click.stop="toggleAutoRefresh()"
+                                class="btn-depressed"
                         >
                             <v-icon v-if="autoRefresh">mdi-sync</v-icon>
                             <v-icon v-if="!autoRefresh">mdi-sync-off</v-icon>
@@ -150,6 +156,7 @@
                                 v-on="on"
                                 v-bind="attrs"
                                 @click.stop="refreshStorage()"
+                                class="btn-depressed"
                         >
                             <v-icon>mdi-cloud-refresh</v-icon>
                         </v-btn>
@@ -166,7 +173,7 @@
                             active-class="grey--text text--accent-4"
                     >
                         <router-link to="/">
-                            <button style="margin-left: 1em" @click="isHome = true">
+                            <button class="btn-nav-link" @click="isHome = true">
                                 <v-list-item>
                                     <v-list-item-icon>
                                         <v-icon>mdi-home</v-icon>
@@ -178,7 +185,7 @@
 
                         <router-link to="/definitions">
                             <button
-                                    style="margin-left: 1em"
+                                    class="btn-nav-link"
                                     @click="isHome = false"
                             >
                                 <v-list-item>
@@ -190,7 +197,7 @@
                             </button>
                         </router-link>
                         <a :href="docLink" class="text-decoration-none" target="_blank">
-                            <button style="margin-left: 1em">
+                            <button class="btn-nav-link">
                                 <v-list-item>
                                     <v-list-item-icon>
                                         <v-icon>mdi-book-open-variant</v-icon>
@@ -200,7 +207,7 @@
                             </button>
                         </a>
                         <a :href="logLink" class="text-decoration-none" target="_blank">
-                            <button style="margin-left: 1em">
+                            <button class="btn-nav-link">
                                 <v-list-item>
                                     <v-list-item-icon>
                                         <v-icon>mdi-clipboard-text</v-icon>
@@ -216,7 +223,7 @@
             <!-- Drawer Ends-->
 
             <!-- Home Begins -->
-            <v-main v-if="isHome==true">
+            <v-main v-if="isHome">
                 <v-container v-if="!$route.params.id">
                     <v-row>
                         <v-col cols="12" md="8">
@@ -225,7 +232,7 @@
                                 <v-card-text>
 
 
-                                    <div class="v-data-table theme--dark">
+                                    <div class="v-data-table">
 
                                         <div class="v-data-table__wrapper">
 
@@ -260,7 +267,7 @@
                                                         <v-avatar
                                                                 size="14"
                                                                 :color="item.status | statusColor"
-                                                        ></v-avatar>
+                                                        >{{ item.status }}</v-avatar>
                                                     </td>
                                                     <td>{{ item.id }}</td>
                                                     <td>{{ item.user_code }}</td>
@@ -283,16 +290,16 @@
 
 
                                     <div class="pagination">
-                                        <button @click="changePage(1)" :disabled="page === 1"><<</button>
-                                        <button @click="changePage(page - 1)" :disabled="page === 1"><</button>
+                                        <button @click="changePage(1)" :disabled="page === 1"><v-icon>mdi-page-first</v-icon></button>
+                                        <button @click="changePage(page - 1)" :disabled="page === 1"><v-icon>mdi-chevron-left</v-icon></button>
                                         <template v-for="pageItem in displayPages">
                                             <button v-if="pageItem !== '...'" @click="changePage(pageItem)" :disabled="page === pageItem" :key="pageItem">
                                                 {{ pageItem }}
                                             </button>
                                             <span v-else :key="pageItem">...</span>
                                         </template>
-                                        <button @click="changePage(page + 1)" :disabled="page === totalPages">></button>
-                                        <button @click="changePage(totalPages)" :disabled="page === totalPages">>></button>
+                                        <button @click="changePage(page + 1)" :disabled="page === totalPages"><v-icon>mdi-chevron-right</v-icon></button>
+                                        <button @click="changePage(totalPages)" :disabled="page === totalPages"><v-icon>mdi-page-last</v-icon></button>
                                     </div>
 
 
@@ -300,9 +307,9 @@
                             </v-card>
                         </v-col>
                         <v-col cols="6" md="4">
-                            <v-card class="pa-4 mb-4" outlined tile>
+                            <v-card class="pa-4 mb-4" outlined>
                                 <div>Search</div>
-                                <v-card-text>
+                                <v-card-text class="card-search">
                                     <v-text-field
                                             v-model="query"
                                             label="Search by Date/ID"
@@ -310,6 +317,7 @@
                                             append-icon="mdi-magnify"
                                             single-line
                                             hide-details
+                                            class="search-by-id"
                                     ></v-text-field>
                                 </v-card-text>
                             </v-card>
@@ -504,7 +512,7 @@
 
                             <h2 class="text-center" style="margin-bottom: 8px">Task</h2>
 
-                            <div class="v-data-table theme--dark">
+                            <div class="v-data-table">
 
                                 <div class="v-data-table__wrapper">
                                     <table>
@@ -721,7 +729,7 @@
             <!-- Home Ends -->
 
             <!-- Definitions Begins -->
-            <v-main v-if="isHome==false">
+            <v-main v-if="!isHome">
                 <!-- snackbar success -->
                 <v-snackbar
                         v-model="snackbar"
@@ -756,7 +764,7 @@
                 <!-- snackbar error -->
                 <v-container>
                     <v-row>
-                        <v-col cols="12" md="8">
+                        <v-col cols="12" md="10">
                             <v-card class="pa-4" outlined>
                                 <div>Definitions</div>
                                 <v-card-text>
@@ -840,16 +848,16 @@
                     <v-card-actions>
                         <v-spacer></v-spacer>
                         <v-btn
-                                color="blue darken-1"
+                                color="var(--primary-color)"
                                 text
                                 @click="dialog = false, snackbar=false,  State=''"
                         >
                             Close
                         </v-btn>
                         <v-btn
-                                color="blue darken-1"
                                 text
                                 @click="dialog = false, runWorkflow()"
+                                class="primary-btn"
                         >
                             Run
                         </v-btn>

@@ -219,6 +219,25 @@ const store = new Vuex.Store({
             commit("setPage", page);
             dispatch("listWorkflows");
         },
+        async getAuthorizerUser() {
+            const headers = {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Authorization': 'Token ' + getCookie('access_token'),
+                'Accept': 'application/json',
+                'Content-type': 'application/json'
+            };
+
+
+            const response =  await fetch(ENV_CSRF_TRUSTED_ORIGINS + '/authorizer/user/0/', {
+                method: 'GET',
+                url: "/authorizer/user/0/",
+                headers: headers
+            });
+
+            const responseData =  await response.json();
+            this.isDarkMode = responseData.data.dark_mode;
+            document.body.classList.toggle('dark-mode', this.isDarkMode)
+        },
     },
     mutations: {
         setPage(state, page) {
@@ -468,7 +487,11 @@ new Vue({
     },
     store,
     router,
-    vuetify: new Vuetify(),
+    vuetify: new Vuetify({
+        theme: {
+            disable: true // Properly disable Vuetify's theme management
+        }
+    }),
     data: () => ({
                 // navigation
         isHome: false,
@@ -497,10 +520,11 @@ new Vue({
         selectedStatus: [],
         status: ['init', "success", "error", "progress", "pending", "canceled"],
         selectedWorkflowName: "All",
+        isDarkMode: false
     }),
 
     mounted() {
-        this.$vuetify.theme.dark = true;
+        // this.$vuetify.theme.dark = true;
     },
     methods: {
         ...Vuex.mapActions(["changePage"]),
@@ -636,6 +660,7 @@ new Vue({
         this.isHome = true;
         this.$store.dispatch('listDefinitions');
         this.$store.dispatch('listWorkflows');
+        this.$store.dispatch('getAuthorizerUser');
 
         this.interval = setInterval(() => {
 

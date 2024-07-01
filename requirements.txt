@@ -22,7 +22,7 @@ docutils==0.16
 ecdsa==0.17.0
 envoy==0.0.3
 idna==3.4
-importlib-metadata==1.5.0
+importlib-metadata>=1.5.0,<5.0.0
 jmespath==0.9.4
 kombu==5.2.4
 ndg-httpsclient==0.5.1
