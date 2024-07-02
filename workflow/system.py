@@ -86,7 +86,7 @@ class SystemWorkflowManager:
             _l.info('local_workflows_folder_path %s' % local_workflows_folder_path)
 
             # Iterate through all files in the /workflows directory and subdirectories
-            for workflow_file in root_path.glob('**/*'):
+            for workflow_file in root_path.glob('**/workflow.*'):
 
                 _l.debug('workflow_file %s' % workflow_file)
 
@@ -113,10 +113,6 @@ class SystemWorkflowManager:
                         _l.error(f"Could not load workflow config file: {workflow_file} - {e}")
                 else:
                     _l.debug(f"Skipped unsupported file format: {workflow_file}")
-
-            if self.workflows:
-                # _l.info('workflows %s' % self.workflows)
-                self.import_user_tasks()
 
         except Exception as e:
             _l.error(f"Error loading workflows for schema {schema}: {e}")
@@ -153,12 +149,12 @@ class SystemWorkflowManager:
         except KeyError:
             return "workflow"
 
-    def sync_remote_storage_to_local_storage_for_schema(self):
+    def sync_remote_storage_to_local_storage_for_schema(self, module_path=''):
 
         space = Space.objects.all().first()
 
-        remote_workflows_folder_path = construct_path(space.space_code, 'workflows')
-        local_workflows_folder_path = construct_path(settings.WORKFLOW_STORAGE_ROOT, 'local',  space.space_code, 'workflows')
+        remote_workflows_folder_path = construct_path(space.space_code, 'workflows', module_path)
+        local_workflows_folder_path = construct_path(settings.WORKFLOW_STORAGE_ROOT, 'local', space.space_code, 'workflows', module_path)
 
         # Check if the local workflows directory exists before attempting to remove it
         if os.path.exists(local_workflows_folder_path):
@@ -231,7 +227,7 @@ class SystemWorkflowManager:
 
         _l.info("sync_remote_storage_to_local_storage_for_schema.Done syncing %s files" % count)
 
-    def import_user_tasks(self):
+    def import_user_tasks(self, workflow_path='**', raise_exception=False):
         self.plugin_base = PluginBase(package="workflow.foobar")
 
         space = Space.objects.all().first()
@@ -246,7 +242,7 @@ class SystemWorkflowManager:
             searchpath=[str(folder)]
         )
 
-        tasks = Path(folder).glob("**/*.py")
+        tasks = Path(folder).glob(f"{workflow_path}/*.py")
 
         # _l.info('tasks %s' % tasks)
 
@@ -263,6 +259,8 @@ class SystemWorkflowManager:
                 spec.loader.exec_module(module)
             except Exception as e:
                 _l.info(f"Could not load user script {task}. Error {e}")
+                if raise_exception:
+                    raise e
 
         # with self.plugin_source:
         #     for task in tasks:

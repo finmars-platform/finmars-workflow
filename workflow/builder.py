@@ -5,7 +5,7 @@ from celery.utils import uuid
 
 from workflow.exceptions import WorkflowSyntaxError
 from workflow.models import Workflow, Task
-from workflow.tasks.workflows import start, end, failure_hooks_launcher
+from workflow.tasks.workflows import start, end, failure_hooks_launcher, execute_workflow_step
 from workflow_app import celery_app
 
 _l = logging.getLogger('workflow')
@@ -52,17 +52,17 @@ class WorkflowBuilder(object):
     def new_task(self, task_name, is_hook, single=True):
         task_id = uuid()
 
-        task_name = self.workflow.space.space_code + '.' + task_name
+        prefixed_name = self.workflow.space.space_code + '.' + task_name
 
-        queue = self.custom_queues.get(task_name, self.queue)
+        queue = self.custom_queues.get(prefixed_name, self.queue)
 
         # We create the Celery task specifying its UID
 
-        _l.info('WorkflowBuilder.celery_app.task_name %s' % task_name)
+        _l.info('WorkflowBuilder.celery_app.task_name %s' % prefixed_name)
         # _l.info('celery_app.tasks %s' % celery_app.tasks)
         _l.info('WorkflowBuilder.celery_app.backend %s' % celery_app.backend)
 
-        signature = celery_app.tasks.get(task_name).subtask(
+        signature = execute_workflow_step.subtask(
             kwargs={"workflow_id": self.workflow_id, "payload": self.workflow.payload, "context": {
                 "realm_code": self.workflow.space.realm_code,
                 "space_code": self.workflow.space.space_code,
