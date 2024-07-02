@@ -153,7 +153,7 @@ class SystemWorkflowManager:
 
         space = Space.objects.all().first()
 
-        remote_workflows_folder_path = construct_path(space.space_code, 'workflows', module_path)
+        remote_workflows_folder_path = construct_path(space.space_code, 'workflows')
         local_workflows_folder_path = construct_path(settings.WORKFLOW_STORAGE_ROOT, 'local', space.space_code, 'workflows', module_path)
 
         # Check if the local workflows directory exists before attempting to remove it
@@ -167,34 +167,37 @@ class SystemWorkflowManager:
         else:
             _l.info(f"Local workflows directory does not exist, no need to remove: {local_workflows_folder_path}")
 
-        _l.info('remote_workflows_folder_path %s' % remote_workflows_folder_path)
+        _l.info('remote_workflows_folder_path %s' % construct_path(remote_workflows_folder_path, module_path))
+
+        module_path_components = []
+        if module_path:
+            module_path_components = module_path.split('/')
 
         configuration_directories, _ = storage.listdir(remote_workflows_folder_path)
-
         count = 0
 
         for configuration_directory in configuration_directories:
-
+            if len(module_path_components) > 0 and configuration_directory != module_path_components[0]:
+                continue
             organization_folder_path = construct_path(remote_workflows_folder_path, configuration_directory)
-
             organization_directories, _ = storage.listdir(organization_folder_path)
 
             for organization_directory in organization_directories:
-
+                if len(module_path_components) > 1 and organization_directory != module_path_components[1]:
+                    continue
                 module_folder_path = construct_path(organization_folder_path, organization_directory)
-
                 modules_directories, _ = storage.listdir(module_folder_path)
 
                 for module_directory in modules_directories:
-
+                    if len(module_path_components) > 2 and module_directory != module_path_components[2]:
+                        continue
                     workflow_folder_path = construct_path(module_folder_path, module_directory)
-
                     workflow_directories, _ = storage.listdir(workflow_folder_path)
 
                     for workflow_directory in workflow_directories:
-
+                        if len(module_path_components) > 3 and workflow_directory != module_path_components[3]:
+                            continue
                         file_folder_path = construct_path(workflow_folder_path, workflow_directory)
-
                         _, files = storage.listdir(file_folder_path)
 
                         # _l.info("sync_remote_storage_to_local_storage_for_schema.files %s" % files)

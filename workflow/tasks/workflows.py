@@ -173,8 +173,7 @@ def execute_workflow_step(self, *args, **kwargs):
     workflow = Workflow.objects.get(id=kwargs['workflow_id'])
     path = workflow.user_code[len(context['space_code'])+1:].replace('.', '/').replace(':', '/')
     module_path, _ = path.rsplit('/', maxsplit=1)
-    if context['space_code'] != 'space00000':  # don't try to sync remote for local development
-        manager.sync_remote_storage_to_local_storage_for_schema(module_path)
+    manager.sync_remote_storage_to_local_storage_for_schema(module_path)
     manager.import_user_tasks(path, raise_exception=True)
 
     func = get_registered_task()
