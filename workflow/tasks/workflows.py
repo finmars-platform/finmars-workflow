@@ -7,6 +7,7 @@ from celery.utils.log import get_task_logger
 from django.db import connection
 
 from workflow.models import Task, Workflow, User, Space
+from workflow.tasks.base import BaseTask
 from workflow.utils import schema_exists, set_schema_from_context
 from workflow_app import celery_app
 
@@ -156,3 +157,30 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
     except Exception as e:
         logger.error('execute e %s' % e)
         logger.error('execute traceback %s' % traceback.format_exc())
+
+
+@celery_app.task(bind=True, base=BaseTask)
+def execute_workflow_step(self, *args, **kwargs):
+    from workflow.api import get_registered_task, clear_registered_task
+    from workflow.system import get_system_workflow_manager
+
+    clear_registered_task()
+    manager = get_system_workflow_manager()
+
+    context = kwargs.get('context')
+    set_schema_from_context(context)
+
+    workflow = Workflow.objects.get(id=kwargs['workflow_id'])
+    path = workflow.user_code[len(context['space_code'])+1:].replace('.', '/').replace(':', '/')
+    module_path, _ = path.rsplit('/', maxsplit=1)
+    if context['space_code'] != 'space00000':  # don't try to sync remote for local development
+        manager.sync_remote_storage_to_local_storage_for_schema(module_path)
+    manager.import_user_tasks(path, raise_exception=True)
+
+    func = get_registered_task()
+    if func:
+        logger.info('executing %s', func.__name__)
+        result = func(self, *args, **kwargs)
+        return result
+    else:
+        raise Exception(f'no function to execute for {workflow.user_code}')

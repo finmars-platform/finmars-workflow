@@ -268,20 +268,6 @@ class RefreshStorageViewSet(ViewSet):
             _l.info('RefreshStorageViewSet.flower result %s' % result)
 
             system_workflow_manager.register_workflows(request.space_code)
-            _l.info('RefreshStorageViewSet.workflows are registered, going to restart workers')
-
-            authorizer_service = AuthorizerService()
-            workers = authorizer_service.get_workers(request.realm_code)
-            _l.info('RefreshStorageViewSet.restarting %s workers' % len(workers))
-
-            for worker in workers:
-                if worker["status"]["status"] == "deployed":
-                    authorizer_service.restart_worker(worker["worker_name"], request.realm_code)
-                    _l.info('RefreshStorageViewSet.restarted worker %s' % worker["worker_name"])
-                else:
-                    _l.info('RefreshStorageViewSet.worker %s is in status %s - cannot restart' % (
-                        worker["worker_name"], worker["status"]["status"]))
-
         except Exception as e:
             _l.info("Could not restart celery.exception %s" % e)
             _l.info("Could not restart celery.traceback %s" % traceback.format_exc())
