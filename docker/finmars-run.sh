@@ -84,9 +84,6 @@ elif [ "$INSTANCE_TYPE" = "worker" ]; then
   export DJANGO_SETTINGS_MODULE=workflow_app.settings
   export C_FORCE_ROOT='true'
 
-  echo "Sync remote storage to local storage"
-  python /var/app/manage.py sync_remote_storage_to_local_storage_all_spaces
-
   echo "Cancel existing tasks"
   python /var/app/manage.py cancel_existing_tasks
 
