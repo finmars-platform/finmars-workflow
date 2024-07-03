@@ -87,8 +87,10 @@
         const API_URL = "api";
         const FLOWER_URL = '{{ FLOWER_URL }}';
         const DOCUMENTATION_LINK = '{{ DOCUMENTATION_LINK }}';
+        const API_DOCUMENTATION_LINK = '{{ API_DOCUMENTATION_LINK }}';
         const LOG_LINK = '{{ LOG_LINK }}';
-        const ENV_CSRF_TRUSTED_ORIGINS = '{{ ENV_CSRF_TRUSTED_ORIGINS }}';
+
+        const DOMAIN_NAME = '{{ DOMAIN_NAME }}';
     </script>
 
     <script src="{% static 'scripts/jquery.min.js' %}"></script>
@@ -119,7 +121,7 @@
             <v-app-bar app clipped-right color="director">
                 <v-app-bar-nav-icon @click="drawer = true, moveUp()"></v-app-bar-nav-icon>
                 <router-link to="/" tag="span" style="cursor: pointer">
-                    <v-toolbar-title @click="isHome = true"
+                    <v-toolbar-title @click="page = 'home'"
                     >Finmars Workflow
                     </v-toolbar-title
                     >
@@ -173,7 +175,7 @@
                             active-class="grey--text text--accent-4"
                     >
                         <router-link to="/">
-                            <button class="btn-nav-link" @click="isHome = true">
+                            <button class="btn-nav-link" @click="page = 'home'">
                                 <v-list-item>
                                     <v-list-item-icon>
                                         <v-icon>mdi-home</v-icon>
@@ -186,13 +188,26 @@
                         <router-link to="/definitions">
                             <button
                                     class="btn-nav-link"
-                                    @click="isHome = false"
+                                    @click="page = 'definitions'"
                             >
                                 <v-list-item>
                                     <v-list-item-icon>
                                         <v-icon>mdi-format-list-bulleted</v-icon>
                                     </v-list-item-icon>
                                     <v-list-item-title>Definitions</v-list-item-title>
+                                </v-list-item>
+                            </button>
+                        </router-link>
+                        <router-link to="/workers">
+                            <button
+                                    class="btn-nav-link"
+                                    @click="page = 'workers'"
+                            >
+                                <v-list-item>
+                                    <v-list-item-icon>
+                                        <v-icon>mdi-lan</v-icon>
+                                    </v-list-item-icon>
+                                    <v-list-item-title>Workers</v-list-item-title>
                                 </v-list-item>
                             </button>
                         </router-link>
@@ -203,6 +218,16 @@
                                         <v-icon>mdi-book-open-variant</v-icon>
                                     </v-list-item-icon>
                                     <v-list-item-title>Documentation</v-list-item-title>
+                                </v-list-item>
+                            </button>
+                        </a>
+                        <a :href="apiDocLink" class="text-decoration-none" target="_blank">
+                            <button class="btn-nav-link">
+                                <v-list-item>
+                                    <v-list-item-icon>
+                                        <v-icon>mdi-book-open-variant</v-icon>
+                                    </v-list-item-icon>
+                                    <v-list-item-title>API Documentation</v-list-item-title>
                                 </v-list-item>
                             </button>
                         </a>
@@ -223,7 +248,7 @@
             <!-- Drawer Ends-->
 
             <!-- Home Begins -->
-            <v-main v-if="isHome">
+            <v-main v-if="page==='home'">
                 <v-container v-if="!$route.params.id">
                     <v-row>
                         <v-col cols="12" md="8">
@@ -290,16 +315,16 @@
 
 
                                     <div class="pagination">
-                                        <button @click="changePage(1)" :disabled="page === 1"><v-icon>mdi-page-first</v-icon></button>
-                                        <button @click="changePage(page - 1)" :disabled="page === 1"><v-icon>mdi-chevron-left</v-icon></button>
+                                        <button @click="changePage(1)" :disabled="pageNumber === 1"><v-icon>mdi-page-first</v-icon></button>
+                                        <button @click="changePage(pageNumber - 1)" :disabled="pageNumber === 1"><v-icon>mdi-chevron-left</v-icon></button>
                                         <template v-for="pageItem in displayPages">
-                                            <button v-if="pageItem !== '...'" @click="changePage(pageItem)" :disabled="page === pageItem" :key="pageItem">
+                                            <button v-if="pageItem !== '...'" @click="changePage(pageItem)" :disabled="pageNumber === pageItem" :key="pageItem">
                                                 {{ pageItem }}
                                             </button>
                                             <span v-else :key="pageItem">...</span>
                                         </template>
-                                        <button @click="changePage(page + 1)" :disabled="page === totalPages"><v-icon>mdi-chevron-right</v-icon></button>
-                                        <button @click="changePage(totalPages)" :disabled="page === totalPages"><v-icon>mdi-page-last</v-icon></button>
+                                        <button @click="changePage(pageNumber + 1)" :disabled="pageNumber === totalPages"><v-icon>mdi-chevron-right</v-icon></button>
+                                        <button @click="changePage(totalPages)" :disabled="pageNumber === totalPages"><v-icon>mdi-page-last</v-icon></button>
                                     </div>
 
 
@@ -729,7 +754,7 @@
             <!-- Home Ends -->
 
             <!-- Definitions Begins -->
-            <v-main v-if="!isHome">
+            <v-main v-if="page=='definitions'">
                 <!-- snackbar success -->
                 <v-snackbar
                         v-model="snackbar"
@@ -865,6 +890,43 @@
                 </v-card>
             </v-dialog>
             <!-- Definitions Ends -->
+
+            <!-- Workers Begins -->
+            <v-main v-if="page=='workers'">
+                <v-container>
+                    <v-row>
+                        <v-col cols="12" md="8">
+                            <v-card class="pa-4" outlined>
+                                <div>Workers</div>
+                                <v-card-text>
+                                    <v-simple-table>
+                                        <template v-slot:default>
+                                            <thead>
+                                            <tr>
+                                                <th class="text-left">Name</th>
+                                                <th class="text-left">Status</th>
+                                                <th class="text-left">Uptime</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr
+                                                    v-for="item in workers"
+                                                    :key="item.worker_name"
+                                            >
+                                                <td>{{ item.worker_name }}</td>
+                                                <td>{{ item.status.status }}</td>
+                                                <td>{{ formattedTime(item.status.uptime) }}</td>
+                                            </tr>
+                                            </tbody>
+                                        </template>
+                                    </v-simple-table>
+                                </v-card-text>
+                            </v-card>
+                        </v-col>
+                    </v-row>
+                </v-container>
+            </v-main>
+            <!-- Workers Ends -->
         </v-app>
 
     </div>

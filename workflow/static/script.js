@@ -79,6 +79,10 @@ const router = new VueRouter({
             path: '/definitions'
         },
         {
+            name: 'workers',
+            path: '/workers'
+        },
+        {
             name: 'worfklow',
             path: '/item/:id'
         }
@@ -88,6 +92,7 @@ const router = new VueRouter({
 const store = new Vuex.Store({
     state: {
         definitions: [],
+        workers: [],
         workflows: [],
         workflowsCount: 0,
         workflowNames: [],
@@ -99,7 +104,8 @@ const store = new Vuex.Store({
         hideHooks: false,
         page_size: 40,
         query: null,
-        page: 1,
+        page: 'home',
+        pageNumber: 1,
     },
     actions: {
         listWorkflows({commit}) {
@@ -110,7 +116,7 @@ const store = new Vuex.Store({
                 'Content-type': 'application/json'
             };
 
-            let url = API_URL + "/workflow/light/?page_size=" + this.state.page_size + '&page=' + this.state.page
+            let url = API_URL + "/workflow/light/?page_size=" + this.state.page_size + '&page=' + this.state.pageNumber
 
             if (this.state.query) {
                 url = url + '&query=' + this.state.query
@@ -138,6 +144,21 @@ const store = new Vuex.Store({
 
             axios({method: 'get', url: API_URL + "/definition/", headers: headers}).then((response) => {
                 commit('updateDefinitions', response.data)
+                commit('changeLoadingState', false)
+            })
+        },
+        listWorkers({
+                            commit
+                        }) {
+
+            const headers = {
+                'Authorization': 'Token ' + getCookie('access_token'),
+                'Accept': 'application/json',
+                'Content-type': 'application/json'
+            };
+
+            axios({method: 'get', url: API_URL + "/worker/", headers: headers}).then((response) => {
+                commit('updateWorkers', response.data)
                 commit('changeLoadingState', false)
             })
         },
@@ -177,6 +198,7 @@ const store = new Vuex.Store({
                 .then((response) => {
                     dispatch("listWorkflows");
                     dispatch("listDefinitions");
+                    dispatch("listWorkers");
 
                     toastr.success("Storage refreshed")
 
@@ -228,7 +250,7 @@ const store = new Vuex.Store({
             };
 
 
-            const response =  await fetch(ENV_CSRF_TRUSTED_ORIGINS + '/authorizer/user/0/', {
+            const response =  await fetch(DOMAIN_NAME + '/authorizer/user/0/', {
                 method: 'GET',
                 url: "/authorizer/user/0/",
                 headers: headers
@@ -241,7 +263,7 @@ const store = new Vuex.Store({
     },
     mutations: {
         setPage(state, page) {
-            state.page = page;
+            state.pageNumber = page;
         },
         updateWorkflows(state, workflows) {
             state.workflows = workflows;
@@ -260,6 +282,10 @@ const store = new Vuex.Store({
         },
         updateDefinitions(state, definitions) {
             state.definitions = definitions
+        },
+        updateWorkers(state, workers) {
+            console.log('workers' ,workers)
+            state.workers = workers
         },
         updateSelectedWorkflow(state, workflow) {
             state.taskIndex = null;
@@ -360,7 +386,7 @@ const store = new Vuex.Store({
             state.loading = loading;
         },
         updateQueryValue(state, value) {
-            state.page = 1;
+            state.pageNumber = 1;
             state.query = value;
         },
     },
@@ -463,6 +489,7 @@ new Vue({
         },
         ...Vuex.mapState([
             "definitions",
+            "workers",
             "workflows",
             "workflowsCount",
             "workflowNames",
@@ -472,7 +499,8 @@ new Vue({
             "network",
             "loading",
             "hideHooks",
-            "page"
+            "page",
+            "pageNumber"
         ]),
         ...Vuex.mapGetters(["totalPages", "displayPages"]),
         query: {
@@ -494,10 +522,12 @@ new Vue({
     }),
     data: () => ({
                 // navigation
-        isHome: false,
+        page: 'home',
+        pageNumber: 1,
         drawer: false,
         group: null,
         docLink: DOCUMENTATION_LINK,
+        apiDocLink: API_DOCUMENTATION_LINK,
         logLink: LOG_LINK,
         // definitions
         multiLine: true,
@@ -655,9 +685,21 @@ new Vue({
                     )
                 );
         },
+        formattedTime(seconds) {
+          if (!parseFloat(seconds)) {
+              return 'N/A';
+          }
+          const days = Math.floor(seconds / 86400);
+          const hours = Math.floor((seconds % 86400) / 3600);
+          const minutes = Math.floor(((seconds % 86400) % 3600) / 60);
+          const remainingSeconds = ((seconds % 86400) % 3600) % 60;
+
+          return `${days}d ${hours}h ${minutes}m ${remainingSeconds}s`;
+        },
     },
     created() {
-        this.isHome = true;
+        this.page = 'home';
+        this.$store.dispatch('listWorkers');
         this.$store.dispatch('listDefinitions');
         this.$store.dispatch('listWorkflows');
         this.$store.dispatch('getAuthorizerUser');
@@ -676,8 +718,10 @@ new Vue({
         }
 
 
-        if (this.$route.name == "definitions") {
-            this.isHome = false;
+        if (this.$route.name === "definitions") {
+            this.page = 'definitions';
+        } else if (this.$route.name === "workers") {
+            this.page = 'workers';
         }
 
     },

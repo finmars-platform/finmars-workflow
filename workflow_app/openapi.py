@@ -85,7 +85,7 @@ def get_redoc_urlpatterns():
     urlpatterns = [
 
         path('<slug:realm_code>/<slug:space_code>/workflow/docs/', render_main_page, name='main'),
-        path('<slug:realm_code>/<slug:space_code>/workflow/docs/api',
+        path('<slug:realm_code>/<slug:space_code>/workflow/docs/api/',
                 api_schema_view.with_ui('redoc', cache_timeout=0), name='api'),
 
     ]

@@ -135,6 +135,11 @@
   color: var(--primary-color);
   background-color: transparent;
 }
+
+.pagination button {
+  color: var(--primary-color);
+}
+
 .pagination button:hover {
   opacity: .7;
 }

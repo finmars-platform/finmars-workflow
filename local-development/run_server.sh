@@ -30,4 +30,5 @@ ADMIN_PASSWORD=d798nf0rgpp6g8qp \
 BASE_API_URL=space00000 \
 FLOWER_URL=http://0.0.0.0:5555 \
 BACKEND_ROLES="ALL" \
+DOMAIN_NAME=http://0.0.0.0:8080 \
 gunicorn --config workflow_app/gunicorn-dev.py workflow_app.wsgi

@@ -21,21 +21,11 @@ app = Celery('workflow')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 
-@worker_init.connect
-def configure_worker(sender=None, conf=None, **kwargs):
-    _l.info("Celery worker has started.")
-    from workflow.system import get_system_workflow_manager
-    system_workflow_manager = get_system_workflow_manager()
-
-    system_workflow_manager.register_workflows()
-
-
 @beat_init.connect
 def configure_beat(**kwargs):
     from workflow.system import get_system_workflow_manager
     system_workflow_manager = get_system_workflow_manager()
 
-    system_workflow_manager.register_workflows()
     system_workflow_manager.init_periodic_tasks()
     kwargs['sender'].scheduler.setup_schedule()
 

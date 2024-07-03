@@ -64,6 +64,11 @@ class BulkSerializer(serializers.Serializer):
     ids = serializers.ListField(child=serializers.IntegerField())
 
 
+class RunWorkflowSerializer(serializers.Serializer):
+    user_code = serializers.CharField(required=True)
+    payload = serializers.CharField(allow_blank=True)
+
+
 class CeleryWorkerSerializer(serializers.Serializer):
     worker_name = serializers.CharField(required=True)
     worker_type = serializers.CharField(default="worker")
@@ -78,7 +83,7 @@ class CeleryWorkerSerializer(serializers.Serializer):
 
     def get_status(self, instance):
         try:
-            return json.loads(instance["status"])
+            return instance["status"]
         except Exception as e:
             return {
                 "status": "unknown",

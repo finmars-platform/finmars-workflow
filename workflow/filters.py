@@ -44,12 +44,18 @@ class WorkflowQueryFilter(BaseFilterBackend):
 
 
 class WholeWordsSearchFilter(SearchFilter):
-    def get_search_terms(self, request):
-        terms = super().get_search_terms(request)
-        for i in range(len(terms)):
-            if terms[i]:
-                terms[i] = f'\\m{terms[i]}\\M'
-        return terms
+    def filter_queryset(self, request, queryset, view):
+        search_fields = getattr(view, 'search_fields', [])
+        search_terms = self.get_search_terms(request)
+
+        queries = Q()
+        for term in search_terms:
+            term_query = Q()
+            for field in search_fields:
+                term_query |= Q(**{f"{field}__regex": rf'\m{term}\M'})
+            queries &= term_query
+
+        return queryset.filter(queries)
 
 
 class CharFilter(django_filters.CharFilter):

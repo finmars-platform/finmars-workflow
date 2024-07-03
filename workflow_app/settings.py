@@ -233,7 +233,7 @@ if os.environ.get("CSRF_TRUSTED_ORIGINS", ""):
 # =================
 # TODO Refactor this block
 
-# ENV_CSRF_TRUSTED_ORIGINS = ENV_STR('ENV_CSRF_TRUSTED_ORIGINS', None)
+ENV_CSRF_TRUSTED_ORIGINS = ENV_STR('ENV_CSRF_TRUSTED_ORIGINS', None)
 # TODO warning about security in future
 # if SERVER_TYPE == "production":
 #     CORS_URLS_REGEX = r'^/workflow/.*$'

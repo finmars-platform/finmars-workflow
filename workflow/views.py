@@ -29,6 +29,7 @@ from workflow.serializers import (
     PingSerializer,
     WorkflowLightSerializer,
     BulkSerializer,
+    RunWorkflowSerializer,
     CeleryWorkerSerializer,
 )
 from workflow.workflows import execute_workflow
@@ -87,7 +88,7 @@ class WorkflowViewSet(ModelViewSet):
 
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=False, methods=['POST'], url_path='run-workflow')
+    @action(detail=False, methods=['POST'], url_path='run-workflow', serializer_class=RunWorkflowSerializer)
     def run_workflow(self, request, pk=None, *args, **kwargs):
         user_code, payload = (
             request.data["user_code"],
@@ -117,10 +118,10 @@ class WorkflowViewSet(ModelViewSet):
 
         return Response(workflow.to_dict())
 
-    @action(detail=False, methods=('POST',), url_path='bulk-cancel')
+    @action(detail=False, methods=('POST',), url_path='bulk-cancel', serializer_class=BulkSerializer)
     def bulk_cancel(self, request, *args, **kwargs):
-        serializer = BulkSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer = self.get_serializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=False)
 
         data = serializer.validated_data
         workflows = Workflow.objects.filter(id__in=data['ids'],
@@ -130,9 +131,9 @@ class WorkflowViewSet(ModelViewSet):
 
         return Response({'status': 'ok'})
 
-    @action(detail=False, methods=('POST',), url_path='bulk-delete')
+    @action(detail=False, methods=('POST',), url_path='bulk-delete', serializer_class=BulkSerializer)
     def bulk_delete(self, request, *args, **kwargs):
-        serializer = BulkSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
@@ -267,20 +268,6 @@ class RefreshStorageViewSet(ViewSet):
             _l.info('RefreshStorageViewSet.flower result %s' % result)
 
             system_workflow_manager.register_workflows(request.space_code)
-            _l.info('RefreshStorageViewSet.workflows are registered, going to restart workers')
-
-            authorizer_service = AuthorizerService()
-            workers = authorizer_service.get_workers(request.realm_code)
-            _l.info('RefreshStorageViewSet.restarting %s workers' % len(workers))
-
-            for worker in workers:
-                if worker["status"]["status"] == "deployed":
-                    authorizer_service.restart_worker(worker["worker_name"], request.realm_code)
-                    _l.info('RefreshStorageViewSet.restarted worker %s' % worker["worker_name"])
-                else:
-                    _l.info('RefreshStorageViewSet.worker %s is in status %s - cannot restart' % (
-                        worker["worker_name"], worker["status"]["status"]))
-
         except Exception as e:
             _l.info("Could not restart celery.exception %s" % e)
             _l.info("Could not restart celery.traceback %s" % traceback.format_exc())
