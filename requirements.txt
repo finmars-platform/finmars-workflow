@@ -60,7 +60,7 @@ botocore==1.29.17
 djangorestframework-simplejwt==5.2.2
 pluginbase==1.0.1
 jsonschema==4.17.3
-sqlalchemy==1.4.46
+sqlalchemy==1.4.52
 flower==2.0.0
 mkdocs==1.4.2
 mkdocs-material==9.0.8
@@ -75,3 +75,4 @@ rarfile==4.1
 pyzipper==0.3.6
 drf_yasg==1.21.5
 whitenoise==6.3.0
+dash==2.17.1
