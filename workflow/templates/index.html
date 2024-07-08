@@ -85,6 +85,8 @@
         const DOCUMENTATION_LINK = '{{ DOCUMENTATION_LINK }}';
         const API_DOCUMENTATION_LINK = '{{ API_DOCUMENTATION_LINK }}';
         const LOG_LINK = '{{ LOG_LINK }}';
+        const DOMAIN_NAME = '{{ DOMAIN_NAME }}';
+        const REALM_CODE = '{{ REALM_CODE }}';
     </script>
 
     <script src="{% static 'scripts/jquery.min.js' %}"></script>
@@ -115,7 +117,7 @@
             <v-app-bar app clipped-right color="director" dark>
                 <v-app-bar-nav-icon @click="drawer = true, moveUp()"></v-app-bar-nav-icon>
                 <router-link to="/" tag="span" style="cursor: pointer">
-                    <v-toolbar-title @click="page = 'home'"
+                    <v-toolbar-title @click="pageName = 'home'"
                     >Finmars Workflow
                     </v-toolbar-title
                     >
@@ -167,7 +169,7 @@
                             active-class="grey--text text--accent-4"
                     >
                         <router-link to="/">
-                            <button style="margin-left: 1em" @click="page = 'home'">
+                            <button style="margin-left: 1em" @click="pageName = 'home'">
                                 <v-list-item>
                                     <v-list-item-icon>
                                         <v-icon>mdi-home</v-icon>
@@ -180,7 +182,7 @@
                         <router-link to="/definitions">
                             <button
                                     style="margin-left: 1em"
-                                    @click="page = 'definitions'"
+                                    @click="pageName = 'definitions'"
                             >
                                 <v-list-item>
                                     <v-list-item-icon>
@@ -193,7 +195,7 @@
                         <router-link to="/workers">
                             <button
                                     style="margin-left: 1em"
-                                    @click="page = 'workers'"
+                                    @click="pageName = 'workers'"
                             >
                                 <v-list-item>
                                     <v-list-item-icon>
@@ -240,7 +242,7 @@
             <!-- Drawer Ends-->
 
             <!-- Home Begins -->
-            <v-main v-if="page==='home'">
+            <v-main v-if="pageName==='home'">
                 <v-container v-if="!$route.params.id">
                     <v-row>
                         <v-col cols="12" md="8">
@@ -503,6 +505,24 @@
                                     </template>
                                     <span>Payload</span>
                                 </v-tooltip>
+                                <v-tooltip
+                                    bottom
+                                    v-if="selectedWorkflow.tasks[0].status != 'init'"
+                                >
+                                    <template v-slot:activator="{ on, attrs }">
+                                        <v-btn
+                                                tile
+                                                outlined
+                                                color="director"
+                                                v-on="on"
+                                                v-bind="attrs"
+                                                @click.stop="goToWorkerLogs()"
+                                        >
+                                            <v-icon>mdi-script-text-outline</v-icon>
+                                        </v-btn>
+                                    </template>
+                                    <span>Worker {{ selectedWorkflow.tasks[0].worker_name }} Logs</span>
+                                </v-tooltip>
                             </v-list-item>
                             <v-divider class="mt-2 mb-4"></v-divider>
                         </template>
@@ -745,7 +765,7 @@
             <!-- Home Ends -->
 
             <!-- Definitions Begins -->
-            <v-main v-if="page=='definitions'">
+            <v-main v-if="pageName=='definitions'">
                 <!-- snackbar success -->
                 <v-snackbar
                         v-model="snackbar"
@@ -883,7 +903,7 @@
             <!-- Definitions Ends -->
 
             <!-- Workers Begins -->
-            <v-main v-if="page=='workers'">
+            <v-main v-if="pageName=='workers'">
                 <v-container>
                     <v-row>
                         <v-col cols="12" md="8">

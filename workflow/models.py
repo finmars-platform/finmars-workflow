@@ -10,7 +10,6 @@ from django.db import models
 from django.utils.translation import gettext_lazy
 
 from workflow.storage import get_storage
-from workflow.finmars_authorizer import AuthorizerService
 
 
 LANGUAGE_MAX_LENGTH = 5

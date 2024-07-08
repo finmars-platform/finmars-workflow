@@ -22,7 +22,7 @@ class TaskSerializer(serializers.ModelSerializer):
                   'previous', 'is_hook',
                   'payload', 'result', 'progress',
 
-                  'created', 'modified', 'log',
+                  'created', 'modified', 'log', 'worker_name',
                   'finished_at'
                   ]
 
@@ -67,25 +67,3 @@ class BulkSerializer(serializers.Serializer):
 class RunWorkflowSerializer(serializers.Serializer):
     user_code = serializers.CharField(required=True)
     payload = serializers.CharField(allow_blank=True)
-
-
-class CeleryWorkerSerializer(serializers.Serializer):
-    worker_name = serializers.CharField(required=True)
-    worker_type = serializers.CharField(default="worker")
-    memory_limit = serializers.CharField()
-    queue = serializers.CharField(default="workflow")
-
-    id = serializers.SerializerMethodField()
-    status = serializers.SerializerMethodField()
-
-    def get_id(self, instance):
-        return instance["worker_name"]
-
-    def get_status(self, instance):
-        try:
-            return instance["status"]
-        except Exception as e:
-            return {
-                "status": "unknown",
-                "error_message": None
-            }
