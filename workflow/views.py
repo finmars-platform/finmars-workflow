@@ -30,13 +30,11 @@ from workflow.serializers import (
     WorkflowLightSerializer,
     BulkSerializer,
     RunWorkflowSerializer,
-    CeleryWorkerSerializer,
 )
 from workflow.workflows import execute_workflow
 
 from workflow.user_sessions import create_session, execute_code, sessions
 from workflow.workflows import execute_workflow
-from workflow.finmars_authorizer import AuthorizerService
 
 _l = logging.getLogger('workflow')
 
@@ -154,58 +152,6 @@ class TaskViewSet(ModelViewSet):
     ]
     filter_backends = ModelViewSet.filter_backends + [
     ]
-
-
-class CeleryWorkerViewSet(ViewSet):
-    authorizer_service = AuthorizerService()
-
-    def list(self, request, *args, **kwargs):
-        response = self.authorizer_service.get_workers(self.request.realm_code)
-        serializer = CeleryWorkerSerializer(response, many=True)
-        return Response(serializer.data)
-
-    def create(self, request, *args, **kwargs):
-        serializer = CeleryWorkerSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            worker = serializer.data
-            self.authorizer_service.create_worker(worker, request.realm_code)
-            return Response(worker, status=status.HTTP_201_CREATED)
-
-    def update(self, request, *args, **kwargs):
-        # Workers could not be updated for now,
-        # Consider delete and creating new
-        raise PermissionDenied()
-
-    @action(detail=True, methods=["PUT"], url_path="start")
-    def start(self, request, pk=None, *args, **kwargs):
-        self.authorizer_service.start_worker(pk, request.realm_code)
-
-        return Response({"status": "ok"})
-
-    @action(detail=True, methods=["PUT"], url_path="stop")
-    def stop(self, request, pk=None, *args, **kwargs):
-        self.authorizer_service.stop_worker(pk, request.realm_code)
-
-        return Response({"status": "ok"})
-
-    @action(detail=True, methods=["PUT"], url_path="restart")
-    def restart(self, request, pk=None, *args, **kwargs):
-        self.authorizer_service.restart_worker(pk, request.realm_code)
-
-        return Response({"status": "ok"})
-
-    @action(detail=True, methods=["GET"], url_path="status")
-    def status(self, request, pk=None, *args, **kwargs):
-        self.authorizer_service.get_worker_status(pk, request.realm_code)
-
-        return Response({"status": "ok"})
-
-    def destroy(self, request, pk=None, *args, **kwargs):
-        try:
-            self.authorizer_service.delete_worker(pk, request.realm_code)
-        except Exception as e:
-            pass
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class PingViewSet(ViewSet):

@@ -89,8 +89,8 @@
         const DOCUMENTATION_LINK = '{{ DOCUMENTATION_LINK }}';
         const API_DOCUMENTATION_LINK = '{{ API_DOCUMENTATION_LINK }}';
         const LOG_LINK = '{{ LOG_LINK }}';
-
         const DOMAIN_NAME = '{{ DOMAIN_NAME }}';
+        const REALM_CODE = '{{ REALM_CODE }}';
     </script>
 
     <script src="{% static 'scripts/jquery.min.js' %}"></script>
@@ -511,6 +511,24 @@
                                         </v-btn>
                                     </template>
                                     <span>Payload</span>
+                                </v-tooltip>
+                                <v-tooltip
+                                    bottom
+                                    v-if="selectedWorkflow.tasks[0].status != 'init'"
+                                >
+                                    <template v-slot:activator="{ on, attrs }">
+                                        <v-btn
+                                                tile
+                                                outlined
+                                                color="director"
+                                                v-on="on"
+                                                v-bind="attrs"
+                                                @click.stop="goToWorkerLogs()"
+                                        >
+                                            <v-icon>mdi-script-text-outline</v-icon>
+                                        </v-btn>
+                                    </template>
+                                    <span>Worker {{ selectedWorkflow.tasks[0].worker_name }} Logs</span>
                                 </v-tooltip>
                             </v-list-item>
                             <v-divider class="mt-2 mb-4"></v-divider>
