@@ -233,7 +233,7 @@ if os.environ.get("CSRF_TRUSTED_ORIGINS", ""):
 # =================
 # TODO Refactor this block
 
-ENV_CSRF_TRUSTED_ORIGINS = ENV_STR('ENV_CSRF_TRUSTED_ORIGINS', None)
+# ENV_CSRF_TRUSTED_ORIGINS = ENV_STR('ENV_CSRF_TRUSTED_ORIGINS', None)
 # TODO warning about security in future
 # if SERVER_TYPE == "production":
 #     CORS_URLS_REGEX = r'^/workflow/.*$'
@@ -488,8 +488,8 @@ SIMPLE_JWT = {
 
     'AUTH_HEADER_TYPES': ('Bearer'),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
+    'USER_ID_FIELD': 'username',
+    'USER_ID_CLAIM': 'username',
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
 
