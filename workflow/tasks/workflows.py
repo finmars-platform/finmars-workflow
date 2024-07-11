@@ -126,6 +126,9 @@ def failure_hooks_launcher(self, workflow_id, queue, tasks_names, payload, *args
 
 @celery_app.task(bind=True)
 def execute(self, user_code, payload, is_manager, *args, **kwargs):
+    from workflow.system import get_system_workflow_manager
+    manager = get_system_workflow_manager()
+
     try:
 
         logger.info("periodic.execute %s" % user_code)
@@ -140,6 +143,13 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
         c_obj = Workflow(owner=finmars_bot, space=space, user_code=user_code, payload=payload, periodic=True,
                          is_manager=is_manager)
         c_obj.save()
+
+        path = user_code[len(context['space_code']) + 1:].replace('.', '/').replace(':', '/')
+        module_path, _ = path.rsplit('/', maxsplit=1)
+        manager.sync_remote_storage_to_local_storage_for_schema(module_path)
+        manager.register_workflows(context['space_code'])
+
+        set_schema_from_context(context)  # because register_workflows switches to public
 
         # Build the workflow and execute it
         from workflow.builder import WorkflowBuilder

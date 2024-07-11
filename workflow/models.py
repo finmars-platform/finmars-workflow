@@ -10,7 +10,6 @@ from django.db import models
 from django.utils.translation import gettext_lazy
 
 from workflow.storage import get_storage
-from workflow.finmars_authorizer import AuthorizerService
 
 
 LANGUAGE_MAX_LENGTH = 5
@@ -89,7 +88,6 @@ class Space(TimeStampedModel):
 
 class Workflow(TimeStampedModel):
     STATUS_INIT = 'init'
-    STATUS_PENDING = 'pending'
     STATUS_PROGRESS = 'progress'
     STATUS_SUCCESS = 'success'
     STATUS_ERROR = 'error'
@@ -98,7 +96,6 @@ class Workflow(TimeStampedModel):
 
     STATUS_CHOICES = (
         (STATUS_INIT, 'INIT'),
-        (STATUS_PENDING, 'PENDING'),
         (STATUS_PROGRESS, 'PROGRESS'),
         (STATUS_SUCCESS, 'SUCCESS'),
         (STATUS_ERROR, 'ERROR'),
@@ -168,7 +165,7 @@ class Workflow(TimeStampedModel):
         return d
 
     def cancel(self):
-        status_to_cancel = [Task.STATUS_PROGRESS, Task.STATUS_PENDING]
+        status_to_cancel = [Task.STATUS_PROGRESS]
         for task in self.tasks.all():
             if task.status in status_to_cancel:
                 celery_app.control.revoke(task.celery_task_id, terminate=True)
@@ -208,7 +205,6 @@ class Workflow(TimeStampedModel):
 
 class Task(TimeStampedModel):
     STATUS_INIT = 'init'
-    STATUS_PENDING = 'pending'
     STATUS_PROGRESS = 'progress'
     STATUS_SUCCESS = 'success'
     STATUS_ERROR = 'error'
@@ -217,7 +213,6 @@ class Task(TimeStampedModel):
 
     STATUS_CHOICES = (
         (STATUS_INIT, 'INIT'),
-        (STATUS_PENDING, 'PENDING'),
         (STATUS_PROGRESS, 'PROGRESS'),
         (STATUS_SUCCESS, 'SUCCESS'),
         (STATUS_ERROR, 'ERROR'),
