@@ -104,8 +104,7 @@ const store = new Vuex.Store({
         hideHooks: false,
         page_size: 40,
         query: null,
-        page: 'home',
-        pageNumber: 1,
+        page: 1,
     },
     actions: {
         listWorkflows({commit}) {
@@ -116,7 +115,7 @@ const store = new Vuex.Store({
                 'Content-type': 'application/json'
             };
 
-            let url = API_URL + "/workflow/light/?page_size=" + this.state.page_size + '&page=' + this.state.pageNumber
+            let url = API_URL + "/workflow/light/?page_size=" + this.state.page_size + '&page=' + this.state.page
 
             if (this.state.query) {
                 url = url + '&query=' + this.state.query
@@ -243,27 +242,20 @@ const store = new Vuex.Store({
         },
         async getAuthorizerUser() {
             const headers = {
-                'X-CSRFToken': getCookie('csrftoken'),
                 'Authorization': 'Token ' + getCookie('access_token'),
                 'Accept': 'application/json',
                 'Content-type': 'application/json'
             };
 
-
-            const response =  await fetch(DOMAIN_NAME + '/authorizer/user/0/', {
-                method: 'GET',
-                url: "/authorizer/user/0/",
-                headers: headers
-            });
-
-            const responseData =  await response.json();
-            this.isDarkMode = responseData.data.dark_mode;
+            const response =  await fetch(`//${DOMAIN_NAME}/authorizer/user/0/`, {headers})
+                                    .then(response => response.json())
+            this.isDarkMode = !!response.data?.dark_mode;
             document.body.classList.toggle('dark-mode', this.isDarkMode)
         },
     },
     mutations: {
         setPage(state, page) {
-            state.pageNumber = page;
+            state.page = page;
         },
         updateWorkflows(state, workflows) {
             state.workflows = workflows;
@@ -284,7 +276,6 @@ const store = new Vuex.Store({
             state.definitions = definitions
         },
         updateWorkers(state, workers) {
-            console.log('workers' ,workers)
             state.workers = workers
         },
         updateSelectedWorkflow(state, workflow) {
@@ -386,7 +377,7 @@ const store = new Vuex.Store({
             state.loading = loading;
         },
         updateQueryValue(state, value) {
-            state.pageNumber = 1;
+            state.page = 1;
             state.query = value;
         },
     },
@@ -499,8 +490,7 @@ new Vue({
             "network",
             "loading",
             "hideHooks",
-            "page",
-            "pageNumber"
+            "page"
         ]),
         ...Vuex.mapGetters(["totalPages", "displayPages"]),
         query: {
@@ -522,8 +512,7 @@ new Vue({
     }),
     data: () => ({
                 // navigation
-        page: 'home',
-        pageNumber: 1,
+        pageName: 'home',
         drawer: false,
         group: null,
         docLink: DOCUMENTATION_LINK,
@@ -698,11 +687,11 @@ new Vue({
         },
     },
     created() {
-        this.page = 'home';
+        this.pageName = 'home';
+        this.$store.dispatch('getAuthorizerUser');
         this.$store.dispatch('listWorkers');
         this.$store.dispatch('listDefinitions');
         this.$store.dispatch('listWorkflows');
-        this.$store.dispatch('getAuthorizerUser');
 
         this.interval = setInterval(() => {
 
@@ -719,9 +708,9 @@ new Vue({
 
 
         if (this.$route.name === "definitions") {
-            this.page = 'definitions';
+            this.pageName = 'definitions';
         } else if (this.$route.name === "workers") {
-            this.page = 'workers';
+            this.pageName = 'workers';
         }
 
     },

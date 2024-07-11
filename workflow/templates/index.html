@@ -121,7 +121,7 @@
             <v-app-bar app clipped-right color="director">
                 <v-app-bar-nav-icon @click="drawer = true, moveUp()"></v-app-bar-nav-icon>
                 <router-link to="/" tag="span" style="cursor: pointer">
-                    <v-toolbar-title @click="page = 'home'"
+                    <v-toolbar-title @click="pageName = 'home'"
                     >Finmars Workflow
                     </v-toolbar-title
                     >
@@ -175,7 +175,7 @@
                             active-class="grey--text text--accent-4"
                     >
                         <router-link to="/">
-                            <button class="btn-nav-link" @click="page = 'home'">
+                            <button class="btn-nav-link" @click="pageName = 'home'">
                                 <v-list-item>
                                     <v-list-item-icon>
                                         <v-icon>mdi-home</v-icon>
@@ -188,7 +188,7 @@
                         <router-link to="/definitions">
                             <button
                                     class="btn-nav-link"
-                                    @click="page = 'definitions'"
+                                    @click="pageName = 'definitions'"
                             >
                                 <v-list-item>
                                     <v-list-item-icon>
@@ -201,7 +201,7 @@
                         <router-link to="/workers">
                             <button
                                     class="btn-nav-link"
-                                    @click="page = 'workers'"
+                                    @click="pageName = 'workers'"
                             >
                                 <v-list-item>
                                     <v-list-item-icon>
@@ -248,7 +248,7 @@
             <!-- Drawer Ends-->
 
             <!-- Home Begins -->
-            <v-main v-if="page==='home'">
+            <v-main v-if="pageName==='home'">
                 <v-container v-if="!$route.params.id">
                     <v-row>
                         <v-col cols="12" md="8">
@@ -315,16 +315,16 @@
 
 
                                     <div class="pagination">
-                                        <button @click="changePage(1)" :disabled="pageNumber === 1"><v-icon>mdi-page-first</v-icon></button>
-                                        <button @click="changePage(pageNumber - 1)" :disabled="pageNumber === 1"><v-icon>mdi-chevron-left</v-icon></button>
+                                        <button @click="changePage(1)" :disabled="page === 1"><v-icon>mdi-page-first</v-icon></button>
+                                        <button @click="changePage(page - 1)" :disabled="page === 1"><v-icon>mdi-chevron-left</v-icon></button>
                                         <template v-for="pageItem in displayPages">
-                                            <button v-if="pageItem !== '...'" @click="changePage(pageItem)" :disabled="pageNumber === pageItem" :key="pageItem">
+                                            <button v-if="pageItem !== '...'" @click="changePage(pageItem)" :disabled="page === pageItem" :key="pageItem">
                                                 {{ pageItem }}
                                             </button>
                                             <span v-else :key="pageItem">...</span>
                                         </template>
-                                        <button @click="changePage(pageNumber + 1)" :disabled="pageNumber === totalPages"><v-icon>mdi-chevron-right</v-icon></button>
-                                        <button @click="changePage(totalPages)" :disabled="pageNumber === totalPages"><v-icon>mdi-page-last</v-icon></button>
+                                        <button @click="changePage(page + 1)" :disabled="page === totalPages"><v-icon>mdi-chevron-right</v-icon></button>
+                                        <button @click="changePage(totalPages)" :disabled="page === totalPages"><v-icon>mdi-page-last</v-icon></button>
                                     </div>
 
 
@@ -754,7 +754,7 @@
             <!-- Home Ends -->
 
             <!-- Definitions Begins -->
-            <v-main v-if="page=='definitions'">
+            <v-main v-if="pageName=='definitions'">
                 <!-- snackbar success -->
                 <v-snackbar
                         v-model="snackbar"
@@ -892,7 +892,7 @@
             <!-- Definitions Ends -->
 
             <!-- Workers Begins -->
-            <v-main v-if="page=='workers'">
+            <v-main v-if="pageName=='workers'">
                 <v-container>
                     <v-row>
                         <v-col cols="12" md="8">
