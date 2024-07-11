@@ -124,8 +124,7 @@ class WorkflowViewSet(ModelViewSet):
         valid = serializer.is_valid(raise_exception=False)
 
         data = serializer.validated_data
-        workflows = Workflow.objects.filter(id__in=data['ids'],
-                                            status__in=[Workflow.STATUS_PROGRESS, Workflow.STATUS_PENDING])
+        workflows = Workflow.objects.filter(id__in=data['ids'], status=Workflow.STATUS_PROGRESS)
         for workflow in workflows:
             workflow.cancel()
 
