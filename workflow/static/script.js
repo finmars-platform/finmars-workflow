@@ -241,6 +241,18 @@ const store = new Vuex.Store({
             commit("setPage", page);
             dispatch("listWorkflows");
         },
+        async getAuthorizerUser() {
+            const headers = {
+                'Authorization': 'Token ' + getCookie('access_token'),
+                'Accept': 'application/json',
+                'Content-type': 'application/json'
+            };
+
+            const response =  await fetch(`//${DOMAIN_NAME}/authorizer/user/0/`, {headers})
+                                    .then(response => response.json())
+            this.isDarkMode = !!response.data?.dark_mode;
+            document.body.classList.toggle('dark-mode', this.isDarkMode)
+        },
     },
     mutations: {
         setPage(state, page) {
@@ -494,7 +506,11 @@ new Vue({
     },
     store,
     router,
-    vuetify: new Vuetify(),
+    vuetify: new Vuetify({
+        theme: {
+            disable: true // Properly disable Vuetify's theme management
+        }
+    }),
     data: () => ({
                 // navigation
         pageName: 'home',
@@ -524,10 +540,11 @@ new Vue({
         selectedStatus: [],
         status: ['init', "success", "error", "progress", "pending", "canceled"],
         selectedWorkflowName: "All",
+        isDarkMode: false
     }),
 
     mounted() {
-        this.$vuetify.theme.dark = true;
+        // this.$vuetify.theme.dark = true;
     },
     methods: {
         ...Vuex.mapActions(["changePage"]),
@@ -683,6 +700,7 @@ new Vue({
     },
     created() {
         this.pageName = 'home';
+        this.$store.dispatch('getAuthorizerUser');
         this.$store.dispatch('listWorkers');
         this.$store.dispatch('listDefinitions');
         this.$store.dispatch('listWorkflows');
