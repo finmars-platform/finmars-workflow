@@ -288,6 +288,26 @@ def execute_task(task_name, payload={}):
     return response.json()
 
 
+def update_task_status(platform_task_id, status, result=None, error=None):
+    refresh = get_refresh_token()
+    headers = {'Content-type': 'application/json', 'Accept': 'application/json',
+               'Authorization': f'Bearer {refresh.access_token}'}
+
+    data = {
+        'status': status,
+        'result': result,
+        'error': error,
+    }
+
+    url = f'{get_base_path()}/api/v1/tasks/task/{platform_task_id}/update-status/'
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    try:
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        _l.error("update_task_status error: %s" % e)
+
+
 def get_task(id):
     refresh = get_refresh_token()
 

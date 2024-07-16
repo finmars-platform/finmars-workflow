@@ -88,14 +88,16 @@ class WorkflowViewSet(ModelViewSet):
 
     @action(detail=False, methods=['POST'], url_path='run-workflow', serializer_class=RunWorkflowSerializer)
     def run_workflow(self, request, pk=None, *args, **kwargs):
-        user_code, payload = (
+        user_code, payload, platform_task_id = (
             request.data["user_code"],
             request.data["payload"],
+            request.data.get("platform_task_id")
         )
 
         user_code = f'{request.space_code}.{user_code}'
 
-        data, _ = execute_workflow(request.user.username, user_code, payload, request.realm_code, request.space_code)
+        data, _ = execute_workflow(request.user.username, user_code, payload, request.realm_code, request.space_code,
+                                   platform_task_id)
 
         _l.info('data %s' % data)
 
@@ -224,8 +226,6 @@ class DefinitionViewSet(ViewSet):
 
     def list(self, request, *args, **kwargs):
         workflow_definitions = []
-
-        system_workflow_manager.register_workflows()
 
         for user_code, definition in sorted(system_workflow_manager.workflows.items()):
             # _l.info('DefinitionViewSet.definition %s' % definition)
