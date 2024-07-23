@@ -603,7 +603,7 @@ new Vue({
                 app_code: "workflow",
                 worker_name: this.selectedWorkflow.tasks[0].worker_name,
                 start_time: this.selectedWorkflow.tasks[0].created,
-                end_time: this.selectedWorkflow.tasks[0].finished_at,
+                end_time: this.selectedWorkflow.tasks[0].finished_at ?? '',
             })
             let url = `//${DOMAIN_NAME}/authorizer/api/v2/realm/0/log/?${params}`
             window.open(url, "_blank")
