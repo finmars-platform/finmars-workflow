@@ -514,7 +514,7 @@
                                 </v-tooltip>
                                 <v-tooltip
                                     bottom
-                                    v-if="selectedWorkflow.tasks[0].status != 'init'"
+                                    v-if="selectedWorkflow.tasks[0].worker_name"
                                 >
                                     <template v-slot:activator="{ on, attrs }">
                                         <v-btn
