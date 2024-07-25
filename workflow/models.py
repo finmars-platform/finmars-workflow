@@ -115,6 +115,8 @@ class Workflow(TimeStampedModel):
     periodic = models.BooleanField(default=False, verbose_name=gettext_lazy('periodic'))
 
     is_manager = models.BooleanField(default=False, verbose_name=gettext_lazy('is manager'))
+    platform_task_id = models.IntegerField(null=True,
+                                           help_text="Platform Task ID in case if Platform initiated some pipeline")
 
     space = models.ForeignKey(Space, verbose_name=gettext_lazy('space'),
                               on_delete=models.CASCADE, related_name="workflows")
@@ -163,6 +165,25 @@ class Workflow(TimeStampedModel):
         if with_payload:
             d["payload"] = self.payload
         return d
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        if self.platform_task_id and \
+           self.status in (self.STATUS_SUCCESS, self.STATUS_ERROR, self.STATUS_TIMEOUT, self.STATUS_CANCELED):
+
+            from workflow.finmars import update_task_status
+            try:
+                error_task = self.tasks.filter(status=Task.STATUS_ERROR).first()
+                if error_task:
+                    update_task_status(self.platform_task_id, self.status, error=error_task.error_message)
+                    return
+
+                last_task = self.tasks.last()
+                if last_task:
+                    update_task_status(self.platform_task_id, self.status, result=last_task.result)
+            except Exception as ex:
+                _l.warning('update_task_status %s' % ex)
 
     def cancel(self):
         status_to_cancel = [Task.STATUS_PROGRESS]
