@@ -698,13 +698,17 @@
                         <v-card-actions>
                             <v-spacer></v-spacer>
                             <div class="my-2 ma-2">
-                                <v-btn depressed @click.stop="cancelDialog = false"
+                                <v-btn
+                                        class="btn link-button"
+                                        depressed
+                                        @click.stop="cancelDialog = false"
                                 >Cancel
                                 </v-btn
                                 >
                             </div>
                             <div class="my-2">
                                 <v-btn
+                                        class="btn primary-btn"
                                         depressed
                                         color="primary"
                                         @click.stop="cancelWorkflow()"
@@ -742,17 +746,22 @@
                         <v-card-actions>
                             <v-spacer></v-spacer>
                             <div class="my-2 ma-2">
-                                <v-btn depressed @click.stop="relaunchDialog = false"
-                                >Cancel
+                                <v-btn
+                                        class="btn link-button"
+                                        depressed
+                                        @click.stop="relaunchDialog = false"
+                                >
+                                    Cancel
                                 </v-btn
                                 >
                             </div>
                             <div class="my-2">
                                 <v-btn
+                                        class="btn primary-btn"
                                         depressed
-                                        color="primary"
                                         @click.stop="relaunchWorkflow()"
-                                >Confirm
+                                >
+                                    Confirm
                                 </v-btn
                                 >
                             </div>
@@ -841,6 +850,8 @@
                                                 <!-- run button begins here -->
                                                 <td>
                                                     <v-btn
+                                                            style="background-color: var(--state-active-background-color);
+                                                                   border: 1px solid var(--table-border-color);"
                                                             elevation="0"
                                                             fab
                                                             x-small

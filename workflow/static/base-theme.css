@@ -44,6 +44,8 @@
 	--scrole-color: #85736E;
 	--outline-background-color: rgba(103, 80, 164, 0.12);
 	--state-active-background-color: #FFDBD0;
+	--outline-color: rgba(133, 115, 110, 1);
+	--code-background-color:#f5f5f5;
 }
 
 /* Switch to dark mode when .dark-mode class is present on body */
@@ -110,4 +112,6 @@ body.dark-mode {
 	--scrole-color: #85736E;
 	--outline-background-color: rgba(208, 188, 255, 0.12);
 	--state-active-background-color: #5D4036;
+	--outline-color: rgba(160, 141, 135, 1);
+	--code-background-color: #272822;
 }
