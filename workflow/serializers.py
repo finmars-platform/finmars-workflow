@@ -15,7 +15,8 @@ class TaskSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        representation['worker_name'] = representation['worker_name'].replace('celery@', '')
+        if representation['worker_name']:
+            representation['worker_name'] = representation['worker_name'].replace('celery@', '')
         return representation
 
     class Meta:
