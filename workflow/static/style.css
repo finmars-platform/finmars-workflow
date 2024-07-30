@@ -75,7 +75,7 @@
 }
 
 .graph .node g div {
-  width: 200px;
+  width: min-content;
   min-height: 50px;
   height: 100%;
   color: #333;
@@ -106,7 +106,7 @@
   padding: 10px;
   display: block !important;
   white-space: pre;
-  background-color: #f5f5f5;
+  background-color: var(--code-background-color);
   box-shadow: none;
   font-weight: normal;
   font-size: 90%;
@@ -330,9 +330,20 @@ tr:hover:not(.v-data-table__expanded__content):not(.v-data-table__empty-wrapper)
 }
 
 .primary-btn {
-  background-color: var(--primary-color);
-  border: 1px solid var(--primary-color);
+  background-color: var(--primary-color) !important;
+  border: 1px solid var(--primary-color) !important;
   color: var(--onPrimary-color) !important;
+}
+
+.link-button {
+  background-color: transparent  !important;
+  color: var(--primary-color) !important;
+  border: 0 !important;
+}
+
+.link-button:not([disabled]):hover {
+  background-color: var(--state-active-background-color) !important;
+  border: 0;
 }
 .v-avatar {
   width: min-content !important;
@@ -340,4 +351,38 @@ tr:hover:not(.v-data-table__expanded__content):not(.v-data-table__empty-wrapper)
   padding: 12px;
   height: 24px !important;
   color: #231917;
+}
+
+.btn {
+  display: inline-block;
+  position: relative;
+  cursor: pointer;
+  min-height: 36px;
+  min-width: 88px;
+  line-height: 36px;
+  vertical-align: middle;
+  align-items: center;
+  text-align: center;
+  border-radius: 2px;
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  outline: none;
+  border: 0;
+  padding: 0 6px;
+  margin: 6px 8px;
+  background-color: transparent;
+  color: currentColor;
+  white-space: nowrap;
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 14px;
+  font-style: inherit;
+  font-variant: inherit;
+  font-family: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  transition: box-shadow 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), background-color 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
