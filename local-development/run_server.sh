@@ -31,4 +31,4 @@ BASE_API_URL=space00000 \
 FLOWER_URL=http://0.0.0.0:5555 \
 BACKEND_ROLES="ALL" \
 DOMAIN_NAME=0.0.0.0:8083 \
-gunicorn --config workflow_app/gunicorn-dev.py workflow_app.wsgi
+gunicorn --workers 1 --threads 1 --config workflow_app/gunicorn-dev.py workflow_app.wsgi

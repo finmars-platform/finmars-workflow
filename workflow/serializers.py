@@ -73,3 +73,8 @@ class BulkSerializer(serializers.Serializer):
 class RunWorkflowSerializer(serializers.Serializer):
     user_code = serializers.CharField(required=True)
     payload = serializers.CharField(allow_blank=True)
+
+
+class FileExecutionSerializer(serializers.Serializer):
+    file_path = serializers.CharField(max_length=1024)
+    data = serializers.JSONField()

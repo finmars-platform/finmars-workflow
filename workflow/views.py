@@ -33,7 +33,7 @@ from workflow.serializers import (
 )
 from workflow.workflows import execute_workflow
 
-from workflow.user_sessions import create_session, execute_code, sessions
+from workflow.user_sessions import create_session, execute_code, sessions, execute_file
 from workflow.workflows import execute_workflow
 
 _l = logging.getLogger('workflow')
@@ -275,6 +275,32 @@ class CodeExecutionViewSet(ViewSet):
             # Try to execute the code
             output = execute_code(user_id, file_path, code)
             return Response({"detail": "Code executed successfully.", "result": output})
+
+        except Exception as e:
+            # Catch any errors during code execution
+            return Response({"error": str(e)}, status=400)
+
+
+class FileExecutionViewSet(ViewSet):
+
+    # force serializer to make it visible in Django Browserable API
+    def create(self, request, *args, **kwargs):
+        """
+        This function handles POST request to execute code.
+        It expects 'code' and 'file_path' in the request data.
+        """
+        user_id = request.user.id  # or however you get the user's ID
+        data = request.data.get('data')
+        file_path = request.data.get('file_path')
+
+        # Ensure the user session is created
+        if user_id not in sessions:
+            create_session(user_id)
+
+        try:
+            # Try to execute the code
+            output = execute_file(user_id, file_path, data)
+            return Response(output)
 
         except Exception as e:
             # Catch any errors during code execution

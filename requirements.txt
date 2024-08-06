@@ -75,3 +75,4 @@ rarfile==4.1
 pyzipper==0.3.6
 drf_yasg==1.21.5
 whitenoise==6.3.0
+matplotlib==3.9.0
