@@ -49,6 +49,7 @@ class SystemWorkflowManager:
 
             self.load_workflows_for_schema(schema)
 
+        if not space_code:
             with connection.cursor() as cursor:
                 cursor.execute("SET search_path TO public;")
 
@@ -291,11 +292,17 @@ class SystemWorkflowManager:
     def cancel_all_existing_tasks(self, worker_name):
         from workflow.models import Task
         from workflow.models import Workflow
+
+        # find workflows through tasks
         tasks = Task.objects.filter(status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT], worker_name=worker_name)
         workflow_ids = [task.workflow_id for task in tasks]
         workflows = Workflow.objects.filter(status__in=[Workflow.STATUS_PROGRESS, Workflow.STATUS_INIT],
                                             id__in=workflow_ids)
+        for workflow in workflows:
+            workflow.cancel()
 
+        # now find tasks without workflows
+        tasks = Task.objects.filter(status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT], worker_name=worker_name)
         for task in tasks:
             task.status = Task.STATUS_CANCELED
 
@@ -309,10 +316,6 @@ class SystemWorkflowManager:
             task.mark_task_as_finished()
 
             task.save()
-
-        for workflow in workflows:
-            workflow.status = Workflow.STATUS_CANCELED
-            workflow.save()
 
         _l.info("Canceled %s tasks " % len(tasks))
 

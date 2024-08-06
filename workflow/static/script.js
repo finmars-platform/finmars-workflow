@@ -156,8 +156,9 @@ const store = new Vuex.Store({
                 'Content-type': 'application/json'
             };
 
-            axios({method: 'get', url: API_URL + "/worker/", headers: headers}).then((response) => {
-                commit('updateWorkers', response.data)
+            const url = `//${DOMAIN_NAME}/authorizer/api/v2/worker/?realm_code=${REALM_CODE}&app_code=workflow`;
+            axios({method: 'get', url: url, headers: headers}).then((response) => {
+                commit('updateWorkers', response.data.workers)
                 commit('changeLoadingState', false)
             })
         },
@@ -239,6 +240,18 @@ const store = new Vuex.Store({
         changePage({commit, dispatch}, page) {
             commit("setPage", page);
             dispatch("listWorkflows");
+        },
+        async getAuthorizerUser() {
+            const headers = {
+                'Authorization': 'Token ' + getCookie('access_token'),
+                'Accept': 'application/json',
+                'Content-type': 'application/json'
+            };
+
+            const response =  await fetch(`//${DOMAIN_NAME}/authorizer/user/0/`, {headers})
+                                    .then(response => response.json())
+            this.isDarkMode = !!response.data?.dark_mode;
+            document.body.classList.toggle('dark-mode', this.isDarkMode)
         },
     },
     mutations: {
@@ -493,10 +506,14 @@ new Vue({
     },
     store,
     router,
-    vuetify: new Vuetify(),
+    vuetify: new Vuetify({
+        theme: {
+            disable: true // Properly disable Vuetify's theme management
+        }
+    }),
     data: () => ({
                 // navigation
-        page: 'home',
+        pageName: 'home',
         drawer: false,
         group: null,
         docLink: DOCUMENTATION_LINK,
@@ -523,10 +540,11 @@ new Vue({
         selectedStatus: [],
         status: ['init', "success", "error", "progress", "pending", "canceled"],
         selectedWorkflowName: "All",
+        isDarkMode: false
     }),
 
     mounted() {
-        this.$vuetify.theme.dark = true;
+        // this.$vuetify.theme.dark = true;
     },
     methods: {
         ...Vuex.mapActions(["changePage"]),
@@ -578,6 +596,17 @@ new Vue({
         goToHashUrl: function (hashUrl) {
             window.location.hash = hashUrl
             window.location.reload() // TODO Make location change without app reload
+        },
+        goToWorkerLogs: function() {
+            const params = new URLSearchParams({
+                realm_code: REALM_CODE,
+                app_code: "workflow",
+                worker_name: this.selectedWorkflow.tasks[0].worker_name,
+                start_time: this.selectedWorkflow.tasks[0].created,
+                end_time: this.selectedWorkflow.tasks[0].finished_at ?? '',
+            })
+            let url = `//${DOMAIN_NAME}/authorizer/api/v2/realm/0/log/?${params}`
+            window.open(url, "_blank")
         },
         toggleAutoRefresh: function () {
 
@@ -670,7 +699,8 @@ new Vue({
         },
     },
     created() {
-        this.page = 'home';
+        this.pageName = 'home';
+        this.$store.dispatch('getAuthorizerUser');
         this.$store.dispatch('listWorkers');
         this.$store.dispatch('listDefinitions');
         this.$store.dispatch('listWorkflows');
@@ -690,9 +720,9 @@ new Vue({
 
 
         if (this.$route.name === "definitions") {
-            this.page = 'definitions';
+            this.pageName = 'definitions';
         } else if (this.$route.name === "workers") {
-            this.page = 'workers';
+            this.pageName = 'workers';
         }
 
     },

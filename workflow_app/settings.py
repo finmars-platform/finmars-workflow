@@ -488,8 +488,8 @@ SIMPLE_JWT = {
 
     'AUTH_HEADER_TYPES': ('Bearer'),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
+    'USER_ID_FIELD': 'username',
+    'USER_ID_CLAIM': 'username',
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
 
@@ -510,16 +510,17 @@ REDOC_SETTINGS = {
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
-sentry_sdk.init(
-    dsn="https://d7c2e86d381f4010987f909e89b0d570@sentry.finmars.com/4",
-    integrations=[DjangoIntegration()],
+if SERVER_TYPE != "local":
+    sentry_sdk.init(
+        dsn="https://d7c2e86d381f4010987f909e89b0d570@sentry.finmars.com/4",
+        integrations=[DjangoIntegration()],
+        environment=SERVER_TYPE,
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        # We recommend adjusting this value in production.
+        traces_sample_rate=1.0,
 
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for performance monitoring.
-    # We recommend adjusting this value in production.
-    traces_sample_rate=1.0,
-
-    # If you wish to associate users to errors (assuming you are using
-    # django.contrib.auth) you may enable sending PII data.
-    send_default_pii=True
-)
+        # If you wish to associate users to errors (assuming you are using
+        # django.contrib.auth) you may enable sending PII data.
+        send_default_pii=True
+    )

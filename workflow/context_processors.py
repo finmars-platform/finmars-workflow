@@ -12,6 +12,8 @@ def workflow(request):
     return {'FLOWER_URL': settings.FLOWER_URL,
             'SPACE_CODE': request.space_code,
             'REALM_CODE': request.realm_code,
-            'DOCUMENTATION_LINK': url_prefix + '/workflow/static/documentation/index.html',
+            'DOCUMENTATION_LINK': settings.STATIC_URL + 'documentation/index.html',
             'API_DOCUMENTATION_LINK': url_prefix + '/workflow/docs/api/',
-            'LOG_LINK': url_prefix + '/workflow/api/log'}
+            'LOG_LINK': url_prefix + '/workflow/api/log',
+            'DOMAIN_NAME': settings.DOMAIN_NAME,
+            }

@@ -11,8 +11,7 @@
 }
 
 .v-application .workflow {
-  background-color: #3c4652 !important;
-  border-color: #3c4652 !important;
+  border-color: 1px solid var(--onSecondary-color) !important;
 }
 
 #network {
@@ -76,7 +75,7 @@
 }
 
 .graph .node g div {
-  width: 200px;
+  width: min-content;
   min-height: 50px;
   height: 100%;
   color: #333;
@@ -107,7 +106,7 @@
   padding: 10px;
   display: block !important;
   white-space: pre;
-  background-color: #f5f5f5;
+  background-color: var(--code-background-color);
   box-shadow: none;
   font-weight: normal;
   font-size: 90%;
@@ -125,11 +124,265 @@
   margin: 4px;
   padding: 2px 8px;
 }
+
+.search-by-id .v-icon, input, .v-input {
+  color: var(--baseText-color) !important;
+}
+
+.pagination button .v-icon {
+  width: 12px;
+  height: 12px;
+  color: var(--primary-color);
+  background-color: transparent;
+}
+
+.pagination button {
+  color: var(--primary-color);
+}
+
 .pagination button:hover {
   opacity: .7;
 }
 .pagination button:disabled {
-  background-color: grey;
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.v-application--wrap {
+  background-color: var(--base-backgroundColor);
+  color: var(--primary-color);
+}
+
+.v-app-bar.v-toolbar.v-sheet {
+  background-color: var(--base-backgroundColor) !important;
+  color: var(--primary-color) !important;
+  border-bottom: 1px solid var(--table-border-color);
+  box-shadow: none !important;
+}
+
+.v-btn--outlined .v-btn__content .v-icon, .v-btn--round .v-btn__content .v-icon {
+  color: var(--primary-color);
+}
+
+.v-sheet.v-card {
+  border: 1px solid var(--onSecondary-color);
+  background-color: transparent;
+  color: var(--baseText-color);
+}
+.v-dialog {
+  background-color: var(--dialog-background-color);
+}
+.v-dialog .v-card__text {
+  color: var(--baseHeading-color) !important;
+}
+
+
+.v-data-table__wrapper th:hover {
+  background-color: var(--card-background-color);
+  opacity: 0.9;
+}
+.v-data-table__wrapper th {
+  background-color: var(--dropdown-background-color);
+}
+
+.v-data-table__wrapper thead tr th {
+  color: var(--baseHeading-color) !important;
+}
+
+.v-data-table__wrapper tbody tr td {
+  color: var(--baseText-color) !important;
+}
+
+.v-data-table__wrapper td {
+  background-color: transparent;
+}
+
+.v-data-table__wrapper th, td {
+  border: 1px solid var(--onSecondary-color);
+  color: var(--primary-color);
+}
+
+.pagination button {
+  background-color: transparent;
+}
+
+.v-btn--outlined {
+  border: none;
+}
+
+.v-text-field .v-input__control , textarea{
+  border-bottom: 1px solid var(--baseText-color);
+}
+
+textarea {
+  color: var(--baseText-color) !important;
+}
+
+.v-text-field, .v-text-field {
+  color: var(--baseText-color);
+}
+.v-label {
+  color: var(--secondary-color) !important;
+  padding-left: 16px;
+}
+
+.v-input input:focus, .v-input input:hover, .v-input input:active, .v-input textarea:focus, .v-input textarea:active {
+  outline: none !important;
+}
+
+.v-navigation-drawer__content {
+  background-color: var(--page-background-color);
+  border-right: 1px solid var(--table-border-color);
+  border-bottom: 1px solid var(--table-border-color);
+}
+
+.v-list-item__icon .v-icon, .v-list-item__title {
+  color: var(--secondary-color);
+}
+
+.btn-nav-link {
+  width: 100%;
+  margin-left: 0 !important;
+}
+.btn-nav-link:hover {
+  background: var(--state-active-background-color);
+  border-radius: 24px;
+}
+
+.card-search {
+  background-color: var(--table-border-color);
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  padding: 0;
+}
+
+.card-search input {
+  padding-left: 16px;
+}
+
+.card-search .v-icon {
+  margin-right: 16px;
+}
+
+.theme--light.v-data-table {
+  background-color: transparent !important;
+}
+
+.btn-nav-link .v-list-item--active::before {
+  background-color: unset;
+  color: unset;
+}
+.btn-nav-link .v-list-item--active .v-icon {
+  color: var(--secondary-color);
+}
+
+.btn-nav-link .v-list-item:hover::before {
+  opacity: 0;
+}
+
+.btn-depressed:hover {
+  background: var(--state-active-background-color);
+}
+
+.v-data-table > .v-data-table__wrapper > table > tbody >
+tr:hover:not(.v-data-table__expanded__content):not(.v-data-table__empty-wrapper) {
+  background-color: var(--success-color) !important;
+}
+
+.v-application .blue--text.text--darken-1 {
+  color: var(--primary-color) !important;
+}
+
+.monospacedPayload .v-input__control {
+  border: none;
+}
+
+.v-navigation-drawer .v-navigation-drawer__append .v-btn {
+  color: var(--primary-color) !important;
+}
+
+.container .v-navigation-drawer {
+    background-color: transparent !important;
+    border: 1px solid var(--onSecondary-color);
+}
+
+.v-list--dense .v-list-item .v-list-item__title {
+  font-weight: 600 !important;
+  text-align: left;
+}
+
+.container .v-navigation-drawer .v-list-item__content,
+.container .v-navigation-drawer .v-list-item__subtitle,
+.container .v-navigation-drawer h2 {
+  color: var(--baseText-color) !important;
+}
+
+.container .v-navigation-drawer button:hover {
+  background-color: var(--state-active-background-color) !important;
+}
+
+.v-dialog button {
+  font-size: 14px;
+  border: 1px solid var(--border-color);
+  padding: 10px 24px 10px 24px !important;
+  color: var(--primary-color);
+  border-radius: 24px;
+}
+
+.primary-btn {
+  background-color: var(--primary-color) !important;
+  border: 1px solid var(--primary-color) !important;
+  color: var(--onPrimary-color) !important;
+}
+
+.link-button {
+  background-color: transparent  !important;
+  color: var(--primary-color) !important;
+  border: 0 !important;
+}
+
+.link-button:not([disabled]):hover {
+  background-color: var(--state-active-background-color) !important;
+  border: 0;
+}
+.v-avatar {
+  width: min-content !important;
+  border-radius: 12px;
+  padding: 12px;
+  height: 24px !important;
+  color: #231917;
+}
+
+.btn {
+  display: inline-block;
+  position: relative;
+  cursor: pointer;
+  min-height: 36px;
+  min-width: 88px;
+  line-height: 36px;
+  vertical-align: middle;
+  align-items: center;
+  text-align: center;
+  border-radius: 2px;
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  outline: none;
+  border: 0;
+  padding: 0 6px;
+  margin: 6px 8px;
+  background-color: transparent;
+  color: currentColor;
+  white-space: nowrap;
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 14px;
+  font-style: inherit;
+  font-variant: inherit;
+  font-family: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  transition: box-shadow 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), background-color 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
