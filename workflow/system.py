@@ -49,6 +49,7 @@ class SystemWorkflowManager:
 
             self.load_workflows_for_schema(schema)
 
+        if not space_code:
             with connection.cursor() as cursor:
                 cursor.execute("SET search_path TO public;")
 

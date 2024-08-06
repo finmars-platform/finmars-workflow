@@ -28,10 +28,6 @@ class WorkflowConfig(AppConfig):
 
         post_migrate.connect(self.bootstrap, sender=self)
 
-        from workflow.system import get_system_workflow_manager
-        system_workflow_manager = get_system_workflow_manager()
-        system_workflow_manager.register_workflows()
-
     def bootstrap(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
 
         _l.info("Bootstrapping Workflow Application")

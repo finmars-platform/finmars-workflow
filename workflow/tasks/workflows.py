@@ -149,8 +149,6 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
         manager.sync_remote_storage_to_local_storage_for_schema(module_path)
         manager.register_workflows(context['space_code'])
 
-        set_schema_from_context(context)  # because register_workflows switches to public
-
         # Build the workflow and execute it
         from workflow.builder import WorkflowBuilder
         workflow = WorkflowBuilder(c_obj.id)
