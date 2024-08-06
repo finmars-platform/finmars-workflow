@@ -22,7 +22,7 @@ from rest_framework.viewsets import ModelViewSet, ViewSet
 
 
 from workflow.filters import WorkflowQueryFilter, WholeWordsSearchFilter, CharFilter
-from workflow.models import Workflow, Task
+from workflow.models import Workflow, Task, Schedule
 from workflow.serializers import (
     WorkflowSerializer,
     TaskSerializer,
@@ -30,6 +30,7 @@ from workflow.serializers import (
     WorkflowLightSerializer,
     BulkSerializer,
     RunWorkflowSerializer,
+    ScheduleSerializer,
 )
 from workflow.workflows import execute_workflow
 
@@ -324,3 +325,12 @@ class RealmMigrateSchemeView(ViewSet):
             _l.error(f"RealmMigrateSchemeView.traceback: {traceback.format_exc()}")
 
             return Response({"status": "error", "message": str(e)})
+
+
+class ScheduleViewSet(ModelViewSet):
+    queryset = Schedule.objects.select_related('owner', 'crontab')
+    serializer_class = ScheduleSerializer
+    permission_classes = ModelViewSet.permission_classes + [
+    ]
+    filter_backends = ModelViewSet.filter_backends + [
+    ]

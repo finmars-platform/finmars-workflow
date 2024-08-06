@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_beat',
 
     'drf_yasg',
     'django_filters',
@@ -414,6 +415,7 @@ CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'UTC'
 CELERY_TASK_TIME_LIMIT = ENV_INT('CELERY_TASK_TIME_LIMIT', 7200)
 CELERY_TASK_SOFT_TIME_LIMIT = ENV_INT('CELERY_TASK_SOFT_TIME_LIMIT', 3600)
+CELERY_BEAT_SCHEDULER = 'workflow.schedulers:DatabaseScheduler'
 
 DJANGO_CELERY_RESULTS_TASK_ID_MAX_LENGTH = 191
 

@@ -1,8 +1,9 @@
 import json
 from rest_framework import serializers
 
-from workflow.fields import SpaceField
-from workflow.models import Workflow, Task
+from workflow.fields import SpaceField, OwnerField
+from workflow.models import Workflow, Task, Schedule
+from workflow.system import get_system_workflow_manager
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -78,3 +79,30 @@ class RunWorkflowSerializer(serializers.Serializer):
 class FileExecutionSerializer(serializers.Serializer):
     file_path = serializers.CharField(max_length=1024)
     data = serializers.JSONField()
+
+
+class ScheduleSerializer(serializers.ModelSerializer):
+    owner = OwnerField()
+    space = SpaceField()
+    payload = serializers.JSONField(allow_null=True, required=False)
+    crontab_line = serializers.CharField()
+    user_code = serializers.ChoiceField(choices=[])
+
+    class Meta:
+        model = Schedule
+        fields = ['id', 'user_code', 'space', 'owner', 'created', 'modified', 'payload', 'crontab_line']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        manager = get_system_workflow_manager()
+        space_code = self.context['request'].space_code
+        workflow_codes = filter(lambda k: k.startswith(space_code), manager.workflows.keys())
+        self.fields['user_code'].choices = [workflow_code[len(space_code)+1:] for workflow_code in workflow_codes]
+
+    def validate_crontab_line(self, value):
+        try:
+            minute, hour, day, month, weekday = value.split(' ')
+        except ValueError:
+            raise serializers.ValidationError("Wrong crontab format. Make sure there are 5 space-separated values")
+        return value

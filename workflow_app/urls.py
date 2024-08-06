@@ -22,7 +22,7 @@ from django.conf import settings
 from workflow_app.openapi import get_redoc_urlpatterns
 
 from workflow.views import WorkflowViewSet, TaskViewSet, PingViewSet, DefinitionViewSet, RefreshStorageViewSet, \
-    LogFileViewSet, CodeExecutionViewSet, RealmMigrateSchemeView, FileExecutionViewSet
+    LogFileViewSet, CodeExecutionViewSet, RealmMigrateSchemeView, FileExecutionViewSet, ScheduleViewSet
 
 router = routers.DefaultRouter()
 
@@ -31,6 +31,7 @@ router.register(r'task', TaskViewSet, "task")
 router.register(r'ping', PingViewSet, "ping")
 router.register(r'refresh-storage', RefreshStorageViewSet, "refresh-storage")
 router.register(r'definition', DefinitionViewSet, "ping")
+router.register(r'schedule', ScheduleViewSet, "schedule")
 router.register(r'log', LogFileViewSet, "log")
 router.register(r'execute-code', CodeExecutionViewSet, basename='execute-code')
 router.register(r'execute-file', FileExecutionViewSet, basename='execute-file')

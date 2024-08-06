@@ -144,9 +144,9 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
                          is_manager=is_manager)
         c_obj.save()
 
-        path = user_code[len(context['space_code']) + 1:].replace('.', '/').replace(':', '/')
-        module_path, _ = path.rsplit('/', maxsplit=1)
-        manager.sync_remote_storage_to_local_storage_for_schema(module_path)
+        # path = user_code[len(context['space_code']) + 1:].replace('.', '/').replace(':', '/')
+        # module_path, _ = path.rsplit('/', maxsplit=1)
+        # manager.sync_remote_storage_to_local_storage_for_schema(module_path)
         manager.register_workflows(context['space_code'])
 
         # Build the workflow and execute it
