@@ -208,14 +208,9 @@ class Workflow(TimeStampedModel):
         from workflow.workflows import execute_workflow
         system_workflow_manager = get_system_workflow_manager()
 
-        path = user_code.replace('.', '/').replace(':', '/')
-        module_path, _ = path.rsplit('/', maxsplit=1)
-        system_workflow_manager.sync_remote_storage_to_local_storage_for_schema(module_path)
-        system_workflow_manager.register_workflows(self.space.space_code)
-
         user_code = f'{self.space.space_code}.{user_code}'
 
-        new_workflow = system_workflow_manager.get_by_user_code(user_code)
+        new_workflow = system_workflow_manager.get_by_user_code(user_code, sync_remote=True)
 
         is_manager = new_workflow.get('is_manager', False)
 
