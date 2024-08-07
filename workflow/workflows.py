@@ -13,12 +13,7 @@ def execute_workflow(username, user_code, payload={}, realm_code=None, space_cod
     from workflow.system import get_system_workflow_manager
     system_workflow_manager = get_system_workflow_manager()
 
-    # Check if the workflow exists
-    try:
-        wf = system_workflow_manager.get_by_user_code(user_code)
-    except Exception:
-        raise Exception(f"Workflow {user_code} not found")
-
+    wf = system_workflow_manager.get_by_user_code(user_code)
     space = Space.objects.get(space_code=space_code)
 
     # Create the workflow in DB

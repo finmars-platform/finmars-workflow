@@ -96,6 +96,8 @@ class WorkflowViewSet(ModelViewSet):
 
         user_code = f'{request.space_code}.{user_code}'
 
+        system_workflow_manager.get_by_user_code(user_code, sync_remote=True)
+
         data, _ = execute_workflow(request.user.username, user_code, payload, request.realm_code, request.space_code,
                                    platform_task_id)
 
