@@ -21,6 +21,9 @@ class WorkflowConfig(AppConfig):
     name = 'workflow'
 
     def ready(self):
+        import sys
+        sys.stdout.close = lambda: (_ for _ in ()).throw(Exception('stdout close attempt detected'))
+
         from workflow.system import get_system_workflow_manager
 
         system_workflow_manager = get_system_workflow_manager()
