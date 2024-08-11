@@ -110,7 +110,7 @@ def _execute_code(code, context):
 
 def execute_file(user_id, file_path, data):
     session = sessions[user_id]
-    context = session.get_file_context(file_path)
+    context = {}
 
     _l.info('execute_file.context %s' % context)
 
