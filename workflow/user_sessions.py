@@ -1,6 +1,7 @@
 import json
 import logging
 import sys
+import threading
 import traceback
 
 _l = logging.getLogger('workflow')
@@ -11,6 +12,8 @@ import sys
 import matplotlib.pyplot as plt
 import base64
 import json
+
+exec_lock = threading.Lock()
 
 class UserSession:
     def __init__(self):
@@ -74,30 +77,32 @@ def _execute_code(code, context):
     with contextlib.redirect_stdout(output_buffer), contextlib.redirect_stderr(error_buffer):
         try:
             # Execute the code
-            exec(code, context)
-            error = error_buffer.getvalue()
 
-            # Handle image output if matplotlib is used
-            if plt.get_fignums():
-                image_buffer = io.BytesIO()
-                plt.savefig(image_buffer, format='png')
-                plt.close()
-                image_buffer.seek(0)
-                image_data = base64.b64encode(image_buffer.read()).decode('utf-8')
-                return {'type': 'image', 'data': image_data}
+            with exec_lock:
+                exec(code, context)
+                error = error_buffer.getvalue()
 
-            # If no image, return text output
-            output = output_buffer.getvalue()
-            if output:
-                try:
-                    # Attempt to parse the output as JSON
-                    json_output = json.loads(output)
-                    return {'type': 'json', 'data': json_output}
-                except json.JSONDecodeError:
-                    # If not JSON, return as text
-                    return {'type': 'text', 'data': output}
-            elif error:
-                return {'type': 'error', 'data': error}
+                # Handle image output if matplotlib is used
+                if plt.get_fignums():
+                    image_buffer = io.BytesIO()
+                    plt.savefig(image_buffer, format='png')
+                    plt.close()
+                    image_buffer.seek(0)
+                    image_data = base64.b64encode(image_buffer.read()).decode('utf-8')
+                    return {'type': 'image', 'data': image_data}
+
+                # If no image, return text output
+                output = output_buffer.getvalue()
+                if output:
+                    try:
+                        # Attempt to parse the output as JSON
+                        json_output = json.loads(output)
+                        return {'type': 'json', 'data': json_output}
+                    except json.JSONDecodeError:
+                        # If not JSON, return as text
+                        return {'type': 'text', 'data': output}
+                elif error:
+                    return {'type': 'error', 'data': error}
 
         except Exception as e:
             # Handle any errors that occur during execution
@@ -107,6 +112,7 @@ def _execute_code(code, context):
         finally:
             output_buffer.close()
             error_buffer.close()
+
 
 def execute_file(user_id, file_path, data):
     session = sessions[user_id]
