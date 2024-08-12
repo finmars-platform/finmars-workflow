@@ -13,8 +13,6 @@ import matplotlib.pyplot as plt
 import base64
 import json
 
-exec_lock = threading.Lock()
-
 class UserSession:
     def __init__(self):
         self.files = {}
@@ -69,40 +67,51 @@ def get_base_path():
     return space.space_code
 
 
+thread_local = threading.local()
+
 # for execute_file method
+def get_thread_local_buffers():
+    # Initialize output and error buffers if they don't exist in the current thread
+    if not hasattr(thread_local, 'output_buffer'):
+        thread_local.output_buffer = io.StringIO()
+    if not hasattr(thread_local, 'error_buffer'):
+        thread_local.error_buffer = io.StringIO()
+    return thread_local.output_buffer, thread_local.error_buffer
+
 def _execute_code(code, context):
-    # Redirect standard output and standard error
-    output_buffer = io.StringIO()
-    error_buffer = io.StringIO()
+    # Get thread-local buffers
+    output_buffer, error_buffer = get_thread_local_buffers()
+
+    current_thread_id = threading.get_ident()
+    _l.info(f"Executing code in thread ID: {current_thread_id}")
+
     with contextlib.redirect_stdout(output_buffer), contextlib.redirect_stderr(error_buffer):
         try:
             # Execute the code
+            exec(code, context)
+            error = error_buffer.getvalue()
 
-            with exec_lock:
-                exec(code, context)
-                error = error_buffer.getvalue()
+            # Handle image output if matplotlib is used
+            if plt.get_fignums():
+                image_buffer = io.BytesIO()
+                plt.savefig(image_buffer, format='png')
+                plt.close()
+                image_buffer.seek(0)
+                image_data = base64.b64encode(image_buffer.read()).decode('utf-8')
+                return {'type': 'image', 'data': image_data}
 
-                # Handle image output if matplotlib is used
-                if plt.get_fignums():
-                    image_buffer = io.BytesIO()
-                    plt.savefig(image_buffer, format='png')
-                    plt.close()
-                    image_buffer.seek(0)
-                    image_data = base64.b64encode(image_buffer.read()).decode('utf-8')
-                    return {'type': 'image', 'data': image_data}
-
-                # If no image, return text output
-                output = output_buffer.getvalue()
-                if output:
-                    try:
-                        # Attempt to parse the output as JSON
-                        json_output = json.loads(output)
-                        return {'type': 'json', 'data': json_output}
-                    except json.JSONDecodeError:
-                        # If not JSON, return as text
-                        return {'type': 'text', 'data': output}
-                elif error:
-                    return {'type': 'error', 'data': error}
+            # If no image, return text output
+            output = output_buffer.getvalue()
+            if output:
+                try:
+                    # Attempt to parse the output as JSON
+                    json_output = json.loads(output)
+                    return {'type': 'json', 'data': json_output}
+                except json.JSONDecodeError:
+                    # If not JSON, return as text
+                    return {'type': 'text', 'data': output}
+            elif error:
+                return {'type': 'error', 'data': error}
 
         except Exception as e:
             # Handle any errors that occur during execution
@@ -110,8 +119,11 @@ def _execute_code(code, context):
             return {'type': 'error', 'data': traceback_str}
 
         finally:
-            output_buffer.close()
-            error_buffer.close()
+            # Reset buffers for next use
+            output_buffer.seek(0)
+            output_buffer.truncate()
+            error_buffer.seek(0)
+            error_buffer.truncate()
 
 
 def execute_file(user_id, file_path, data):
