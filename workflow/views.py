@@ -293,7 +293,7 @@ class FileExecutionViewSet(ViewSet):
         It expects 'code' and 'file_path' in the request data.
         """
         user_id = request.user.id  # or however you get the user's ID
-        data = request.data.get('data')
+        data = request.data.get('data', {})
         file_path = request.data.get('file_path')
 
         # Ensure the user session is created
