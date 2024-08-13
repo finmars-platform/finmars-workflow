@@ -1,15 +1,17 @@
 from __future__ import unicode_literals
-
+from celery import schedules
 import json
 
 import pytz
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import models
+from django.db import models, connection
 from django.utils.translation import gettext_lazy
+from django_celery_beat.models import PeriodicTask, CrontabSchedule
 
 from workflow.storage import get_storage
+from workflow.utils import get_all_tenant_schemas
 
 
 LANGUAGE_MAX_LENGTH = 5
@@ -356,3 +358,93 @@ class Task(TimeStampedModel):
         self.progress = progress
 
         self.save()
+
+
+class ScheduleManager(models.Manager):
+    def enabled(self):
+        result = []
+        schemas = get_all_tenant_schemas()
+
+        for schema in schemas:
+            with connection.cursor() as cursor:
+                cursor.execute(f"SET search_path TO {schema};")
+
+            schema_schedules = list(self.filter(enabled=True).prefetch_related("crontab"))
+            result.extend(schema_schedules)
+        return result
+
+
+class Schedule(PeriodicTask, TimeStampedModel):
+    objects = ScheduleManager()
+
+    user_code = models.TextField(verbose_name=gettext_lazy('user_code'))
+
+    payload_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('payload data'))
+
+    is_manager = models.BooleanField(default=False, verbose_name=gettext_lazy('is manager'))
+
+    space = models.ForeignKey(Space, verbose_name=gettext_lazy('space'),
+                              on_delete=models.CASCADE, related_name="schedules")
+
+    owner = models.ForeignKey(User, verbose_name=gettext_lazy('owner'),
+                              on_delete=models.CASCADE, related_name="schedules")
+
+    @property
+    def payload(self):
+        if self.payload_data is None:
+            return None
+        return json.loads(self.payload_data)
+
+    @payload.setter
+    def payload(self, value):
+        if value is None:
+            self.payload_data = None
+        else:
+            self.payload_data = json.dumps(value, sort_keys=True, indent=1)
+
+    @property
+    def crontab_line(self) -> str | None:
+        if self.crontab:
+            return '{} {} {} {} {}'.format(
+                self.crontab.minute, self.crontab.hour,
+                self.crontab.day_of_month, self.crontab.month_of_year,
+                self.crontab.day_of_week
+            )
+
+    @crontab_line.setter
+    def crontab_line(self, value: str):
+        minute, hour, day, month, weekday = value.split(' ')
+        schedule = schedules.crontab(
+            minute=minute,
+            hour=hour,
+            day_of_month=day,
+            month_of_year=month,
+            day_of_week=weekday
+        )
+        self.crontab = CrontabSchedule.from_schedule(schedule)
+
+    def save(self, *args, **kwargs):
+        self.queue = "workflow"
+        self.task = "workflow.tasks.workflows.execute"
+        space_user_code = f"{self.space.space_code}.{self.user_code}"
+        self.name = f"periodic-{space_user_code}-{self.crontab_line}"
+        self.args = json.dumps([space_user_code, self.payload_data, self.is_manager])
+        self.kwargs = json.dumps({"context": {
+            "realm_code": self.space.realm_code, "space_code": self.space.space_code
+        }})
+        self.crontab, _ = CrontabSchedule.objects.get_or_create(
+            minute=self.crontab.minute,
+            hour=self.crontab.hour,
+            day_of_month=self.crontab.day_of_month,
+            month_of_year=self.crontab.month_of_year,
+            day_of_week=self.crontab.day_of_week
+        )
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+    # restore the property overwritten by 1:1 relationship
+    @property
+    def schedule(self):
+        return self.crontab.schedule
