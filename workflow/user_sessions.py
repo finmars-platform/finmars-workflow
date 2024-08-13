@@ -3,6 +3,7 @@ import logging
 import sys
 import threading
 import traceback
+import uuid
 
 _l = logging.getLogger('workflow')
 import contextlib
@@ -143,7 +144,9 @@ def execute_file(user_id, file_path, data):
 
     content = file.read()
 
-    context.update({'data': data})
+    data['execution_id'] = str(uuid.uuid4())
+
+    context.update({'execution_context': data})
 
     # _l.info('execute_file %s' % content)
 
