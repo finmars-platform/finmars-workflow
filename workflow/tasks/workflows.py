@@ -144,10 +144,7 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
                          is_manager=is_manager)
         c_obj.save()
 
-        # path = user_code[len(context['space_code']) + 1:].replace('.', '/').replace(':', '/')
-        # module_path, _ = path.rsplit('/', maxsplit=1)
-        # manager.sync_remote_storage_to_local_storage_for_schema(module_path)
-        manager.register_workflows(context['space_code'])
+        manager.get_by_user_code(user_code, sync_remote=True)
 
         # Build the workflow and execute it
         from workflow.builder import WorkflowBuilder
