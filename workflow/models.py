@@ -379,7 +379,7 @@ class Schedule(PeriodicTask, TimeStampedModel):
 
     user_code = models.TextField(verbose_name=gettext_lazy('user_code'))
 
-    payload_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('payload data'))
+    payload = models.JSONField(null=True, blank=True, verbose_name=gettext_lazy('payload'))
 
     is_manager = models.BooleanField(default=False, verbose_name=gettext_lazy('is manager'))
 
@@ -388,19 +388,6 @@ class Schedule(PeriodicTask, TimeStampedModel):
 
     owner = models.ForeignKey(User, verbose_name=gettext_lazy('owner'),
                               on_delete=models.CASCADE, related_name="schedules")
-
-    @property
-    def payload(self):
-        if self.payload_data is None:
-            return None
-        return json.loads(self.payload_data)
-
-    @payload.setter
-    def payload(self, value):
-        if value is None:
-            self.payload_data = None
-        else:
-            self.payload_data = json.dumps(value, sort_keys=True, indent=1)
 
     @property
     def crontab_line(self) -> str | None:
@@ -428,7 +415,7 @@ class Schedule(PeriodicTask, TimeStampedModel):
         self.task = "workflow.tasks.workflows.execute"
         space_user_code = f"{self.space.space_code}.{self.user_code}"
         self.name = f"periodic-{space_user_code}-{self.crontab_line}"
-        self.args = json.dumps([space_user_code, self.payload_data, self.is_manager])
+        self.args = json.dumps([space_user_code, self.payload, self.is_manager])
         self.kwargs = json.dumps({"context": {
             "realm_code": self.space.realm_code, "space_code": self.space.space_code
         }})

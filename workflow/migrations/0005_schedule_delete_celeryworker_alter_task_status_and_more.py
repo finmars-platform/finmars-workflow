@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True, db_index=True, verbose_name='created')),
                 ('modified', models.DateTimeField(auto_now=True, db_index=True, verbose_name='modified')),
                 ('user_code', models.TextField(verbose_name='user_code')),
-                ('payload_data', models.TextField(blank=True, null=True, verbose_name='payload data')),
+                ('payload', models.JSONField(blank=True, null=True, verbose_name='payload')),
                 ('is_manager', models.BooleanField(default=False, verbose_name='is manager')),
                 ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='schedules', to=settings.AUTH_USER_MODEL, verbose_name='owner')),
                 ('space', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='schedules', to='workflow.space', verbose_name='space')),
