@@ -1,4 +1,5 @@
 import os
+import contextlib
 import warnings
 
 def ENV_BOOL(env_name, default):
@@ -47,3 +48,13 @@ def print_finmars():
     """
 
     print(text)
+
+
+def filter_sentry_events(event, hint):
+    with contextlib.suppress(Exception):
+        frames = event['exception']['values'][0]['stacktrace']['frames']
+        for i, frame in enumerate(frames):
+            if frame['function'] == 'execute_workflow_step' and len(frames) > i+1:
+                #  do not report exceptions raised in custom modules
+                return None
+    return event

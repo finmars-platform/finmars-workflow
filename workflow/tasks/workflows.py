@@ -160,8 +160,7 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
         return c_obj_dict
 
     except Exception as e:
-        logger.error('execute e %s' % e)
-        logger.error('execute traceback %s' % traceback.format_exc())
+        logger.error('periodic task error: %s' % e, exc_info=True)
 
 
 @celery_app.task(bind=True, base=BaseTask)
