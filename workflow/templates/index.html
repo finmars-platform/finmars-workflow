@@ -279,6 +279,8 @@
                                                     </th>
                                                     <th>Date
                                                     </th>
+                                                    <th>Schedule
+                                                    </th>
                                                 </tr>
                                                 </thead>
                                                 <tbody>
@@ -303,6 +305,7 @@
                                                     <td v-bind:title="item.created">
                                                         <v-ship>{{ item.created | formatDate }}</v-ship>
                                                     </td>
+                                                    <td>{{ item.crontab_line }}</td>
                                                 </tr>
 
                                                 </tbody>
