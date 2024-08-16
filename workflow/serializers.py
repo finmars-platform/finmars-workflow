@@ -50,13 +50,19 @@ class WorkflowSerializer(serializers.ModelSerializer):
 
 
 class WorkflowLightSerializer(serializers.ModelSerializer):
+    crontab_line = serializers.SerializerMethodField()
+
     class Meta:
         model = Workflow
         fields = ['id', 'name', 'user_code',
                   'owner',
                   'status',
                   'created', 'modified', 'periodic',
-                  'is_manager']
+                  'is_manager', 'crontab_line']
+
+    def get_crontab_line(self, obj):
+        if obj.crontab:
+            return obj.crontab.human_readable
 
 
 class PingSerializer(serializers.Serializer):
@@ -87,10 +93,12 @@ class ScheduleSerializer(serializers.ModelSerializer):
     payload = serializers.JSONField(allow_null=True, required=False)
     crontab_line = serializers.CharField()
     user_code = serializers.ChoiceField(choices=[])
+    owner_username = serializers.SerializerMethodField()
 
     class Meta:
         model = Schedule
-        fields = ['id', 'user_code', 'space', 'owner', 'created', 'modified', 'payload', 'crontab_line']
+        fields = ['id', 'user_code', 'space', 'owner', 'created', 'modified', 'payload', 'crontab_line',
+                  'enabled', 'owner_id', 'owner_username']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -106,3 +114,6 @@ class ScheduleSerializer(serializers.ModelSerializer):
         except ValueError:
             raise serializers.ValidationError("Wrong crontab format. Make sure there are 5 space-separated values")
         return value
+
+    def get_owner_username(self, obj):
+        return obj.owner.username

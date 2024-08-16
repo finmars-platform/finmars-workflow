@@ -126,6 +126,9 @@ class Workflow(TimeStampedModel):
     owner = models.ForeignKey(User, verbose_name=gettext_lazy('owner'),
                               on_delete=models.CASCADE, related_name="workflows")
 
+    crontab = models.ForeignKey(CrontabSchedule, verbose_name=gettext_lazy('crontab'),
+                                null=True, on_delete=models.SET_NULL, related_name="workflows")
+
     class Meta:
         get_latest_by = 'modified'
         ordering = ['-created', 'id']
@@ -416,9 +419,6 @@ class Schedule(PeriodicTask, TimeStampedModel):
         space_user_code = f"{self.space.space_code}.{self.user_code}"
         self.name = f"periodic-{space_user_code}-{self.crontab_line}"
         self.args = json.dumps([space_user_code, self.payload, self.is_manager])
-        self.kwargs = json.dumps({"context": {
-            "realm_code": self.space.realm_code, "space_code": self.space.space_code
-        }})
         self.crontab, _ = CrontabSchedule.objects.get_or_create(
             minute=self.crontab.minute,
             hour=self.crontab.hour,
@@ -426,6 +426,10 @@ class Schedule(PeriodicTask, TimeStampedModel):
             month_of_year=self.crontab.month_of_year,
             day_of_week=self.crontab.day_of_week
         )
+        self.kwargs = json.dumps({
+            "context": {"realm_code": self.space.realm_code, "space_code": self.space.space_code},
+            "crontab_id": self.crontab.id
+        })
         return super().save(*args, **kwargs)
 
     def __str__(self):

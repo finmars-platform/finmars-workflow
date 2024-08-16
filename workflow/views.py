@@ -57,7 +57,7 @@ class WorkflowFilterSet(FilterSet):
 
 class WorkflowViewSet(ModelViewSet):
     queryset = Workflow.objects.select_related(
-        'owner'
+        'owner', 'crontab'
     )
     serializer_class = WorkflowSerializer
     permission_classes = ModelViewSet.permission_classes + [

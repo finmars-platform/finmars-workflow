@@ -141,7 +141,7 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
         space = Space.objects.get(space_code=context.get('space_code'))
 
         c_obj = Workflow(owner=finmars_bot, space=space, user_code=user_code, payload=payload, periodic=True,
-                         is_manager=is_manager)
+                         is_manager=is_manager, crontab_id=kwargs.get('crontab_id'))
         c_obj.save()
 
         manager.get_by_user_code(user_code, sync_remote=True)
