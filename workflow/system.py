@@ -111,7 +111,7 @@ class SystemWorkflowManager:
                         _l.debug(f"Loaded workflow for user code: {space.space_code}.{user_code}")
 
                     except Exception as e:
-                        _l.error(f"Could not load workflow config file: {workflow_file} - {e}")
+                        _l.warning(f"Could not load workflow config file: {workflow_file} - {e}")
                 else:
                     _l.debug(f"Skipped unsupported file format: {workflow_file}")
 

@@ -7,10 +7,9 @@ https://docs.djangoproject.com/en/4.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
-
 import os
 
-from workflow_app.utils import ENV_BOOL, ENV_STR, ENV_INT, print_finmars
+from workflow_app.utils import ENV_BOOL, ENV_STR, ENV_INT, print_finmars, filter_sentry_events
 
 print_finmars()
 
@@ -524,5 +523,6 @@ if SERVER_TYPE != "local":
 
         # If you wish to associate users to errors (assuming you are using
         # django.contrib.auth) you may enable sending PII data.
-        send_default_pii=True
+        send_default_pii=True,
+        before_send=filter_sentry_events,
     )
