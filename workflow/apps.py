@@ -53,7 +53,13 @@ class WorkflowConfig(AppConfig):
             space_code = 'space00000'
 
         try:
-            space = Space.objects.get(space_code=space_code, name=space_code, realm_code=settings.REALM_CODE)
+            space = Space.objects.first()
+            if not space:
+                raise Space.DoesNotExist()
+            space.space_code = space_code
+            space.name = space_code
+            space.realm_code = settings.REALM_CODE
+            space.save()
             _l.info("bootstrap.space_exists: %s " % space_code)
         except Space.DoesNotExist:
             space = Space.objects.create(space_code=space_code, name=space_code, realm_code=settings.REALM_CODE)
