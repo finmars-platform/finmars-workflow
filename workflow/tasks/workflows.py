@@ -174,11 +174,13 @@ def execute_workflow_step(self, *args, **kwargs):
     context = kwargs.get('context')
     set_schema_from_context(context)
 
-    workflow = Workflow.objects.get(id=kwargs['workflow_id'])
-    path = workflow.user_code[len(context['space_code'])+1:].replace('.', '/').replace(':', '/')
-    module_path, _ = path.rsplit('/', maxsplit=1)
+    path = self.task.name
+    if path.endswith('.task'):
+        path = path[:-5]
+    module_path = path.replace('.', '/').replace(':', '/')
+
     manager.sync_remote_storage_to_local_storage_for_schema(module_path)
-    manager.import_user_tasks(path, raise_exception=True)
+    manager.import_user_tasks(module_path, raise_exception=True)
 
     func = get_registered_task()
     if func:
@@ -186,4 +188,4 @@ def execute_workflow_step(self, *args, **kwargs):
         result = func(self, *args, **kwargs)
         return result
     else:
-        raise Exception(f'no function to execute for {workflow.user_code}')
+        raise Exception(f'no function to execute for {self.task.name}')
