@@ -1,3 +1,4 @@
+import os.path
 import time
 import traceback
 
@@ -181,6 +182,20 @@ def execute_workflow_step(self, *args, **kwargs):
 
     manager.sync_remote_storage_to_local_storage_for_schema(module_path)
     manager.import_user_tasks(module_path, raise_exception=True)
+
+    imports = kwargs.get('imports') or {}
+    if isinstance(imports, dict):
+        imports = imports.get('dirs')
+    if isinstance(imports, list):
+        for extra_path in imports:
+            extra_path = os.path.normpath(os.path.join(module_path, extra_path))
+            last_segment = extra_path.split('/')[-1]
+            if '*' in last_segment or '?' in last_segment:
+                # given a wildcard for file name
+                extra_path, pattern = extra_path.rsplit('/', maxsplit=1)
+            else:
+                pattern = '*.*'
+            manager.sync_remote_storage_to_local_storage_for_schema(extra_path, [pattern])
 
     func = get_registered_task()
     if func:

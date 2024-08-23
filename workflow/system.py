@@ -5,6 +5,7 @@ import shutil
 import sys
 import traceback
 from pathlib import Path
+import fnmatch
 
 import yaml
 
@@ -159,7 +160,10 @@ class SystemWorkflowManager:
         except KeyError:
             return "workflow"
 
-    def sync_remote_storage_to_local_storage_for_schema(self, module_path=''):
+    def get_imports(self, user_code):
+        return self.get_by_user_code(user_code).get("imports")
+
+    def sync_remote_storage_to_local_storage_for_schema(self, module_path='', patterns=('*.yaml', '*.yml', '*.json', '*.py')):
 
         space = Space.objects.all().first()
 
@@ -219,7 +223,7 @@ class SystemWorkflowManager:
                                 # Log the file syncing
                                 # _l.info(f"Syncing file: {filepath}")
 
-                                if filename.endswith('.yaml') or filename.endswith('.yml') or filename.endswith('.json') or filename.endswith('.py'):
+                                if any(fnmatch.fnmatch(filename, pattern) for pattern in patterns):
 
                                     with storage.open(filepath) as f:
                                         f_content = f.read()

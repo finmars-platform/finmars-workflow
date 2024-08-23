@@ -26,6 +26,8 @@ class WorkflowBuilder(object):
 
         self.tasks = system_workflow_manager.get_tasks(str(self.workflow))
 
+        self.imports = system_workflow_manager.get_imports(str(self.workflow))
+
         self.canvas = []
 
         self.failure_hook = system_workflow_manager.get_failure_hook_task(str(self.workflow))
@@ -63,11 +65,15 @@ class WorkflowBuilder(object):
         _l.info('WorkflowBuilder.celery_app.backend %s' % celery_app.backend)
 
         signature = execute_workflow_step.subtask(
-            kwargs={"workflow_id": self.workflow_id, "payload": self.workflow.payload, "context": {
-                "realm_code": self.workflow.space.realm_code,
-                "space_code": self.workflow.space.space_code,
-
-            }},
+            kwargs={
+                "workflow_id": self.workflow_id,
+                "payload": self.workflow.payload,
+                "context": {
+                    "realm_code": self.workflow.space.realm_code,
+                    "space_code": self.workflow.space.space_code,
+                },
+                "imports": self.imports
+            },
             queue=queue,
             task_id=task_id,
         )
