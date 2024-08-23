@@ -8,6 +8,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import os
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 from workflow_app.utils import ENV_BOOL, ENV_STR, ENV_INT, print_finmars, filter_sentry_events
 
@@ -507,13 +509,13 @@ REDOC_SETTINGS = {
 }
 
 # SENTRY
-
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
+SENTRY_DSN = ENV_STR("SENTRY_DSN", None)
+if SENTRY_DSN is None:
+    SENTRY_DSN = "https://d7c2e86d381f4010987f909e89b0d570@sentry.finmars.com/4"
 
 if SERVER_TYPE != "local":
     sentry_sdk.init(
-        dsn="https://d7c2e86d381f4010987f909e89b0d570@sentry.finmars.com/4",
+        dsn=SENTRY_DSN,
         integrations=[DjangoIntegration()],
         environment=SERVER_TYPE,
         # Set traces_sample_rate to 1.0 to capture 100%
