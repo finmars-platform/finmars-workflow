@@ -62,3 +62,29 @@ class CharFilter(django_filters.CharFilter):
     def __init__(self, *args, **kwargs):
         kwargs["lookup_expr"] = "icontains"
         super().__init__(*args, **kwargs)
+
+
+class WorkflowSearchParamFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        date_from = request.query_params.get("date_from", None)
+        date_to = request.query_params.get("date_to", None)
+        status = request.query_params.get('status', None)
+        is_manager = request.query_params.get('is_manager', None)
+        
+        if date_from:
+            date = datetime.strptime(date_from, "%Y-%m-%d")
+            queryset = queryset.filter(created__gte=date)
+
+        if date_to:
+            date = datetime.strptime(date_to, "%Y-%m-%d") + timedelta(
+                days=1, microseconds=-1)
+            queryset = queryset.filter(created__lte=date)
+
+        if status:
+            status_list = status.split(',')
+            queryset = queryset.filter(status__in=status_list)
+
+        if is_manager:
+            queryset = queryset.filter(is_manager=is_manager)
+
+        return queryset
