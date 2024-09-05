@@ -1,16 +1,17 @@
 import logging
 import os
-import sys
 import random
 import string
+import sys
+
+from django.db import connection
 
 from celery.schedules import crontab
 from jsonschema.validators import validator_for
-from django.db import connection
 
 from workflow.exceptions import WorkflowSyntaxError
 
-_l = logging.getLogger('workflow')
+_l = logging.getLogger("workflow")
 
 
 def validate(payload, schema):
@@ -33,7 +34,7 @@ def format_schema_errors(e):
 def build_celery_schedule(workflow_name, data):
     """A celery schedule can accept seconds or crontab"""
 
-    _l.info('build_celery_schedule %s' % workflow_name)
+    _l.info("build_celery_schedule %s" % workflow_name)
 
     def _handle_schedule(schedule):
         try:
@@ -86,13 +87,13 @@ def build_celery_schedule(workflow_name, data):
 
 
 def send_alert(workflow):
-    from workflow.models import Workflow
-    from workflow.models import User
-    from workflow.models import Task
-    from workflow_app import settings
-    from rest_framework_simplejwt.tokens import RefreshToken
-    import requests
     import json
+
+    import requests
+    from rest_framework_simplejwt.tokens import RefreshToken
+
+    from workflow.models import Task, User, Workflow
+    from workflow_app import settings
 
     if workflow.status == Workflow.STATUS_ERROR:
 
@@ -106,12 +107,15 @@ def send_alert(workflow):
 
             # _l.info('refresh %s' % refresh.access_token)
 
-            headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-                       'Authorization': 'Bearer %s' % refresh.access_token}
+            headers = {
+                "Content-type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Bearer %s" % refresh.access_token,
+            }
 
             error_task = workflow.tasks.filter(status=Task.STATUS_ERROR).first()
 
-            error_description = 'Unknown'
+            error_description = "Unknown"
 
             if error_task:
                 error_description = str(error_task.error_message)
@@ -119,18 +123,39 @@ def send_alert(workflow):
             _l.info("Going to report Error to Finmars")
 
             data = {
-                "expression": "send_system_message(type='error', title='Workflow Failed. " + str(
-                    workflow.user_code) + " (" + str(
-                    workflow.id) + ")', description='Something Went Wrong. See Task for the details', action_status='required')",
-                "is_eval": True
+                "expression": "send_system_message(type='error', title='Workflow Failed. "
+                + str(workflow.user_code)
+                + " ("
+                + str(workflow.id)
+                + ")', description='Something Went Wrong. See Task for the details', action_status='required')",
+                "is_eval": True,
             }
 
             if workflow.space.realm_code:
-                url = 'https://' + settings.DOMAIN_NAME + '/' + workflow.space.realm_code + '/' + workflow.space.space_code + '/api/v1/utils/expression/'
+                url = (
+                    "https://"
+                    + settings.DOMAIN_NAME
+                    + "/"
+                    + workflow.space.realm_code
+                    + "/"
+                    + workflow.space.space_code
+                    + "/api/v1/utils/expression/"
+                )
             else:
-                url = 'https://' + settings.DOMAIN_NAME + '/' + workflow.space.space_code + '/api/v1/utils/expression/'
+                url = (
+                    "https://"
+                    + settings.DOMAIN_NAME
+                    + "/"
+                    + workflow.space.space_code
+                    + "/api/v1/utils/expression/"
+                )
 
-            response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+            response = requests.post(
+                url=url,
+                data=json.dumps(data),
+                headers=headers,
+                verify=settings.VERIFY_SSL,
+            )
 
             # _l.info('response %s' % response.text)
 
@@ -144,11 +169,14 @@ def construct_path(*args):
 
 def schema_exists(schema_name):
     with connection.cursor() as cursor:
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT schema_name
             FROM information_schema.schemata
             WHERE schema_name = %s;
-        """, [schema_name])
+        """,
+            [schema_name],
+        )
         return cursor.fetchone() is not None
 
 
@@ -175,30 +203,38 @@ def get_all_tenant_schemas():
 
 def is_special_execution_context():
     """Check if the current execution context is for special operations like migrations or tests."""
-    special_commands = {'test', 'makemigrations', 'migrate', 'migrate_all_schemes', 'clearsessions', 'collectstatic', 'sync_remote_storage_to_local_storage_all_spaces'}
+    special_commands = {
+        "test",
+        "makemigrations",
+        "migrate",
+        "migrate_all_schemes",
+        "clearsessions",
+        "collectstatic",
+        "sync_remote_storage_to_local_storage_all_spaces",
+    }
     return any(cmd in sys.argv for cmd in special_commands)
 
 
 def set_schema_from_context(context):
 
     if context:
-        if context.get('space_code'):
+        if context.get("space_code"):
 
-            if schema_exists(context.get('space_code')):
+            if schema_exists(context.get("space_code")):
 
-                space_code = context.get('space_code')
+                space_code = context.get("space_code")
                 with connection.cursor() as cursor:
                     cursor.execute(f"SET search_path TO {space_code};")
 
             else:
-                raise Exception('No space_code in database schemas')
+                raise Exception("No space_code in database schemas")
         else:
-            raise Exception('No space_code in context')
+            raise Exception("No space_code in context")
     else:
-        raise Exception('No context in kwargs')
-
-
+        raise Exception("No context in kwargs")
 
 
 def generate_random_string(N):
-    return ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(N))
+    return "".join(
+        random.choice(string.ascii_lowercase + string.digits) for _ in range(N)
+    )

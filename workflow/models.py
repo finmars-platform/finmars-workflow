@@ -1,51 +1,64 @@
 from __future__ import unicode_literals
-from celery import schedules
+
 import json
 
-import pytz
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import models, connection
+from django.db import connection, models
 from django.utils.translation import gettext_lazy
-from django_celery_beat.models import PeriodicTask, CrontabSchedule
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
+
+import pytz
+from celery import schedules
 
 from workflow.storage import get_storage
 from workflow.utils import get_all_tenant_schemas
-
 
 LANGUAGE_MAX_LENGTH = 5
 TIMEZONE_MAX_LENGTH = 20
 TIMEZONE_CHOICES = sorted(list((k, k) for k in pytz.all_timezones))
 TIMEZONE_COMMON_CHOICES = sorted(list((k, k) for k in pytz.common_timezones))
 
-from django.utils.translation import gettext_lazy as _
-from workflow_app import celery_app
-from django.utils.timezone import now
-
 import logging
 
-_l = logging.getLogger('workflow')
+from django.utils.timezone import now
+from django.utils.translation import gettext_lazy as _
+
+from workflow_app import celery_app
+
+_l = logging.getLogger("workflow")
 
 storage = get_storage()
 
 
-
 class User(AbstractUser):
-    language = models.CharField(max_length=LANGUAGE_MAX_LENGTH, default=settings.LANGUAGE_CODE,
-                                verbose_name=gettext_lazy('language'))
-    timezone = models.CharField(max_length=TIMEZONE_MAX_LENGTH, default=settings.TIME_ZONE,
-                                verbose_name=gettext_lazy('timezone'))
+    language = models.CharField(
+        max_length=LANGUAGE_MAX_LENGTH,
+        default=settings.LANGUAGE_CODE,
+        verbose_name=gettext_lazy("language"),
+    )
+    timezone = models.CharField(
+        max_length=TIMEZONE_MAX_LENGTH,
+        default=settings.TIME_ZONE,
+        verbose_name=gettext_lazy("timezone"),
+    )
 
-    two_factor_verification = models.BooleanField(default=False, verbose_name=gettext_lazy('two factor verification'))
+    two_factor_verification = models.BooleanField(
+        default=False, verbose_name=gettext_lazy("two factor verification")
+    )
 
-    json_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('json data'))
+    json_data = models.TextField(
+        null=True, blank=True, verbose_name=gettext_lazy("json data")
+    )
 
-    is_verified = models.BooleanField(default=False, verbose_name=gettext_lazy('is verified'))
+    is_verified = models.BooleanField(
+        default=False, verbose_name=gettext_lazy("is verified")
+    )
 
     password = models.CharField(_("password"), max_length=256)
 
-    is_bot = models.BooleanField(default=False, verbose_name=gettext_lazy('is bot'))
+    is_bot = models.BooleanField(default=False, verbose_name=gettext_lazy("is bot"))
 
     @property
     def data(self):
@@ -66,72 +79,111 @@ class User(AbstractUser):
 
 
 class TimeStampedModel(models.Model):
-    created = models.DateTimeField(auto_now_add=True, editable=False, db_index=True,
-                                   verbose_name=gettext_lazy('created'))
-    modified = models.DateTimeField(auto_now=True, editable=False, db_index=True,
-                                    verbose_name=gettext_lazy('modified'))
+    created = models.DateTimeField(
+        auto_now_add=True,
+        editable=False,
+        db_index=True,
+        verbose_name=gettext_lazy("created"),
+    )
+    modified = models.DateTimeField(
+        auto_now=True,
+        editable=False,
+        db_index=True,
+        verbose_name=gettext_lazy("modified"),
+    )
 
     class Meta:
         abstract = True
-        get_latest_by = 'modified'
-        ordering = ['created', ]
+        get_latest_by = "modified"
+        ordering = [
+            "created",
+        ]
 
 
 class Space(TimeStampedModel):
-    name = models.CharField(max_length=255, null=True, blank=True,
-                            verbose_name=gettext_lazy('name'))
+    name = models.CharField(
+        max_length=255, null=True, blank=True, verbose_name=gettext_lazy("name")
+    )
 
-    realm_code = models.CharField(max_length=255, null=True, blank=True,
-                                  verbose_name=gettext_lazy('realm_code'))
+    realm_code = models.CharField(
+        max_length=255, null=True, blank=True, verbose_name=gettext_lazy("realm_code")
+    )
 
-    space_code = models.CharField(max_length=255,
-                                  verbose_name=gettext_lazy('space_code'))
+    space_code = models.CharField(
+        max_length=255, verbose_name=gettext_lazy("space_code")
+    )
 
 
 class Workflow(TimeStampedModel):
-    STATUS_INIT = 'init'
-    STATUS_PROGRESS = 'progress'
-    STATUS_SUCCESS = 'success'
-    STATUS_ERROR = 'error'
-    STATUS_TIMEOUT = 'timeout'
-    STATUS_CANCELED = 'canceled'
+    STATUS_INIT = "init"
+    STATUS_PROGRESS = "progress"
+    STATUS_SUCCESS = "success"
+    STATUS_ERROR = "error"
+    STATUS_TIMEOUT = "timeout"
+    STATUS_CANCELED = "canceled"
 
     STATUS_CHOICES = (
-        (STATUS_INIT, 'INIT'),
-        (STATUS_PROGRESS, 'PROGRESS'),
-        (STATUS_SUCCESS, 'SUCCESS'),
-        (STATUS_ERROR, 'ERROR'),
-        (STATUS_TIMEOUT, 'TIMEOUT'),
-        (STATUS_CANCELED, 'CANCELED')
+        (STATUS_INIT, "INIT"),
+        (STATUS_PROGRESS, "PROGRESS"),
+        (STATUS_SUCCESS, "SUCCESS"),
+        (STATUS_ERROR, "ERROR"),
+        (STATUS_TIMEOUT, "TIMEOUT"),
+        (STATUS_CANCELED, "CANCELED"),
     )
 
-    name = models.CharField(max_length=255, null=True, blank=True,
-                            verbose_name=gettext_lazy('name'))
+    name = models.CharField(
+        max_length=255, null=True, blank=True, verbose_name=gettext_lazy("name")
+    )
 
-    user_code = models.CharField(max_length=1024, null=True, blank=True,
-                                 verbose_name=gettext_lazy('user_code'))
+    user_code = models.CharField(
+        max_length=1024, null=True, blank=True, verbose_name=gettext_lazy("user_code")
+    )
 
-    status = models.CharField(null=True, max_length=255, default=STATUS_INIT, choices=STATUS_CHOICES,
-                              verbose_name='status')
-    payload_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('payload data'))
-    periodic = models.BooleanField(default=False, verbose_name=gettext_lazy('periodic'))
+    status = models.CharField(
+        null=True,
+        max_length=255,
+        default=STATUS_INIT,
+        choices=STATUS_CHOICES,
+        verbose_name="status",
+    )
+    payload_data = models.TextField(
+        null=True, blank=True, verbose_name=gettext_lazy("payload data")
+    )
+    periodic = models.BooleanField(default=False, verbose_name=gettext_lazy("periodic"))
 
-    is_manager = models.BooleanField(default=False, verbose_name=gettext_lazy('is manager'))
-    platform_task_id = models.IntegerField(null=True,
-                                           help_text="Platform Task ID in case if Platform initiated some pipeline")
+    is_manager = models.BooleanField(
+        default=False, verbose_name=gettext_lazy("is manager")
+    )
+    platform_task_id = models.IntegerField(
+        null=True,
+        help_text="Platform Task ID in case if Platform initiated some pipeline",
+    )
 
-    space = models.ForeignKey(Space, verbose_name=gettext_lazy('space'),
-                              on_delete=models.CASCADE, related_name="workflows")
+    space = models.ForeignKey(
+        Space,
+        verbose_name=gettext_lazy("space"),
+        on_delete=models.CASCADE,
+        related_name="workflows",
+    )
 
-    owner = models.ForeignKey(User, verbose_name=gettext_lazy('owner'),
-                              on_delete=models.CASCADE, related_name="workflows")
+    owner = models.ForeignKey(
+        User,
+        verbose_name=gettext_lazy("owner"),
+        on_delete=models.CASCADE,
+        related_name="workflows",
+    )
 
-    crontab = models.ForeignKey(CrontabSchedule, verbose_name=gettext_lazy('crontab'),
-                                null=True, on_delete=models.SET_NULL, related_name="workflows")
+    crontab = models.ForeignKey(
+        CrontabSchedule,
+        verbose_name=gettext_lazy("crontab"),
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="workflows",
+    )
 
     class Meta:
-        get_latest_by = 'modified'
-        ordering = ['-created', 'id']
+        get_latest_by = "modified"
+        ordering = ["-created", "id"]
 
     @property
     def payload(self):
@@ -174,21 +226,32 @@ class Workflow(TimeStampedModel):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
-        if self.platform_task_id and \
-           self.status in (self.STATUS_SUCCESS, self.STATUS_ERROR, self.STATUS_TIMEOUT, self.STATUS_CANCELED):
+        if self.platform_task_id and self.status in (
+            self.STATUS_SUCCESS,
+            self.STATUS_ERROR,
+            self.STATUS_TIMEOUT,
+            self.STATUS_CANCELED,
+        ):
 
             from workflow.finmars import update_task_status
+
             try:
                 error_task = self.tasks.filter(status=Task.STATUS_ERROR).first()
                 if error_task:
-                    update_task_status(self.platform_task_id, self.status, error=error_task.error_message)
+                    update_task_status(
+                        self.platform_task_id,
+                        self.status,
+                        error=error_task.error_message,
+                    )
                     return
 
                 last_task = self.tasks.last()
                 if last_task:
-                    update_task_status(self.platform_task_id, self.status, result=last_task.result)
+                    update_task_status(
+                        self.platform_task_id, self.status, result=last_task.result
+                    )
             except Exception as ex:
-                _l.warning('update_task_status %s' % ex)
+                _l.warning("update_task_status %s" % ex)
 
     def cancel(self):
         status_to_cancel = [Task.STATUS_PROGRESS]
@@ -211,80 +274,119 @@ class Workflow(TimeStampedModel):
 
         from workflow.system import get_system_workflow_manager
         from workflow.workflows import execute_workflow
+
         system_workflow_manager = get_system_workflow_manager()
 
-        user_code = f'{self.space.space_code}.{user_code}'
+        user_code = f"{self.space.space_code}.{user_code}"
 
-        new_workflow = system_workflow_manager.get_by_user_code(user_code, sync_remote=True)
+        new_workflow = system_workflow_manager.get_by_user_code(
+            user_code, sync_remote=True
+        )
 
-        is_manager = new_workflow.get('is_manager', False)
+        is_manager = new_workflow.get("is_manager", False)
 
         if is_manager:
-            raise Exception("New Workflow is manager. Manager can't execute another manager")
+            raise Exception(
+                "New Workflow is manager. Manager can't execute another manager"
+            )
 
-        _l.info('run_new_workflow. Going to execute: %s', user_code)
+        _l.info("run_new_workflow. Going to execute: %s", user_code)
 
-        data, _ = execute_workflow(self.owner.username, user_code, payload, self.space.realm_code, self.space.space_code)
+        data, _ = execute_workflow(
+            self.owner.username,
+            user_code,
+            payload,
+            self.space.realm_code,
+            self.space.space_code,
+        )
 
         return data
 
 
 class Task(TimeStampedModel):
-    STATUS_INIT = 'init'
-    STATUS_PROGRESS = 'progress'
-    STATUS_SUCCESS = 'success'
-    STATUS_ERROR = 'error'
-    STATUS_TIMEOUT = 'timeout'
-    STATUS_CANCELED = 'canceled'
+    STATUS_INIT = "init"
+    STATUS_PROGRESS = "progress"
+    STATUS_SUCCESS = "success"
+    STATUS_ERROR = "error"
+    STATUS_TIMEOUT = "timeout"
+    STATUS_CANCELED = "canceled"
 
     STATUS_CHOICES = (
-        (STATUS_INIT, 'INIT'),
-        (STATUS_PROGRESS, 'PROGRESS'),
-        (STATUS_SUCCESS, 'SUCCESS'),
-        (STATUS_ERROR, 'ERROR'),
-        (STATUS_TIMEOUT, 'TIMEOUT'),
-        (STATUS_CANCELED, 'CANCELED'),
+        (STATUS_INIT, "INIT"),
+        (STATUS_PROGRESS, "PROGRESS"),
+        (STATUS_SUCCESS, "SUCCESS"),
+        (STATUS_ERROR, "ERROR"),
+        (STATUS_TIMEOUT, "TIMEOUT"),
+        (STATUS_CANCELED, "CANCELED"),
     )
 
-    workflow = models.ForeignKey(Workflow, verbose_name=gettext_lazy('workflow'),
-                                 on_delete=models.CASCADE, related_name="tasks")
+    workflow = models.ForeignKey(
+        Workflow,
+        verbose_name=gettext_lazy("workflow"),
+        on_delete=models.CASCADE,
+        related_name="tasks",
+    )
 
     celery_task_id = models.CharField(null=True, max_length=255)
     name = models.CharField(null=True, max_length=255)
     source_code = models.CharField(null=True, max_length=255)
-    status = models.CharField(null=True, max_length=255, default=STATUS_INIT, choices=STATUS_CHOICES,
-                              verbose_name='status')
-    worker_name = models.CharField(null=True, max_length=255, verbose_name="worker name")
+    status = models.CharField(
+        null=True,
+        max_length=255,
+        default=STATUS_INIT,
+        choices=STATUS_CHOICES,
+        verbose_name="status",
+    )
+    worker_name = models.CharField(
+        null=True, max_length=255, verbose_name="worker name"
+    )
     type = models.CharField(max_length=50, blank=True, null=True)
 
-    payload_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('payload data'))
-    result_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('result data'))
+    payload_data = models.TextField(
+        null=True, blank=True, verbose_name=gettext_lazy("payload data")
+    )
+    result_data = models.TextField(
+        null=True, blank=True, verbose_name=gettext_lazy("result data")
+    )
 
-    progress_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('progress data'))
+    progress_data = models.TextField(
+        null=True, blank=True, verbose_name=gettext_lazy("progress data")
+    )
 
-    log = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('log'))
+    log = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("log"))
 
-    notes = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('notes'))
-    error_message = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('error message'))
+    notes = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("notes"))
+    error_message = models.TextField(
+        null=True, blank=True, verbose_name=gettext_lazy("error message")
+    )
 
     verbose_name = models.CharField(null=True, max_length=255)
-    verbose_result = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('verbose result'))
+    verbose_result = models.TextField(
+        null=True, blank=True, verbose_name=gettext_lazy("verbose result")
+    )
 
-    previous_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('previous data'))
+    previous_data = models.TextField(
+        null=True, blank=True, verbose_name=gettext_lazy("previous data")
+    )
 
-    is_hook = models.BooleanField(default=False, verbose_name=gettext_lazy('is hook'))
+    is_hook = models.BooleanField(default=False, verbose_name=gettext_lazy("is hook"))
 
-    finished_at = models.DateTimeField(null=True, db_index=True,
-                                       verbose_name=gettext_lazy('finished at'))
+    finished_at = models.DateTimeField(
+        null=True, db_index=True, verbose_name=gettext_lazy("finished at")
+    )
 
-    space = models.ForeignKey(Space, verbose_name=gettext_lazy('space'),
-                              on_delete=models.CASCADE, related_name="tasks")
+    space = models.ForeignKey(
+        Space,
+        verbose_name=gettext_lazy("space"),
+        on_delete=models.CASCADE,
+        related_name="tasks",
+    )
 
     class Meta:
-        ordering = ['-created']
+        ordering = ["-created"]
 
     def __str__(self):
-        return '<Task: {0.pk} ({0.status})>'.format(self)
+        return "<Task: {0.pk} ({0.status})>".format(self)
 
     @property
     def payload(self):
@@ -356,7 +458,7 @@ class Task(TimeStampedModel):
         #   description
         # }
 
-        _l.info('update_progress %s' % progress)
+        _l.info("update_progress %s" % progress)
 
         self.progress = progress
 
@@ -372,7 +474,9 @@ class ScheduleManager(models.Manager):
             with connection.cursor() as cursor:
                 cursor.execute(f"SET search_path TO {schema};")
 
-            schema_schedules = list(self.filter(enabled=True).prefetch_related("crontab"))
+            schema_schedules = list(
+                self.filter(enabled=True).prefetch_related("crontab")
+            )
             result.extend(schema_schedules)
         return result
 
@@ -380,36 +484,50 @@ class ScheduleManager(models.Manager):
 class Schedule(PeriodicTask, TimeStampedModel):
     objects = ScheduleManager()
 
-    user_code = models.TextField(verbose_name=gettext_lazy('user_code'))
+    user_code = models.TextField(verbose_name=gettext_lazy("user_code"))
 
-    payload = models.JSONField(null=True, blank=True, verbose_name=gettext_lazy('payload'))
+    payload = models.JSONField(
+        null=True, blank=True, verbose_name=gettext_lazy("payload")
+    )
 
-    is_manager = models.BooleanField(default=False, verbose_name=gettext_lazy('is manager'))
+    is_manager = models.BooleanField(
+        default=False, verbose_name=gettext_lazy("is manager")
+    )
 
-    space = models.ForeignKey(Space, verbose_name=gettext_lazy('space'),
-                              on_delete=models.CASCADE, related_name="schedules")
+    space = models.ForeignKey(
+        Space,
+        verbose_name=gettext_lazy("space"),
+        on_delete=models.CASCADE,
+        related_name="schedules",
+    )
 
-    owner = models.ForeignKey(User, verbose_name=gettext_lazy('owner'),
-                              on_delete=models.CASCADE, related_name="schedules")
+    owner = models.ForeignKey(
+        User,
+        verbose_name=gettext_lazy("owner"),
+        on_delete=models.CASCADE,
+        related_name="schedules",
+    )
 
     @property
     def crontab_line(self) -> str | None:
         if self.crontab:
-            return '{} {} {} {} {}'.format(
-                self.crontab.minute, self.crontab.hour,
-                self.crontab.day_of_month, self.crontab.month_of_year,
-                self.crontab.day_of_week
+            return "{} {} {} {} {}".format(
+                self.crontab.minute,
+                self.crontab.hour,
+                self.crontab.day_of_month,
+                self.crontab.month_of_year,
+                self.crontab.day_of_week,
             )
 
     @crontab_line.setter
     def crontab_line(self, value: str):
-        minute, hour, day, month, weekday = value.split(' ')
+        minute, hour, day, month, weekday = value.split(" ")
         schedule = schedules.crontab(
             minute=minute,
             hour=hour,
             day_of_month=day,
             month_of_year=month,
-            day_of_week=weekday
+            day_of_week=weekday,
         )
         self.crontab = CrontabSchedule.from_schedule(schedule)
 
@@ -424,12 +542,17 @@ class Schedule(PeriodicTask, TimeStampedModel):
             hour=self.crontab.hour,
             day_of_month=self.crontab.day_of_month,
             month_of_year=self.crontab.month_of_year,
-            day_of_week=self.crontab.day_of_week
+            day_of_week=self.crontab.day_of_week,
         )
-        self.kwargs = json.dumps({
-            "context": {"realm_code": self.space.realm_code, "space_code": self.space.space_code},
-            "crontab_id": self.crontab.id
-        })
+        self.kwargs = json.dumps(
+            {
+                "context": {
+                    "realm_code": self.space.realm_code,
+                    "space_code": self.space.space_code,
+                },
+                "crontab_id": self.crontab.id,
+            }
+        )
         return super().save(*args, **kwargs)
 
     def __str__(self):
