@@ -20,7 +20,6 @@ from rest_framework.viewsets import ModelViewSet, ViewSet
 import pexpect
 
 from workflow.filters import (
-    CharFilter,
     WholeWordsSearchFilter,
     WorkflowQueryFilter,
     WorkflowSearchParamFilter,
@@ -117,7 +116,7 @@ class WorkflowViewSet(ModelViewSet):
             platform_task_id,
         )
 
-        _l.info("data %s" % data)
+        _l.info(f"data {data}")
 
         return Response(data)
 
@@ -195,12 +194,7 @@ class PingViewSet(ViewSet):
     def get_bearer_token(self, request):
         auth = get_authorization_header(request).split()
 
-        token = None
-
-        if len(auth):
-            token = auth[1].decode()
-
-        return token
+        return auth[1].decode() if len(auth) else None
 
     @method_decorator(ensure_csrf_cookie)
     def list(self, request, *args, **kwargs):
@@ -252,8 +246,7 @@ class RefreshStorageViewSet(ViewSet):
 
             system_workflow_manager.register_workflows(request.space_code)
         except Exception as e:
-            _l.info("Could not restart celery.exception %s" % e)
-            _l.info("Could not restart celery.traceback %s" % traceback.format_exc())
+            _l.info(f"Could not restart error {e} trace {traceback.format_exc()}")
 
         return Response({"status": "ok"})
 
