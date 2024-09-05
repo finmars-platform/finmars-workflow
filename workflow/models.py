@@ -1,12 +1,15 @@
 from __future__ import unicode_literals
 
 import json
+import logging
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection, models
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy
+from django.utils.translation import gettext_lazy as _
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
 import pytz
@@ -14,18 +17,13 @@ from celery import schedules
 
 from workflow.storage import get_storage
 from workflow.utils import get_all_tenant_schemas
+from workflow_app import celery_app
 
 LANGUAGE_MAX_LENGTH = 5
 TIMEZONE_MAX_LENGTH = 20
 TIMEZONE_CHOICES = sorted(list((k, k) for k in pytz.all_timezones))
 TIMEZONE_COMMON_CHOICES = sorted(list((k, k) for k in pytz.common_timezones))
 
-import logging
-
-from django.utils.timezone import now
-from django.utils.translation import gettext_lazy as _
-
-from workflow_app import celery_app
 
 _l = logging.getLogger("workflow")
 

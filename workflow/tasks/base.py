@@ -113,14 +113,12 @@ class BaseTask(_Task):
     We need this method to prevent periodic worfklow overlap
     e.g. workflow execution time is about 2 hours
     but periodic runs it every hour
-    
     00:00 - Run workflow (1)
     01:00 - Run workflow (2) - it will be exited, because workflow (1) is still running
     01:30 - Finished Workflow (1)
     02:00 - Run Workflow (3) It will run, because no active workflow at the moment
     02:40 - Finish Workflow (3) - Workflow was super fast and ended before next one
     03:00 - Run Workflow (4) - It will run, because previous one finished quicker before schedule
-    
     """
 
     def log(self, message):

@@ -1,3 +1,6 @@
+import base64
+import contextlib
+import io
 import json
 import logging
 import sys
@@ -5,14 +8,9 @@ import threading
 import traceback
 import uuid
 
-_l = logging.getLogger("workflow")
-import base64
-import contextlib
-import io
-import json
-import sys
-
 import matplotlib.pyplot as plt
+
+_l = logging.getLogger("workflow")
 
 
 class UserSession:

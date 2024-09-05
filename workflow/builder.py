@@ -5,6 +5,7 @@ from celery.utils import uuid
 
 from workflow.exceptions import WorkflowSyntaxError
 from workflow.models import Task, Workflow
+from workflow.system import get_system_workflow_manager
 from workflow.tasks.workflows import (
     end,
     execute_workflow_step,
@@ -15,7 +16,6 @@ from workflow_app import celery_app
 
 _l = logging.getLogger("workflow")
 
-from workflow.system import get_system_workflow_manager
 
 system_workflow_manager = get_system_workflow_manager()
 

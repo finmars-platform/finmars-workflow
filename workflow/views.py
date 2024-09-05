@@ -37,13 +37,11 @@ from workflow.serializers import (
     WorkflowLightSerializer,
     WorkflowSerializer,
 )
+from workflow.system import get_system_workflow_manager
 from workflow.user_sessions import create_session, execute_code, execute_file, sessions
 from workflow.workflows import execute_workflow
 
 _l = logging.getLogger("workflow")
-
-from workflow.system import get_system_workflow_manager
-
 system_workflow_manager = get_system_workflow_manager()
 
 

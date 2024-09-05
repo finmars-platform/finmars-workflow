@@ -1,10 +1,10 @@
 import fnmatch
 import importlib
 import json
+import logging
 import os
 import shutil
 import sys
-import traceback
 from pathlib import Path
 
 from django.db import connection
@@ -20,7 +20,6 @@ from workflow_app import celery_app, settings
 
 storage = get_storage()
 
-import logging
 
 _l = logging.getLogger("workflow")
 
