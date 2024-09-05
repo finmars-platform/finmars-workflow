@@ -4,8 +4,7 @@ import traceback
 
 import django_filters
 from django.core.management import call_command
-from django.db import connection
-from django.http import Http404, HttpResponse
+from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -13,7 +12,6 @@ from django_filters.rest_framework import FilterSet
 from rest_framework import status
 from rest_framework.authentication import get_authorization_header
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
