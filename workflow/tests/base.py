@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.views.generic.dates import timezone_today
 from rest_framework.test import APIClient
 
-from workflow.models import Space, User
+from workflow.models import User
 
 
 class TestMetaClass(type):
