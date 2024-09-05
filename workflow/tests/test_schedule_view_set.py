@@ -9,19 +9,13 @@ from .base import BaseTestCase
 
 class ScheduleViewSetTestCase(BaseTestCase):
     def setUp(self):
-        self.client = APIClient()
-        self.realm_code = f"realm{self.random_string(5)}"
-        self.space_code = f"space{self.random_string(5)}"
+        self.init_test_case()
+
         self.url_prefix = f"/{self.realm_code}/{self.space_code}/workflow/api/schedule/"
+
         self.space = Space.objects.create(
             realm_code=self.realm_code, space_code=self.space_code
         )
-        self.user = User.objects.create(
-            username=self.random_string(5),
-            is_staff=True,
-            is_superuser=True,
-        )
-        self.client.force_authenticate(self.user)
 
         manager = get_system_workflow_manager()
         manager.workflows = {

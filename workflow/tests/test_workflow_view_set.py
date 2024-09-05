@@ -1,27 +1,19 @@
 from datetime import date
 
-from rest_framework.test import APIClient
-
-from workflow.models import Space, User, Workflow
+from workflow.models import Space, Workflow
 
 from .base import BaseTestCase
 
 
 class WorkflowViewSetFilterTestCase(BaseTestCase):
     def setUp(self):
-        self.client = APIClient()
-        self.realm_code = f"realm{self.random_string(5)}"
-        self.space_code = f"space{self.random_string(5)}"
+        self.init_test_case()
+
         self.url_prefix = f"/{self.realm_code}/{self.space_code}/workflow/api/workflow/"
+
         self.space = Space.objects.create(
             realm_code=self.realm_code, space_code=self.space_code
         )
-        self.user = User.objects.create(
-            username=self.random_string(5),
-            is_staff=True,
-            is_superuser=True,
-        )
-        self.client.force_authenticate(self.user)
 
         self.workflow1 = Workflow.objects.create(
             space=self.space,
@@ -51,7 +43,7 @@ class WorkflowViewSetFilterTestCase(BaseTestCase):
         self.assertIn(self.workflow1.id, ids)
         self.assertNotIn(self.workflow2.id, ids)
         self.assertTrue(
-            all([w for w in response.data["results"] if "another" in w["payload"]])
+            all(w for w in response.data["results"] if "another" in w["payload"])
         )
 
     def test_filter_queryset_payload_partial_not_found(self):
