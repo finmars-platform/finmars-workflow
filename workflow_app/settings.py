@@ -39,24 +39,23 @@ WORKFLOW_STORAGE_ROOT = os.path.join(
 
 # Very Important MasterUserConfigs encrypted by this key
 # Also Session (if enabled) are using it
-SECRET_KEY = ENV_STR("SECRET_KEY", None)
-ENCRYPTION_KEY = ENV_STR("ENCRYPTION_KEY", None)
+SECRET_KEY = ENV_STR("SECRET_KEY", "local_secret_key")
+ENCRYPTION_KEY = ENV_STR("ENCRYPTION_KEY", "local_encryption_key")
 PROVISION_MANAGER = ENV_STR("PROVISION_MANAGER", "rancher")
 
 SERVER_TYPE = ENV_STR("SERVER_TYPE", "local")  # local, development, production
-HOST_LOCATION = ENV_STR(
-    "HOST_LOCATION", "local"
-)  # local, azure, aws, private cloud or custom, only for log purpose
+
+# local, azure, aws, private cloud or custom, only for log purpose
+HOST_LOCATION = ENV_STR("HOST_LOCATION", "local")
 HOST_URL = ENV_STR("HOST_URL", "http://0.0.0.0:8000")
 ALLOWED_HOST = ENV_STR("ALLOWED_HOST", "*")
 DOMAIN_NAME = ENV_STR("DOMAIN_NAME", "finmars.com")
 
-REGISTER_ACCESS_KEY = ENV_STR(
-    "REGISTER_ACCESS_KEY", None
-)  # deprecated, for newly created users to auto-activate
-INSTALLATION_TYPE = ENV_STR(
-    "INSTALLATION_TYPE", "cloud"
-)  # cloud, hnwi_client, private_cloud
+# deprecated, for newly created users to auto-activate
+REGISTER_ACCESS_KEY = ENV_STR("REGISTER_ACCESS_KEY", None)
+
+# cloud, hnwi_client, private_cloud
+INSTALLATION_TYPE = ENV_STR("INSTALLATION_TYPE", "cloud")
 
 # possible deprecated, 0 - local 1 eu-central 2 - zurich, should be generated in licnse server
 BASE_API_URL_PREFIX = ENV_STR("BASE_API_URL_PREFIX", "0")

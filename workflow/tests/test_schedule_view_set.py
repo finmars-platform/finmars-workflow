@@ -44,7 +44,7 @@ class ScheduleViewSetTestCase(BaseTestCase):
         self.assertEqual(len(response.data["results"]), 1)
 
     def test_retrieve_schedule(self):
-        response = self.client.get(self.url_prefix + f"{self.schedule.pk}/")
+        response = self.client.get(f"{self.url_prefix}{self.schedule.pk}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["user_code"], "test_workflow")
 
@@ -65,7 +65,7 @@ class ScheduleViewSetTestCase(BaseTestCase):
             "payload": {"updated": "data"},
         }
         response = self.client.patch(
-            self.url_prefix + f"{self.schedule.pk}/", data, format="json"
+            f"{self.url_prefix}{self.schedule.pk}/", data, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.schedule.refresh_from_db()
@@ -73,7 +73,7 @@ class ScheduleViewSetTestCase(BaseTestCase):
         self.assertEqual(self.schedule.crontab_line, data["crontab_line"])
 
     def test_delete_schedule(self):
-        response = self.client.delete(self.url_prefix + f"{self.schedule.pk}/")
+        response = self.client.delete(f"{self.url_prefix}{self.schedule.pk}/")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Schedule.objects.count(), 0)
 

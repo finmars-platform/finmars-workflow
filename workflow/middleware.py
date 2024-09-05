@@ -32,7 +32,7 @@ class RealmAndSpaceMiddleware:
                 # return HttpResponseBadRequest("Invalid space code.")
 
                 with connection.cursor() as cursor:
-                    cursor.execute(f"SET search_path TO public;")
+                    cursor.execute("SET search_path TO public;")
 
             else:
 
