@@ -21,7 +21,13 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet
 
 
-from workflow.filters import WorkflowQueryFilter, WholeWordsSearchFilter, CharFilter
+from workflow.filters import (
+    WorkflowQueryFilter,
+    WholeWordsSearchFilter,
+    CharFilter,
+    WorkflowSearchParamFilter,
+) 
+      
 from workflow.models import Workflow, Task, Schedule
 from workflow.serializers import (
     WorkflowSerializer,
@@ -65,13 +71,14 @@ class WorkflowViewSet(ModelViewSet):
     ]
     filter_class = WorkflowFilterSet
     filter_backends = ModelViewSet.filter_backends + [
-        OrderingFilter,
+        WorkflowSearchParamFilter,
         WorkflowQueryFilter,
         WholeWordsSearchFilter,
+        OrderingFilter,
     ]
     search_fields = ['payload_data']
     ordering_fields = [
-        'name', 'user_code', 'created', 'modified', 'status', 'owner'
+        'name', 'user_code', 'created', 'modified', 'status', 'owner', 'is_manager',
     ]
 
     @action(
