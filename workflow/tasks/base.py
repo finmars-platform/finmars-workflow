@@ -1,14 +1,16 @@
-from celery import Task as _Task
-from celery.signals import task_prerun, task_postrun, task_failure, task_internal_error
-from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
-from celery.utils.log import get_task_logger
 from django.db import connection
 
+from celery import Task as _Task
+from celery.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
+from celery.signals import task_failure, task_internal_error, task_postrun, task_prerun
+from celery.utils.log import get_task_logger
+
 from workflow.models import Task, Workflow
-from workflow.utils import send_alert, schema_exists, set_schema_from_context
+from workflow.utils import schema_exists, send_alert, set_schema_from_context
 from workflow_app import celery_app
 
 logger = get_task_logger(__name__)
+
 
 # EXTREMELY IMPORTANT CODE
 # DO NOT MODIFY IT
@@ -24,13 +26,13 @@ def workflow_prerun(task_id, task, sender, *args, **kwargs):
 
     logger.info(f"task_prerun.task {task}")
 
-    context = kwargs.get('context')
+    context = kwargs.get("context")
     if context:
-        if context.get('space_code'):
+        if context.get("space_code"):
 
-            if schema_exists(context.get('space_code')):
+            if schema_exists(context.get("space_code")):
 
-                space_code = context.get('space_code')
+                space_code = context.get("space_code")
                 with connection.cursor() as cursor:
                     cursor.execute(f"SET search_path TO {space_code};")
                     logger.info(f"task_prerun.context {space_code}")
@@ -38,12 +40,12 @@ def workflow_prerun(task_id, task, sender, *args, **kwargs):
                 with connection.cursor() as cursor:
                     cursor.execute(f"SET search_path TO public;")
         else:
-            raise Exception('No space_code in context')
+            raise Exception("No space_code in context")
     else:
-        raise Exception('No context in kwargs')
+        raise Exception("No context in kwargs")
 
     with celery_app.app.app_context():
-        print('task_id %s' % task_id)
+        print("task_id %s" % task_id)
 
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_PROGRESS
@@ -62,10 +64,10 @@ def cleanup(task_id, **kwargs):
 @task_internal_error.connect
 def on_failure(task_id, exception, args, einfo, **kwargs):
     logger.info("task_failure.task_id: %s" % task_id)
-    logger.info("task_failure.kwargs: %s" % kwargs['kwargs'])
+    logger.info("task_failure.kwargs: %s" % kwargs["kwargs"])
     logger.info("task_failure.exception: %s" % exception)
 
-    context = kwargs['kwargs'].get('context')
+    context = kwargs["kwargs"].get("context")
     set_schema_from_context(context)
 
     task = Task.objects.get(celery_task_id=task_id)
@@ -107,27 +109,25 @@ class BaseTask(_Task):
 
         task.save()
 
-    '''
+    """
     We need this method to prevent periodic worfklow overlap
     e.g. workflow execution time is about 2 hours
     but periodic runs it every hour
-    
     00:00 - Run workflow (1)
     01:00 - Run workflow (2) - it will be exited, because workflow (1) is still running
     01:30 - Finished Workflow (1)
     02:00 - Run Workflow (3) It will run, because no active workflow at the moment
     02:40 - Finish Workflow (3) - Workflow was super fast and ended before next one
     03:00 - Run Workflow (4) - It will run, because previous one finished quicker before schedule
-    
-    '''
+    """
 
     def log(self, message):
         # Append the message to the task's log
 
         if not self.task.log:
-            self.task.log = ''
+            self.task.log = ""
 
-        self.task.log = self.task.log + str(message) + '\n'
+        self.task.log = self.task.log + str(message) + "\n"
         self.task.save()
 
     def is_workflow_already_running(self, workflow_user_code):
@@ -141,9 +141,11 @@ class BaseTask(_Task):
         # is_workflow_already_running should prevent from executuon in Workflow (2) and so on
         # thats why we have exclude clause
 
-        running_workflows_count = Workflow.objects.exclude(id__in=[self.task.workflow_id]).filter(
-            user_code=workflow_user_code,
-            status=Workflow.STATUS_PROGRESS).count()
+        running_workflows_count = (
+            Workflow.objects.exclude(id__in=[self.task.workflow_id])
+            .filter(user_code=workflow_user_code, status=Workflow.STATUS_PROGRESS)
+            .count()
+        )
 
         if running_workflows_count > 0:
             is_running = True
@@ -155,7 +157,7 @@ class BaseTask(_Task):
         logger.info("BaseTask.before_start.task_id %s" % task_id)
         logger.info("BaseTask.before_start.kwargs: %s" % kwargs)
 
-        context = kwargs.get('context')
+        context = kwargs.get("context")
         set_schema_from_context(context)
 
         task = Task.objects.get(celery_task_id=task_id)
@@ -176,7 +178,7 @@ class BaseTask(_Task):
         logger.info("BaseTask.on_success.task_id %s" % task_id)
         logger.info("BaseTask.on_success.kwargs: %s" % kwargs)
 
-        context = kwargs.get('context')
+        context = kwargs.get("context")
         set_schema_from_context(context)
 
         task = Task.objects.get(celery_task_id=task_id)
