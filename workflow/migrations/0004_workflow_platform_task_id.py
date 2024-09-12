@@ -6,13 +6,16 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('workflow', '0003_task_worker_name'),
+        ("workflow", "0003_task_worker_name"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='workflow',
-            name='platform_task_id',
-            field=models.IntegerField(help_text='Platform Task ID in case if Platform initiated some pipeline', null=True),
+            model_name="workflow",
+            name="platform_task_id",
+            field=models.IntegerField(
+                help_text="Platform Task ID in case if Platform initiated some pipeline",
+                null=True,
+            ),
         ),
     ]

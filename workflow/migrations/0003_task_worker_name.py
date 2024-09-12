@@ -6,13 +6,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('workflow', '0002_celeryworker'),
+        ("workflow", "0002_celeryworker"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='task',
-            name='worker_name',
-            field=models.CharField(max_length=255, null=True, verbose_name='worker name'),
+            model_name="task",
+            name="worker_name",
+            field=models.CharField(
+                max_length=255, null=True, verbose_name="worker name"
+            ),
         ),
     ]

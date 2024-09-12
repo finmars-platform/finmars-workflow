@@ -2,12 +2,13 @@ import os.path
 import time
 import traceback
 
+from django.db import connection
+
 from celery import chain
 from celery.utils import uuid
 from celery.utils.log import get_task_logger
-from django.db import connection
 
-from workflow.models import Task, Workflow, User, Space
+from workflow.models import Space, Task, User, Workflow
 from workflow.tasks.base import BaseTask
 from workflow.utils import schema_exists, set_schema_from_context
 from workflow_app import celery_app
@@ -25,7 +26,7 @@ def ping(self):
 @celery_app.task(bind=True)
 def start(self, workflow_id, *args, **kwargs):
 
-    context = kwargs.get('context')
+    context = kwargs.get("context")
     set_schema_from_context(context)
 
     logger.info(f"Opening the workflow {workflow_id}")
@@ -40,7 +41,7 @@ def end(self, workflow_id, *args, **kwargs):
     # Waiting for the workflow status to be marked in error if a task failed
     time.sleep(0.5)
 
-    context = kwargs.get('context')
+    context = kwargs.get("context")
     set_schema_from_context(context)
 
     logger.info(f"Closing the workflow {workflow_id}")
@@ -55,7 +56,7 @@ def end(self, workflow_id, *args, **kwargs):
 def mark_as_canceled_init_tasks(self, workflow_id, *args, **kwargs):
     logger.info(f"Mark as cancelled pending tasks of the workflow {workflow_id}")
 
-    context = kwargs.get('context')
+    context = kwargs.get("context")
     set_schema_from_context(context)
 
     tasks = Task.objects.filter(workflow_id=workflow_id, status=Task.STATUS_INIT)
@@ -66,10 +67,12 @@ def mark_as_canceled_init_tasks(self, workflow_id, *args, **kwargs):
 
 
 @celery_app.task(bind=True)
-def failure_hooks_launcher(self, workflow_id, queue, tasks_names, payload, *args, **kwargs):
-    logger.info('failure_hooks_launcher %s' % workflow_id)
+def failure_hooks_launcher(
+    self, workflow_id, queue, tasks_names, payload, *args, **kwargs
+):
+    logger.info("failure_hooks_launcher %s" % workflow_id)
 
-    context = kwargs.get('context')
+    context = kwargs.get("context")
     set_schema_from_context(context)
 
     canvas = []
@@ -80,7 +83,7 @@ def failure_hooks_launcher(self, workflow_id, queue, tasks_names, payload, *args
         # We create the Celery task specifying its UID
         signature = celery_app.tasks.get(task_name).subtask(
             kwargs={"workflow_id": workflow_id, "payload": payload, "context": context},
-            queue='workflow',
+            queue="workflow",
             task_id=task_id,
         )
 
@@ -94,7 +97,7 @@ def failure_hooks_launcher(self, workflow_id, queue, tasks_names, payload, *args
         )
         task.save()
 
-        logger.info('failure_hooks_launcher.task %s' % task)
+        logger.info("failure_hooks_launcher.task %s" % task)
 
         canvas.append(signature)
 
@@ -116,11 +119,11 @@ def failure_hooks_launcher(self, workflow_id, queue, tasks_names, payload, *args
         "workflow.tasks.workflows.mark_as_canceled_init_tasks"
     ).subtask(
         kwargs={"workflow_id": workflow_id},
-        queue='workflow',
+        queue="workflow",
         task_id=task_id,
     )
 
-    logger.info('signature_mark_as_canceled %s' % signature_mark_as_canceled)
+    logger.info("signature_mark_as_canceled %s" % signature_mark_as_canceled)
 
     signature_mark_as_canceled.apply_async()
 
@@ -128,27 +131,36 @@ def failure_hooks_launcher(self, workflow_id, queue, tasks_names, payload, *args
 @celery_app.task(bind=True)
 def execute(self, user_code, payload, is_manager, *args, **kwargs):
     from workflow.system import get_system_workflow_manager
+
     manager = get_system_workflow_manager()
 
     try:
 
         logger.info("periodic.execute %s" % user_code)
 
-        context = kwargs.get('context')
+        context = kwargs.get("context")
 
         set_schema_from_context(context)
 
-        finmars_bot = User.objects.get(username='finmars_bot')
-        space = Space.objects.get(space_code=context.get('space_code'))
+        finmars_bot = User.objects.get(username="finmars_bot")
+        space = Space.objects.get(space_code=context.get("space_code"))
 
-        c_obj = Workflow(owner=finmars_bot, space=space, user_code=user_code, payload=payload, periodic=True,
-                         is_manager=is_manager, crontab_id=kwargs.get('crontab_id'))
+        c_obj = Workflow(
+            owner=finmars_bot,
+            space=space,
+            user_code=user_code,
+            payload=payload,
+            periodic=True,
+            is_manager=is_manager,
+            crontab_id=kwargs.get("crontab_id"),
+        )
         c_obj.save()
 
         manager.get_by_user_code(user_code, sync_remote=True)
 
         # Build the workflow and execute it
         from workflow.builder import WorkflowBuilder
+
         workflow = WorkflowBuilder(c_obj.id)
         workflow.run()
 
@@ -161,46 +173,48 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
         return c_obj_dict
 
     except Exception as e:
-        logger.error('periodic task error: %s' % e, exc_info=True)
+        logger.error("periodic task error: %s" % e, exc_info=True)
 
 
 @celery_app.task(bind=True, base=BaseTask)
 def execute_workflow_step(self, *args, **kwargs):
-    from workflow.api import get_registered_task, clear_registered_task
+    from workflow.api import clear_registered_task, get_registered_task
     from workflow.system import get_system_workflow_manager
 
     clear_registered_task()
     manager = get_system_workflow_manager()
 
-    context = kwargs.get('context')
+    context = kwargs.get("context")
     set_schema_from_context(context)
 
     path = self.task.name
-    if path.endswith('.task'):
+    if path.endswith(".task"):
         path = path[:-5]
-    module_path = path.replace('.', '/').replace(':', '/')
+    module_path = path.replace(".", "/").replace(":", "/")
 
     manager.sync_remote_storage_to_local_storage_for_schema(module_path)
     manager.import_user_tasks(module_path, raise_exception=True)
 
-    imports = kwargs.get('imports') or {}
+    imports = kwargs.get("imports") or {}
     if isinstance(imports, dict):
-        imports = imports.get('dirs')
+        imports = imports.get("dirs")
     if isinstance(imports, list):
         for extra_path in imports:
             extra_path = os.path.normpath(os.path.join(module_path, extra_path))
-            last_segment = extra_path.split('/')[-1]
-            if '*' in last_segment or '?' in last_segment:
+            last_segment = extra_path.split("/")[-1]
+            if "*" in last_segment or "?" in last_segment:
                 # given a wildcard for file name
-                extra_path, pattern = extra_path.rsplit('/', maxsplit=1)
+                extra_path, pattern = extra_path.rsplit("/", maxsplit=1)
             else:
-                pattern = '*.*'
-            manager.sync_remote_storage_to_local_storage_for_schema(extra_path, [pattern])
+                pattern = "*.*"
+            manager.sync_remote_storage_to_local_storage_for_schema(
+                extra_path, [pattern]
+            )
 
     func = get_registered_task()
     if func:
-        logger.info('executing %s', func.__name__)
+        logger.info("executing %s", func.__name__)
         result = func(self, *args, **kwargs)
         return result
     else:
-        raise Exception(f'no function to execute for {self.task.name}')
+        raise Exception(f"no function to execute for {self.task.name}")

@@ -17,9 +17,9 @@ class RealmAndSpaceMiddleware:
         request.realm_code = None
         request.space_code = None
 
-        path_parts = request.path_info.split('/')
+        path_parts = request.path_info.split("/")
 
-        if 'realm' in path_parts[1]:
+        if "realm" in path_parts[1]:
 
             request.realm_code = path_parts[1]
             request.space_code = path_parts[2]
@@ -32,7 +32,7 @@ class RealmAndSpaceMiddleware:
                 # return HttpResponseBadRequest("Invalid space code.")
 
                 with connection.cursor() as cursor:
-                    cursor.execute(f"SET search_path TO public;")
+                    cursor.execute("SET search_path TO public;")
 
             else:
 
@@ -51,9 +51,13 @@ class RealmAndSpaceMiddleware:
         response = self.get_response(request)
 
         if not response.streaming and "/admin/" in request.path_info:
-            response.content = response.content.replace(b"spacexxxxx", request.space_code.encode())
+            response.content = response.content.replace(
+                b"spacexxxxx", request.space_code.encode()
+            )
             if "location" in response:
-                response["location"] = response["location"].replace('spacexxxxx', request.space_code)
+                response["location"] = response["location"].replace(
+                    "spacexxxxx", request.space_code
+                )
 
         # Optionally, reset the search path to default after the request is processed
         # This can be important in preventing "leakage" of the schema setting across requests

@@ -6,27 +6,90 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('workflow', '0001_initial'),
+        ("workflow", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='CeleryWorker',
+            name="CeleryWorker",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True, db_index=True, verbose_name='created')),
-                ('modified', models.DateTimeField(auto_now=True, db_index=True, verbose_name='modified')),
-                ('worker_name', models.CharField(help_text='Name that will be used in celery worker command', max_length=255, unique=True, verbose_name='worker name')),
-                ('worker_type', models.CharField(default='worker', help_text='worker or scheduler', max_length=255, verbose_name='worker type')),
-                ('status', models.TextField(blank=True, default='unknown', help_text='Status of worker container', null=True, verbose_name='status')),
-                ('notes', models.TextField(blank=True, null=True, verbose_name='notes')),
-                ('memory_limit', models.CharField(help_text='Memory limit for celery worker e.g. 2Gi', max_length=255, null=True, verbose_name='Memory Limit')),
-                ('queue', models.TextField(blank=True, default='workflow', help_text='Comma separated list of queues that worker will listen to', null=True, verbose_name='Queue')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "created",
+                    models.DateTimeField(
+                        auto_now_add=True, db_index=True, verbose_name="created"
+                    ),
+                ),
+                (
+                    "modified",
+                    models.DateTimeField(
+                        auto_now=True, db_index=True, verbose_name="modified"
+                    ),
+                ),
+                (
+                    "worker_name",
+                    models.CharField(
+                        help_text="Name that will be used in celery worker command",
+                        max_length=255,
+                        unique=True,
+                        verbose_name="worker name",
+                    ),
+                ),
+                (
+                    "worker_type",
+                    models.CharField(
+                        default="worker",
+                        help_text="worker or scheduler",
+                        max_length=255,
+                        verbose_name="worker type",
+                    ),
+                ),
+                (
+                    "status",
+                    models.TextField(
+                        blank=True,
+                        default="unknown",
+                        help_text="Status of worker container",
+                        null=True,
+                        verbose_name="status",
+                    ),
+                ),
+                (
+                    "notes",
+                    models.TextField(blank=True, null=True, verbose_name="notes"),
+                ),
+                (
+                    "memory_limit",
+                    models.CharField(
+                        help_text="Memory limit for celery worker e.g. 2Gi",
+                        max_length=255,
+                        null=True,
+                        verbose_name="Memory Limit",
+                    ),
+                ),
+                (
+                    "queue",
+                    models.TextField(
+                        blank=True,
+                        default="workflow",
+                        help_text="Comma separated list of queues that worker will listen to",
+                        null=True,
+                        verbose_name="Queue",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['created'],
-                'get_latest_by': 'modified',
-                'abstract': False,
+                "ordering": ["created"],
+                "get_latest_by": "modified",
+                "abstract": False,
             },
         ),
     ]
