@@ -417,7 +417,8 @@ class Schedule(PeriodicTask, TimeStampedModel):
         self.queue = "workflow"
         self.task = "workflow.tasks.workflows.execute"
         space_user_code = f"{self.space.space_code}.{self.user_code}"
-        self.name = f"periodic-{space_user_code}-{self.crontab_line}"
+        if not self.name:
+            self.name = f"periodic-{space_user_code}-{self.crontab_line}"
         self.args = json.dumps([space_user_code, self.payload, self.is_manager])
         self.crontab, _ = CrontabSchedule.objects.get_or_create(
             minute=self.crontab.minute,
