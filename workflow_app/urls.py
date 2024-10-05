@@ -48,6 +48,7 @@ urlpatterns = [
 
     # New Approach
     re_path(r'^(?P<realm_code>[^/]+)/(?P<space_code>[^/]+)/workflow/api/', include(router.urls)),
+    re_path(r'^(?P<realm_code>[^/]+)/(?P<space_code>[^/]+)/workflow/api/v1/', include(router.urls)),
     #re_path(r'^(?P<realm_code>[^/]+)/(?P<space_code>[^/]+)/workflow/admin/docs/',
     #        include('django.contrib.admindocs.urls')),
     re_path(rf"^{settings.REALM_CODE}/(?:space\w{{5}})/workflow/admin/", admin.site.urls),
