@@ -88,6 +88,26 @@ class Space(TimeStampedModel):
                                   verbose_name=gettext_lazy('space_code'))
 
 
+class WorkflowTemplate(TimeStampedModel):
+
+    name = models.CharField(max_length=255, null=True, blank=True,
+                            verbose_name=gettext_lazy('name'))
+
+    user_code = models.CharField(max_length=1024, null=True, blank=True,
+                                 verbose_name=gettext_lazy('user_code'))
+
+    notes = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('notes'))
+
+    data = models.JSONField(null=True, blank=True, verbose_name=gettext_lazy('data'))
+
+    space = models.ForeignKey(Space, verbose_name=gettext_lazy('space'),
+                              on_delete=models.CASCADE, related_name="workflow_templates")
+
+    owner = models.ForeignKey(User, verbose_name=gettext_lazy('owner'),
+                              on_delete=models.CASCADE, related_name="workflow_templates")
+
+
+
 class Workflow(TimeStampedModel):
     STATUS_INIT = 'init'
     STATUS_PROGRESS = 'progress'
@@ -107,6 +127,11 @@ class Workflow(TimeStampedModel):
 
     name = models.CharField(max_length=255, null=True, blank=True,
                             verbose_name=gettext_lazy('name'))
+
+    workflow_template = models.ForeignKey(WorkflowTemplate, null=True, verbose_name=gettext_lazy('template'),
+                                 on_delete=models.CASCADE, related_name="workflows")
+
+    node_id = models.CharField(max_length=255, blank=True, null=True, help_text="Node ID from the workflow JSON structure")
 
     user_code = models.CharField(max_length=1024, null=True, blank=True,
                                  verbose_name=gettext_lazy('user_code'))
@@ -217,7 +242,7 @@ class Workflow(TimeStampedModel):
 
         new_workflow = system_workflow_manager.get_by_user_code(user_code, sync_remote=True)
 
-        is_manager = new_workflow.get('is_manager', False)
+        is_manager = new_workflow['workflow'].get('is_manager', False)
 
         if is_manager:
             raise Exception("New Workflow is manager. Manager can't execute another manager")
@@ -248,6 +273,8 @@ class Task(TimeStampedModel):
 
     workflow = models.ForeignKey(Workflow, verbose_name=gettext_lazy('workflow'),
                                  on_delete=models.CASCADE, related_name="tasks")
+
+    node_id = models.CharField(max_length=255, blank=True, null=True, help_text="Node ID from the workflow JSON structure")
 
     celery_task_id = models.CharField(null=True, max_length=255)
     name = models.CharField(null=True, max_length=255)

@@ -28,7 +28,7 @@ from workflow.filters import (
     WorkflowSearchParamFilter,
 ) 
       
-from workflow.models import Workflow, Task, Schedule
+from workflow.models import Workflow, Task, Schedule, WorkflowTemplate
 from workflow.serializers import (
     WorkflowSerializer,
     TaskSerializer,
@@ -36,7 +36,7 @@ from workflow.serializers import (
     WorkflowLightSerializer,
     BulkSerializer,
     RunWorkflowSerializer,
-    ScheduleSerializer,
+    ScheduleSerializer, WorkflowTemplateSerializer,
 )
 from workflow.workflows import execute_workflow
 
@@ -48,6 +48,59 @@ _l = logging.getLogger('workflow')
 from workflow.system import get_system_workflow_manager
 
 system_workflow_manager = get_system_workflow_manager()
+
+
+class WorkflowTemplateFilterSet(FilterSet):
+    name = django_filters.CharFilter()
+    user_code = django_filters.CharFilter()
+    created = django_filters.DateFromToRangeFilter()
+
+    class Meta:
+        model = WorkflowTemplate
+        fields = []
+
+
+class WorkflowTemplateViewSet(ModelViewSet):
+    queryset = WorkflowTemplate.objects.select_related(
+        'owner',
+    )
+    serializer_class = WorkflowTemplateSerializer
+    permission_classes = ModelViewSet.permission_classes + [
+
+    ]
+    filter_class = WorkflowTemplateFilterSet
+    filter_backends = ModelViewSet.filter_backends + [
+        WorkflowSearchParamFilter,
+        WorkflowQueryFilter,
+        WholeWordsSearchFilter,
+        OrderingFilter,
+    ]
+    search_fields = ['payload_data']
+    ordering_fields = [
+        'name', 'user_code', 'created', 'modified', 'owner',
+    ]
+
+
+    @action(detail=False, methods=['POST'], url_path='run-workflow', serializer_class=RunWorkflowSerializer)
+    def run_workflow(self, request, pk=None, *args, **kwargs):
+        user_code, payload, platform_task_id = (
+            request.data["user_code"],
+            request.data["payload"],
+            request.data.get("platform_task_id")
+        )
+
+        if request.space_code not in user_code:
+            user_code = f'{request.space_code}.{user_code}'
+
+        system_workflow_manager.get_by_user_code(user_code, sync_remote=True)
+
+        data, _ = execute_workflow(request.user.username, user_code, payload, request.realm_code, request.space_code,
+                                   platform_task_id)
+
+        _l.info('data %s' % data)
+
+        return Response(data)
+
 
 
 class WorkflowFilterSet(FilterSet):
@@ -102,7 +155,10 @@ class WorkflowViewSet(ModelViewSet):
             request.data.get("platform_task_id")
         )
 
-        user_code = f'{request.space_code}.{user_code}'
+        if request.space_code not in user_code:
+            user_code = f'{request.space_code}.{user_code}'
+
+        _l.info('user_code %s' % user_code)
 
         system_workflow_manager.get_by_user_code(user_code, sync_remote=True)
 

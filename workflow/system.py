@@ -132,17 +132,17 @@ class SystemWorkflowManager:
 
         if not workflow:
             raise WorkflowNotFound(f"Workflow {user_code} not found")
-        return workflow['workflow']
+        return workflow
 
     def get_tasks(self, user_code):
-        return self.get_by_user_code(user_code)["tasks"]
+        return self.get_by_user_code(user_code)['workflow'].get("tasks", [])
 
     def get_hook_task(self, user_code, hook_name):
         if (
-                "hooks" in self.get_by_user_code(user_code)
-                and hook_name in self.get_by_user_code(user_code)["hooks"]
+                "hooks" in self.get_by_user_code(user_code)['workflow']
+                and hook_name in self.get_by_user_code(user_code)['workflow']["hooks"]
         ):
-            return self.get_by_user_code(user_code)["hooks"][hook_name]
+            return self.get_by_user_code(user_code)['workflow']["hooks"][hook_name]
         return None
 
     def get_failure_hook_task(self, name):
@@ -156,12 +156,12 @@ class SystemWorkflowManager:
 
     def get_queue(self, user_code):
         try:
-            return self.get_by_user_code(user_code)["queue"]
+            return self.get_by_user_code(user_code)['workflow']["queue"]
         except KeyError:
             return "workflow"
 
     def get_imports(self, user_code):
-        return self.get_by_user_code(user_code).get("imports")
+        return self.get_by_user_code(user_code)['workflow'].get("imports")
 
     def sync_remote_storage_to_local_storage_for_schema(self, module_path='', patterns=('*.yaml', '*.yml', '*.json', '*.py')):
 

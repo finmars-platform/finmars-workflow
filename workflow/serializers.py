@@ -2,7 +2,8 @@ import json
 from rest_framework import serializers
 
 from workflow.fields import SpaceField, OwnerField
-from workflow.models import Workflow, Task, Schedule
+from workflow.finmars import Storage
+from workflow.models import Workflow, Task, Schedule, WorkflowTemplate
 from workflow.system import get_system_workflow_manager
 
 
@@ -24,7 +25,7 @@ class TaskSerializer(serializers.ModelSerializer):
         model = Task
         fields = ['id',
                   'space',
-                  'name', 'source_code',
+                  'name', 'source_code', 'node_id',
                   'workflow', 'status', 'celery_task_id', 'source_code',
                   'previous', 'is_hook',
                   'payload', 'result', 'progress',
@@ -34,17 +35,55 @@ class TaskSerializer(serializers.ModelSerializer):
                   ]
 
 
+class WorkflowTemplateSerializer(serializers.ModelSerializer):
+    space = SpaceField()
+
+    data = serializers.JSONField(allow_null=True, required=False)
+
+    class Meta:
+        model = WorkflowTemplate
+        fields = ['id', 'name', 'user_code',
+                  'owner', 'space',
+                   'created', 'modified', 'data',
+                  ]
+
+    def save_to_storage(self, instance):
+
+        storage = Storage()
+
+
+        pieces = instance.user_code.split(':')
+
+        module_name = pieces[1]
+        module_path = pieces[0].split('.')
+
+        path = f'workflows/{module_path[0]}/{module_path[1]}/{module_path[2]}/{module_name}/workflow.json'
+
+        storage.save_text(path, json.dumps(instance.data, indent=4))
+
+    def create(self, validated_data):
+        instance = super().create(validated_data)
+        self.save_to_storage(instance)
+        return instance
+
+    # Override the update method to write a JSON file
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        self.save_to_storage(instance)
+        return instance
+
 class WorkflowSerializer(serializers.ModelSerializer):
     space = SpaceField()
 
+    workflow_template_object = WorkflowTemplateSerializer(read_only=True, source="workflow_template")
     payload = serializers.JSONField(allow_null=True, required=False)
     tasks = TaskSerializer(many=True)
 
     class Meta:
         model = Workflow
         fields = ['id', 'name', 'user_code',
-                  'owner', 'space',
-                  'status',
+                  'owner', 'space', 'node_id',
+                  'status', 'workflow_template', 'workflow_template_object',
                   'payload', 'created', 'modified', 'tasks', 'periodic',
                   'is_manager']
 
