@@ -125,43 +125,44 @@ def failure_hooks_launcher(self, workflow_id, queue, tasks_names, payload, *args
     signature_mark_as_canceled.apply_async()
 
 
-@celery_app.task(bind=True)
-def execute(self, user_code, payload, is_manager, *args, **kwargs):
-    from workflow.system import get_system_workflow_manager
-    manager = get_system_workflow_manager()
-
-    try:
-
-        logger.info("periodic.execute %s" % user_code)
-
-        context = kwargs.get('context')
-
-        set_schema_from_context(context)
-
-        finmars_bot = User.objects.get(username='finmars_bot')
-        space = Space.objects.get(space_code=context.get('space_code'))
-
-        c_obj = Workflow(owner=finmars_bot, space=space, user_code=user_code, payload=payload, periodic=True,
-                         is_manager=is_manager, crontab_id=kwargs.get('crontab_id'))
-        c_obj.save()
-
-        manager.get_by_user_code(user_code, sync_remote=True)
-
-        # Build the workflow and execute it
-        from workflow.builder import WorkflowBuilder
-        workflow = WorkflowBuilder(c_obj.id)
-        workflow.run()
-
-        c_obj_dict = c_obj.to_dict()
-        #
-        # # Force commit before ending the function to ensure the ongoing transaction
-        # # does not end up in a "idle in transaction" state on PostgreSQL
-        # c_obj.commit()
-
-        return c_obj_dict
-
-    except Exception as e:
-        logger.error('periodic task error: %s' % e, exc_info=True)
+# szhitenev 2024-10-08 probably no needed
+# @celery_app.task(bind=True)
+# def execute(self, user_code, payload, is_manager, *args, **kwargs):
+#     from workflow.system import get_system_workflow_manager
+#     manager = get_system_workflow_manager()
+#
+#     try:
+#
+#         logger.info("periodic.execute %s" % user_code)
+#
+#         context = kwargs.get('context')
+#
+#         set_schema_from_context(context)
+#
+#         finmars_bot = User.objects.get(username='finmars_bot')
+#         space = Space.objects.get(space_code=context.get('space_code'))
+#
+#         c_obj = Workflow(owner=finmars_bot, space=space, user_code=user_code, payload=payload, periodic=True,
+#                          is_manager=is_manager, crontab_id=kwargs.get('crontab_id'))
+#         c_obj.save()
+#
+#         manager.get_by_user_code(user_code, sync_remote=True)
+#
+#         # Build the workflow and execute it
+#         from workflow.builder import WorkflowBuilder
+#         workflow = WorkflowBuilder(c_obj.id)
+#         workflow.run()
+#
+#         c_obj_dict = c_obj.to_dict()
+#         #
+#         # # Force commit before ending the function to ensure the ongoing transaction
+#         # # does not end up in a "idle in transaction" state on PostgreSQL
+#         # c_obj.commit()
+#
+#         return c_obj_dict
+#
+#     except Exception as e:
+#         logger.error('periodic task error: %s' % e, exc_info=True)
 
 
 @celery_app.task(bind=True, base=BaseTask)
