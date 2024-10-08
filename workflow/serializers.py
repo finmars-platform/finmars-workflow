@@ -98,6 +98,7 @@ class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Schedule
         fields = ['id', 'user_code', 'name', 'space', 'owner', 'created', 'modified', 'payload', 'crontab_line',
+                    'is_manager',
                   'enabled', 'owner_id', 'owner_username']
 
     def __init__(self, *args, **kwargs):
