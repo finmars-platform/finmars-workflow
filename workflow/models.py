@@ -278,7 +278,7 @@ class Task(TimeStampedModel):
 
     celery_task_id = models.CharField(null=True, max_length=255)
     name = models.CharField(null=True, max_length=255)
-    source_code = models.CharField(null=True, max_length=255)
+    source_code = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('source code'))
     status = models.CharField(null=True, max_length=255, default=STATUS_INIT, choices=STATUS_CHOICES,
                               verbose_name='status')
     worker_name = models.CharField(null=True, max_length=255, verbose_name="worker name")

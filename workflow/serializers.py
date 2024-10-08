@@ -31,6 +31,7 @@ class TaskSerializer(serializers.ModelSerializer):
                   'payload', 'result', 'progress',
 
                   'created', 'modified', 'log', 'worker_name',
+                  'error_message',
                   'finished_at'
                   ]
 

@@ -5,17 +5,17 @@ import traceback
 from celery import chain
 from celery.utils import uuid
 from celery.utils.log import get_task_logger
-from django.db import connection
 
 from workflow.models import Task, Workflow, User, Space
 from workflow.tasks.base import BaseTask
-from workflow.utils import schema_exists, set_schema_from_context
+from workflow.utils import set_schema_from_context
 from workflow_app import celery_app
 
 logger = get_task_logger(__name__)
 import logging
 
 _l = logging.getLogger('workflow')
+
 
 @celery_app.task(bind=True)
 def ping(self):
@@ -26,7 +26,6 @@ def ping(self):
 
 @celery_app.task(bind=True)
 def start(self, workflow_id, *args, **kwargs):
-
     context = kwargs.get('context')
     set_schema_from_context(context)
 
@@ -183,35 +182,64 @@ def execute_workflow_step(self, *args, **kwargs):
     context = kwargs.get('context')
     set_schema_from_context(context)
 
-    path = self.task.name
-    if path.endswith('.task'):
-        path = path[:-5]
-    module_path = path.replace('.', '/').replace(':', '/')
+    if self.task.source_code:
+        logger.info(f"Executing user-provided source code for node {self.task}")
 
-    manager.sync_remote_storage_to_local_storage_for_schema(module_path)
-    manager.import_user_tasks(module_path, raise_exception=True)
+        try:
+            # Execute the source code in a dynamic scope
+            exec_scope = {
+                "__name__": "__main__",  # simulate it as a standalone module
+                "self": self,            # allow use of self for things like logging
+                "args": args,
+                "kwargs": kwargs,
+            }
 
-    imports = kwargs.get('imports') or {}
-    if isinstance(imports, dict):
-        imports = imports.get('dirs')
-    if isinstance(imports, list):
-        for extra_path in imports:
-            extra_path = os.path.normpath(os.path.join(module_path, extra_path))
-            last_segment = extra_path.split('/')[-1]
-            if '*' in last_segment or '?' in last_segment:
-                # given a wildcard for file name
-                extra_path, pattern = extra_path.rsplit('/', maxsplit=1)
+            # Execute the source code
+            exec(self.task.source_code, exec_scope)
+
+            # If the code has defined a `main()` function, call it
+            if "main" in exec_scope:
+                logger.info(f"Executing main() function in user-provided source code for node {self.task.source_code}")
+                result = exec_scope["main"](self, *args, **kwargs)
+                return result
             else:
-                pattern = '*.*'
-            manager.sync_remote_storage_to_local_storage_for_schema(extra_path, [pattern])
+                logger.warning(f"No main() function found in source code for node {self.task.source_code}. Skipping execution.")
 
-    func = get_registered_task()
-    if func:
-        logger.info('executing %s', func.__name__)
-        result = func(self, *args, **kwargs)
-        return result
+        except Exception as e:
+            logger.error(f"Error executing custom source code for node {self.task.source_code}: {e}")
+            raise e
+
     else:
-        raise Exception(f'no function to execute for {self.task.name}')
+
+        path = self.task.name
+        if path.endswith('.task'):
+            path = path[:-5]
+        module_path = path.replace('.', '/').replace(':', '/')
+
+        manager.sync_remote_storage_to_local_storage_for_schema(module_path)
+        manager.import_user_tasks(module_path, raise_exception=True)
+
+        imports = kwargs.get('imports') or {}
+        if isinstance(imports, dict):
+            imports = imports.get('dirs')
+        if isinstance(imports, list):
+            for extra_path in imports:
+                extra_path = os.path.normpath(os.path.join(module_path, extra_path))
+                last_segment = extra_path.split('/')[-1]
+                if '*' in last_segment or '?' in last_segment:
+                    # given a wildcard for file name
+                    extra_path, pattern = extra_path.rsplit('/', maxsplit=1)
+                else:
+                    pattern = '*.*'
+                manager.sync_remote_storage_to_local_storage_for_schema(extra_path, [pattern])
+
+        func = get_registered_task()
+        if func:
+            logger.info('executing %s', func.__name__)
+            result = func(self, *args, **kwargs)
+            return result
+        else:
+            raise Exception(f'no function to execute for {self.task.name}')
 
 
 @celery_app.task(bind=True)
@@ -265,15 +293,53 @@ def execute_dynamic_workflow(self, *args, **kwargs):
             "workflow_id": workflow_id,
             "nodes": nodes,
             "adjacency_list": adjacency_list,
-            "context": context
+            "context": context,
+            "connections": connections
         }, queue="workflow")
 
     logger.info("All start nodes have been dispatched.")
 
 
+def get_next_node_by_condition(current_node_id, condition_result, connections):
+    """
+    Determine the next node to execute based on the condition result and the connections.
+
+    Parameters:
+    - current_node_id: The ID of the current node (which is of type conditional).
+    - condition_result: The result of the conditional evaluation (`True` or `False`).
+    - connections: List of all connections in the workflow.
+
+    Returns:
+    - The ID of the next node to execute.
+    """
+    logger.info(f"Evaluating condition for node {current_node_id}, result: {condition_result}")
+
+    # Define which output to follow based on condition result
+
+    if "result" in condition_result:
+
+        if condition_result["result"]:
+            output_to_follow = "out_true"
+        else:
+            output_to_follow = "out_false"
+    else:
+        raise Exception("Wrong condition_result")
+
+
+    # Iterate through connections to find the target node
+    for connection in connections:
+        if connection['source'] == current_node_id and connection['sourceOutput'] == output_to_follow:
+            next_node_id = connection['target']
+            logger.info(f"Following output '{output_to_follow}' to next node {next_node_id}")
+            return next_node_id
+
+    # If no matching connection is found, return None and log a warning
+    logger.warning(f"No matching connection found for node {current_node_id} with output '{output_to_follow}'")
+    return None
+
+
 @celery_app.task(bind=True)
 def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list, previous_output=None, **kwargs):
-
     context = kwargs.get('context')
     logger.info(f"execute_next_task context received: {context}")
     set_schema_from_context(context)
@@ -284,9 +350,15 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
         logger.info(f"Fetching workflow with ID: {workflow_id}")
         workflow = Workflow.objects.get(id=workflow_id)
         current_node = nodes[current_node_id]
-        task_name = current_node['data']['user_code']
 
-        logger.info(f"Executing task for Node ID: {current_node_id}, Task Name: {task_name}")
+        if current_node['data']['node']['type'] == 'source_code':
+            workflow_user_code = 'custom_code'
+        elif current_node['data']['node']['type'] == 'condition':
+            workflow_user_code = 'condition'
+        else:
+            workflow_user_code = current_node['data']['workflow']['user_code']
+
+        logger.info(f"Executing task for Node ID: {current_node_id}, Task Name: {workflow_user_code}")
 
         # Create Celery signature for the current task
         task_id = uuid()
@@ -304,12 +376,18 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
         # Create a Task object for tracking purposes
         task = Task(
             celery_task_id=task_id,
-            name=task_name,
+            name=workflow_user_code,
             workflow_id=workflow.id,
             node_id=current_node_id,
             status=Task.STATUS_INIT,
             space=workflow.space
         )
+
+        if current_node['data']['node']['type'] == 'source_code' or current_node['data']['node']['type'] == 'condition':
+            task.source_code = current_node['data']['source_code']
+
+        task.payload = workflow.payload # because of legacy json field
+
         task.save()
 
         # Run the task synchronously and get the result
@@ -322,12 +400,23 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
         context = kwargs.get('context')
         set_schema_from_context(context)
 
-        logger.info(f"Task {task_name} executed successfully, result: {output}")
+        logger.info(f"Task {workflow_user_code} executed successfully, result: {output}")
 
         # Check for next nodes to execute
         # what if two branches in parallel and one finished before other?
         # TODO szhitenev
-        next_node_ids = adjacency_list.get(current_node_id, [])
+
+        next_node_ids = []
+        if current_node['data']['node']['type'] == "condition":
+            # Use the condition result to determine the next path
+            logger.info(f"Processing conditional node {current_node_id}, result: {output}")
+            next_node_id = get_next_node_by_condition(current_node_id, output, kwargs.get('connections'))
+            if next_node_id:
+                next_node_ids.append(next_node_id)
+        else:
+            # Normal node, just proceed to the next nodes from adjacency list
+            next_node_ids = adjacency_list.get(current_node_id, [])
+
         if not next_node_ids:
             logger.info(f"No next nodes found for current node ID: {current_node_id}. Marking workflow as complete.")
 
@@ -354,11 +443,10 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
                 "nodes": nodes,
                 "adjacency_list": adjacency_list,
                 "previous_output": output,
-                "context": kwargs.get('context')
+                "context": kwargs.get('context'),
+                "connections": kwargs.get('connections')
             }, queue="workflow")
 
     except Exception as e:
         logger.error(f"Error executing task : {e}")
-
-
-
+        logger.error(f"Error executing traceback : {traceback.format_exc()}")
