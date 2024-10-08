@@ -94,7 +94,7 @@ class WorkflowTemplateViewSet(ModelViewSet):
 
         system_workflow_manager.get_by_user_code(user_code, sync_remote=True)
 
-        data, _ = execute_workflow(request.user.username, user_code, payload, request.realm_code, request.space_code,
+        data = execute_workflow(request.user.username, user_code, payload, request.realm_code, request.space_code,
                                    platform_task_id)
 
         _l.info('data %s' % data)
@@ -162,7 +162,7 @@ class WorkflowViewSet(ModelViewSet):
 
         system_workflow_manager.get_by_user_code(user_code, sync_remote=True)
 
-        data, _ = execute_workflow(request.user.username, user_code, payload, request.realm_code, request.space_code,
+        data = execute_workflow(request.user.username, user_code, payload, request.realm_code, request.space_code,
                                    platform_task_id)
 
         _l.info('data %s' % data)
@@ -172,7 +172,7 @@ class WorkflowViewSet(ModelViewSet):
     @action(detail=True, methods=('POST',), url_path='relaunch')
     def relaunch(self, request, pk=None, *args, **kwargs):
         obj = Workflow.objects.get(id=pk)
-        data, _ = execute_workflow(request.user.username, obj.user_code, obj.payload, request.realm_code,
+        data = execute_workflow(request.user.username, obj.user_code, obj.payload, request.realm_code,
                                    request.space_code)
 
         return Response(data)

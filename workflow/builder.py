@@ -72,88 +72,6 @@ class WorkflowBuilder(object):
         if not isinstance(self.queue, str) or not isinstance(self.custom_queues, dict):
             raise WorkflowSyntaxError()
 
-    def parse_connections(self):
-        """
-        Parse connections from Rete.js JSON structure (version 2) to determine the order of execution.
-        """
-        workflow = self.workflow_data['workflow']
-        nodes = {node['id']: node for node in workflow['nodes']}
-        connections = workflow['connections']
-
-        # Step 1: Build adjacency list from connections
-        adjacency_list = {}
-        incoming_count = {}
-
-        # Initialize adjacency list and incoming count for all nodes
-        for node_id in nodes.keys():
-            adjacency_list[node_id] = []
-            incoming_count[node_id] = 0
-
-        # Fill in adjacency list and incoming count based on connections
-        for connection in connections:
-            source = connection['source']
-            target = connection['target']
-            adjacency_list[source].append(target)
-            incoming_count[target] += 1
-
-        # Step 2: Find all nodes with no incoming connections (start nodes)
-        start_nodes = [node_id for node_id, count in incoming_count.items() if count == 0]
-
-        # Step 3: Use Kahn’s algorithm for topological sorting
-        sorted_order = []
-        queue = start_nodes[:]
-
-        while queue:
-            current_node = queue.pop(0)
-            sorted_order.append(current_node)
-
-            for neighbor in adjacency_list[current_node]:
-                incoming_count[neighbor] -= 1
-                if incoming_count[neighbor] == 0:
-                    queue.append(neighbor)
-
-        # Step 4: Add any unprocessed nodes (disconnected nodes)
-        all_node_ids = set(nodes.keys())
-        processed_node_ids = set(sorted_order)
-
-        _l.info('all_node_ids %s' % all_node_ids)
-        _l.info('processed_node_ids %s' % processed_node_ids)
-
-        # Find nodes that are not in the sorted order (i.e., disconnected nodes)
-        disconnected_nodes = all_node_ids - processed_node_ids
-
-        # Add disconnected nodes to the sorted order
-        sorted_order.extend(disconnected_nodes)
-
-        # Step 5: Create task connections dictionary with user_codes
-        task_connections = []
-
-        for node_id in sorted_order:
-            node = nodes[node_id]
-            task_connections.append({
-                'id': node_id,
-                'name': node['name'],
-                'user_code': node['data']['user_code'],
-                'connections': adjacency_list[node_id]
-            })
-
-        return task_connections
-
-    def build_canvas_from_connections(self, task_connections):
-        canvas = []
-
-        # Traverse tasks in the sorted order to build the canvas
-        for task in task_connections:
-            node_id = task['id']
-            task_name = task['name']
-            user_code = task['user_code']
-
-            # Add the current task to the canvas
-            signature = self.new_task(user_code, node_id=node_id)
-            canvas.append(signature)
-
-        return canvas
-
     def parse_flat_tasks(self, tasks, is_hook=False):
         """
         Parse tasks from the older flat structure (version 1).
@@ -207,15 +125,8 @@ class WorkflowBuilder(object):
         self.imports = system_workflow_manager.get_imports(str(self.workflow))
 
         # Check the version of the workflow and build accordingly
-        if self.workflow_data.get("version") == "2":
-            # Version 2: Use the DAG-based approach with connections
-            task_connections = self.parse_connections()
-            _l.info('task_connections %s' % task_connections)
-            self.canvas = self.build_canvas_from_connections(task_connections)
-        else:
-
-            # Version 1: Use the older flat list of tasks approach
-            self.canvas = self.parse_flat_tasks(self.tasks)
+        # Version 1: Use the older flat list of tasks approach
+        self.canvas = self.parse_flat_tasks(self.tasks)
 
         # Add Before-Start Hook if present
         if self.before_start_hook:

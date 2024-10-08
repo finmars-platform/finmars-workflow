@@ -3,6 +3,7 @@ import logging
 from workflow.builder import WorkflowBuilder
 
 from workflow.models import Workflow, User, Space, WorkflowTemplate
+from workflow.tasks.workflows import execute_dynamic_workflow
 
 _l = logging.getLogger('workflow')
 
@@ -34,10 +35,23 @@ def execute_workflow(username, user_code, payload={}, realm_code=None, space_cod
     obj.save()
 
     # Build the workflow and execute it
-    data = obj.to_dict()
-    workflow = WorkflowBuilder(obj.id, wf)
-    workflow.build()  # Build the workflow execution plan
-    workflow.run()  # Run the workflow
 
-    _l.info(f"Workflow sent : {workflow.canvas}")
-    return obj.to_dict(), workflow
+    if wf.get("version") == "2":
+
+        _l.info("Execute new version")
+
+        execute_dynamic_workflow.apply_async(kwargs={"workflow_id": obj.id, 'context': {
+            'space_code': space_code,
+            'realm_code': realm_code
+        }}, queue="workflow")
+
+    else:
+        _l.info("Execute old version")
+        data = obj.to_dict()
+        workflow = WorkflowBuilder(obj.id, wf)
+        workflow.build()  # Build the workflow execution plan
+        workflow.run()  # Run the workflow
+
+        _l.info(f"Workflow sent : {workflow.canvas}")
+
+    return obj.to_dict()
