@@ -38,7 +38,7 @@ class TaskSerializer(serializers.ModelSerializer):
 
 class WorkflowTemplateSerializer(serializers.ModelSerializer):
     space = SpaceField()
-
+    owner = OwnerField()
     data = serializers.JSONField(allow_null=True, required=False)
 
     class Meta:
