@@ -111,18 +111,20 @@ class WorkflowTemplate(TimeStampedModel):
 class Workflow(TimeStampedModel):
     STATUS_INIT = 'init'
     STATUS_PROGRESS = 'progress'
+    STATUS_WAIT = 'wait'
     STATUS_SUCCESS = 'success'
     STATUS_ERROR = 'error'
     STATUS_TIMEOUT = 'timeout'
     STATUS_CANCELED = 'canceled'
 
     STATUS_CHOICES = (
-        (STATUS_INIT, 'INIT'),
-        (STATUS_PROGRESS, 'PROGRESS'),
-        (STATUS_SUCCESS, 'SUCCESS'),
-        (STATUS_ERROR, 'ERROR'),
-        (STATUS_TIMEOUT, 'TIMEOUT'),
-        (STATUS_CANCELED, 'CANCELED')
+        (STATUS_INIT, 'init'),
+        (STATUS_PROGRESS, 'progress'),
+        (STATUS_WAIT, 'wait'),
+        (STATUS_SUCCESS, 'success'),
+        (STATUS_ERROR, 'error'),
+        (STATUS_TIMEOUT, 'timeout'),
+        (STATUS_CANCELED, 'canceled')
     )
 
     name = models.CharField(max_length=255, null=True, blank=True,
@@ -131,6 +133,8 @@ class Workflow(TimeStampedModel):
     workflow_template = models.ForeignKey(WorkflowTemplate, null=True, verbose_name=gettext_lazy('template'),
                                  on_delete=models.CASCADE, related_name="workflows")
 
+    current_node_id = models.CharField(max_length=255, null=True, blank=True)  # Store the current node ID
+    last_task_output = models.JSONField(null=True, blank=True)  # New field for storing last output
     node_id = models.CharField(max_length=255, blank=True, null=True, help_text="Node ID from the workflow JSON structure")
 
     user_code = models.CharField(max_length=1024, null=True, blank=True,

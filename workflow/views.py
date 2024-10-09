@@ -5,8 +5,7 @@ import traceback
 import django_filters
 import pexpect
 from django.core.management import call_command
-from django.db import connection
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -14,20 +13,16 @@ from django_filters.rest_framework import FilterSet
 from rest_framework import status
 from rest_framework.authentication import get_authorization_header
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet
 
-
 from workflow.filters import (
     WorkflowQueryFilter,
     WholeWordsSearchFilter,
-    CharFilter,
     WorkflowSearchParamFilter,
-) 
-      
+)
 from workflow.models import Workflow, Task, Schedule, WorkflowTemplate
 from workflow.serializers import (
     WorkflowSerializer,
@@ -36,10 +31,8 @@ from workflow.serializers import (
     WorkflowLightSerializer,
     BulkSerializer,
     RunWorkflowSerializer,
-    ScheduleSerializer, WorkflowTemplateSerializer,
+    ScheduleSerializer, WorkflowTemplateSerializer, ResumeWorkflowSerializer,
 )
-from workflow.workflows import execute_workflow
-
 from workflow.user_sessions import create_session, execute_code, sessions, execute_file
 from workflow.workflows import execute_workflow
 
@@ -80,7 +73,6 @@ class WorkflowTemplateViewSet(ModelViewSet):
         'name', 'user_code', 'created', 'modified', 'owner',
     ]
 
-
     @action(detail=False, methods=['POST'], url_path='run-workflow', serializer_class=RunWorkflowSerializer)
     def run_workflow(self, request, pk=None, *args, **kwargs):
         user_code, payload, platform_task_id = (
@@ -95,12 +87,11 @@ class WorkflowTemplateViewSet(ModelViewSet):
         system_workflow_manager.get_by_user_code(user_code, sync_remote=True)
 
         data = execute_workflow(request.user.username, user_code, payload, request.realm_code, request.space_code,
-                                   platform_task_id)
+                                platform_task_id)
 
         _l.info('data %s' % data)
 
         return Response(data)
-
 
 
 class WorkflowFilterSet(FilterSet):
@@ -163,7 +154,7 @@ class WorkflowViewSet(ModelViewSet):
         system_workflow_manager.get_by_user_code(user_code, sync_remote=True)
 
         data = execute_workflow(request.user.username, user_code, payload, request.realm_code, request.space_code,
-                                   platform_task_id)
+                                platform_task_id)
 
         _l.info('data %s' % data)
 
@@ -173,7 +164,7 @@ class WorkflowViewSet(ModelViewSet):
     def relaunch(self, request, pk=None, *args, **kwargs):
         obj = Workflow.objects.get(id=pk)
         data = execute_workflow(request.user.username, obj.user_code, obj.payload, request.realm_code,
-                                   request.space_code)
+                                request.space_code)
 
         return Response(data)
 
@@ -208,6 +199,85 @@ class WorkflowViewSet(ModelViewSet):
             workflow.delete()
 
         return Response({'status': 'ok'})
+
+    # Pause Workflow Action
+    @action(detail=True, methods=['PUT'], url_path='pause')
+    def pause_workflow(self, request, pk=None, *args, **kwargs):
+        try:
+            workflow = self.get_object()  # Get the workflow instance
+            if workflow.status != Workflow.STATUS_PROGRESS:
+                return Response({"message": "Cannot pause workflow that is not in progress."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            workflow.status = Workflow.STATUS_WAIT
+            workflow.save()
+
+            return Response({"message": f"Workflow {workflow.id} paused successfully."}, status=status.HTTP_200_OK)
+
+        except Workflow.DoesNotExist:
+            return Response({"message": "Workflow not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    # Resume Workflow Action
+    @action(detail=True, methods=['PUT'], url_path='resume', serializer_class=ResumeWorkflowSerializer)
+    def resume_workflow(self, request, pk=None, *args, **kwargs):
+        try:
+
+            # Use the serializer to validate the input data
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            workflow = self.get_object()  # Get the workflow instance
+            if workflow.status != Workflow.STATUS_WAIT:
+                return Response({"message": "Cannot resume workflow that is not paused."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            # Check if there are any running tasks associated with this workflow
+            active_tasks = Task.objects.filter(workflow_id=workflow.id,
+                                               status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT])
+
+            if active_tasks.exists():
+                return Response({"message": "Cannot resume workflow while there are active tasks running."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            # Update the payload if provided
+            new_payload = serializer.validated_data.get("payload")
+            if new_payload:
+                workflow.payload = new_payload
+
+            # Update workflow status to progress
+            workflow.status = Workflow.STATUS_PROGRESS
+            workflow.save()
+
+            from workflow.tasks.workflows import execute_next_task
+            # Trigger the next task from the stored `current_node_id`
+            if workflow.current_node_id:
+
+                nodes = {node['id']: node for node in workflow.workflow_template.data['workflow']['nodes']}
+                connections = workflow.workflow_template.data['workflow']['connections']
+                adjacency_list = {node_id: [] for node_id in nodes}
+                for connection in connections:
+                    adjacency_list[connection['source']].append(connection['target'])
+
+                execute_next_task.apply_async(kwargs={
+                    "current_node_id": workflow.current_node_id,
+                    "workflow_id": workflow.id,
+                    # Fetch nodes, adjacency_list, and connections from the workflow data
+                    "nodes": nodes,
+                    "adjacency_list": adjacency_list,
+                    "connections": connections,
+                    "previous_output": workflow.last_task_output,
+                    "context": {
+                        "realm_code": workflow.space.realm_code,
+                        "space_code": workflow.space.space_code
+                    },
+                }, queue="workflow")
+
+                return Response({"message": f"Workflow {workflow.id} resumed successfully."}, status=status.HTTP_200_OK)
+            else:
+                return Response({"message": "No node to resume from."}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Workflow.DoesNotExist:
+            return Response({"message": "Workflow not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
 class TaskViewSet(ModelViewSet):
@@ -255,9 +325,9 @@ class RefreshStorageViewSet(ViewSet):
 
         try:
 
-            #c = pexpect.spawn("supervisorctl stop celery", timeout=240)
-            #result = c.read()
-            #_l.info('RefreshStorageViewSet.stop celery result %s' % result)
+            # c = pexpect.spawn("supervisorctl stop celery", timeout=240)
+            # result = c.read()
+            # _l.info('RefreshStorageViewSet.stop celery result %s' % result)
             c = pexpect.spawn("supervisorctl stop celerybeat", timeout=240)
             result = c.read()
             _l.info('RefreshStorageViewSet.stop celerybeat result %s' % result)
@@ -265,12 +335,12 @@ class RefreshStorageViewSet(ViewSet):
             result = c.read()
             _l.info('RefreshStorageViewSet.stop flower result %s' % result)
 
-            #c = pexpect.spawn("python /var/app/manage.py sync_remote_storage_to_local_storage", timeout=240)
+            # c = pexpect.spawn("python /var/app/manage.py sync_remote_storage_to_local_storage", timeout=240)
             system_workflow_manager.sync_remote_storage_to_local_storage(request.space_code)
 
-            #c = pexpect.spawn("supervisorctl start celery", timeout=240)
-            #result = c.read()
-            #_l.info('RefreshStorageViewSet.celery result %s' % result)
+            # c = pexpect.spawn("supervisorctl start celery", timeout=240)
+            # result = c.read()
+            # _l.info('RefreshStorageViewSet.celery result %s' % result)
             c = pexpect.spawn("supervisorctl start celerybeat", timeout=240)
 
             result = c.read()

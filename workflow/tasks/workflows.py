@@ -10,6 +10,7 @@ from workflow.models import Task, Workflow, User, Space
 from workflow.tasks.base import BaseTask
 from workflow.utils import set_schema_from_context
 from workflow_app import celery_app
+from django.db import close_old_connections
 
 logger = get_task_logger(__name__)
 import logging
@@ -199,11 +200,11 @@ def execute_workflow_step(self, *args, **kwargs):
 
             # If the code has defined a `main()` function, call it
             if "main" in exec_scope:
-                logger.info(f"Executing main() function in user-provided source code for node {self.task.source_code}")
+                # logger.info(f"Executing main() function in user-provided source code for node {self.task.source_code}")
                 result = exec_scope["main"](self, *args, **kwargs)
                 return result
             else:
-                logger.warning(f"No main() function found in source code for node {self.task.source_code}. Skipping execution.")
+                logger.warning(f"No main() function found in source code for node. Skipping execution.")
 
         except Exception as e:
             logger.error(f"Error executing custom source code for node {self.task.source_code}: {e}")
@@ -349,7 +350,15 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
         # Fetch workflow and task information
         logger.info(f"Fetching workflow with ID: {workflow_id}")
         workflow = Workflow.objects.get(id=workflow_id)
+        logger.info(f"Workflow status: {workflow.status}")
         current_node = nodes[current_node_id]
+
+        if workflow.status == Workflow.STATUS_WAIT:
+            logger.info(f"Workflow {workflow_id} is currently waiting. Stopping execution until resumed.")
+            # Save the current_node_id for resuming
+            workflow.current_node_id = current_node_id
+            workflow.save()
+            return  # Exit the task without further execution
 
         if current_node['data']['node']['type'] == 'source_code':
             workflow_user_code = 'custom_code'
@@ -400,6 +409,10 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
         context = kwargs.get('context')
         set_schema_from_context(context)
 
+        workflow.last_task_output = output
+        workflow.current_node_id = current_node_id
+        workflow.save(update_fields=['last_task_output', 'current_node_id'])
+
         logger.info(f"Task {workflow_user_code} executed successfully, result: {output}")
 
         # Check for next nodes to execute
@@ -427,6 +440,7 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
             logger.info(f"Workflow ID {workflow.id} status updated to SUCCESS.")
             return
 
+
         # Decide what the next step will be, based on the current task's output
         for next_node_id in next_node_ids:
             next_node = nodes.get(next_node_id)
@@ -435,6 +449,8 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
                 continue
 
             logger.info(f"Processing next node: {next_node_id}, Name: {next_node['name']}")
+
+            # Check if the workflow is in WAIT state
 
             # Execute the next task recursively by calling `execute_next_task` again
             execute_next_task.apply_async(kwargs={

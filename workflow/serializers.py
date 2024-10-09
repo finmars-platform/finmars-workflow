@@ -83,7 +83,7 @@ class WorkflowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Workflow
         fields = ['id', 'name', 'user_code',
-                  'owner', 'space', 'node_id',
+                  'owner', 'space', 'node_id', 'current_node_id',
                   'status', 'workflow_template', 'workflow_template_object',
                   'payload', 'created', 'modified', 'tasks', 'periodic',
                   'is_manager']
@@ -157,3 +157,7 @@ class ScheduleSerializer(serializers.ModelSerializer):
 
     def get_owner_username(self, obj):
         return obj.owner.username
+
+
+class ResumeWorkflowSerializer(serializers.Serializer):
+    payload = serializers.JSONField(required=False, help_text="Optional payload to update the workflow before resuming.")
