@@ -6,6 +6,7 @@ import logging
 import os
 import time
 from datetime import timedelta
+from unidecode import unidecode
 
 import jwt
 import pandas as pd
@@ -360,6 +361,27 @@ def wait_task_to_complete(task_id=None, retries=5, retry_interval=60):
 
     return result
 
+
+def poll_workflow_status(workflow_id, max_retries=100, wait_time=5):
+    url = f'/workflow/api/workflow/{workflow_id}/'  # Replace with your actual API endpoint
+
+    for attempt in range(max_retries):
+        data = request_api(url)
+
+        if data:
+            status = data.get('status')
+            _l.info(f'Attempt {attempt + 1}: Workflow status is {status}')
+
+            if status in ['success', 'error']:
+                return status  # Return the status when it's success or error
+
+        else:
+            _l.error(f'Error fetching status')
+
+        time.sleep(wait_time)  # Wait before the next attempt
+
+    _l.info('Max retries reached. Workflow status not successful.')
+    return None  # Indicate that the status was not found
 
 def _wait_procedure_to_complete_recursive(procedure_instance_id=None, retries=5, retry_interval=60, counter=None):
     if counter == retries:
@@ -719,6 +741,47 @@ class Utils():
     def tree_to_flat(self, data, **kwargs):
 
         return flatten(data, **kwargs)
+
+    # Example conversions:
+    # "Héllo World!"        -> "hello_world!"
+    # "Café.com"            -> "cafe_com"
+    # "Jürgen.Smith"        -> "jurgen_smith"
+    # "Mañana es jueves."   -> "manana_es_jueves_"
+    # "Gérard Dépardieu"    -> "gerard_depardieu"
+    # "naïve artist"        -> "naive_artist"
+    # Problem here Example conversions with different accents on 'e':
+    # "é" -> "e"
+    # "è" -> "e"
+    # "ê" -> "e"
+    # "ë" -> "e"
+    # Example conversions:
+    # "école"        -> "U233cole"
+    # "café.com"     -> "cafeU233_com"
+    # "Jürgen.Smith" -> "jU252rgen_smith"
+    # "élève"        -> "U233lU232ve"
+    # "Mañana"       -> "manU241ana"
+    # "Gödel"        -> "gU246del"
+    def convert_to_ascii(self, input_string):
+        # Convert the input string to lowercase
+        input_string = input_string.lower()
+
+        # Convert spaces and dots to underscores
+        modified_string = input_string.replace(' ', '_').replace('.', '_')
+
+        # Function to convert each character
+        def to_ascii_or_unicode(char):
+            try:
+                # Try to encode the character in ASCII
+                ascii_char = char.encode('ascii')
+                return ascii_char.decode()  # Return as string if it's a valid ASCII character
+            except UnicodeEncodeError:
+                # If it's not an ASCII character, return its Unicode code point
+                return f"U{ord(char)}"
+
+        # Apply the conversion to each character in the string
+        ascii_string = ''.join(to_ascii_or_unicode(c) for c in modified_string)
+
+        return ascii_string
 
 
 class Vault():
