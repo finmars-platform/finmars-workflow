@@ -132,7 +132,7 @@ class ScheduleSerializer(serializers.ModelSerializer):
     space = SpaceField()
     payload = serializers.JSONField(allow_null=True, required=False)
     crontab_line = serializers.CharField()
-    user_code = serializers.ChoiceField(choices=[])
+    # user_code = serializers.ChoiceField(choices=[])
     owner_username = serializers.SerializerMethodField()
 
     class Meta:
@@ -144,10 +144,10 @@ class ScheduleSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        manager = get_system_workflow_manager()
-        space_code = self.context['request'].space_code
-        workflow_codes = filter(lambda k: k.startswith(space_code), manager.workflows.keys())
-        self.fields['user_code'].choices = [workflow_code[len(space_code)+1:] for workflow_code in workflow_codes]
+        # manager = get_system_workflow_manager()
+        # space_code = self.context['request'].space_code
+        # workflow_codes = filter(lambda k: k.startswith(space_code), manager.workflows.keys())
+        # self.fields['user_code'].choices = [workflow_code[len(space_code)+1:] for workflow_code in workflow_codes]
 
     def validate_crontab_line(self, value):
         try:
