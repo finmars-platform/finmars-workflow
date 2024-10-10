@@ -413,6 +413,8 @@ class Schedule(PeriodicTask, TimeStampedModel):
 
     user_code = models.TextField(verbose_name=gettext_lazy('user_code'))
 
+    notes = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('notes'))
+
     payload = models.JSONField(null=True, blank=True, verbose_name=gettext_lazy('payload'))
 
     is_manager = models.BooleanField(default=False, verbose_name=gettext_lazy('is manager'))
@@ -422,6 +424,8 @@ class Schedule(PeriodicTask, TimeStampedModel):
 
     owner = models.ForeignKey(User, verbose_name=gettext_lazy('owner'),
                               on_delete=models.CASCADE, related_name="schedules")
+
+    workflow_user_code = models.TextField(verbose_name=gettext_lazy('workflow_user_code'))
 
     @property
     def crontab_line(self) -> str | None:
@@ -447,7 +451,7 @@ class Schedule(PeriodicTask, TimeStampedModel):
     def save(self, *args, **kwargs):
         self.queue = "workflow"
         self.task = "workflow.tasks.workflows.execute"
-        space_user_code = f"{self.space.space_code}.{self.user_code}"
+        space_user_code = f"{self.space.space_code}.{self.workflow_user_code}"
         if not self.name:
             self.name = f"periodic-{space_user_code}-{self.crontab_line}"
         self.args = json.dumps([space_user_code, self.payload, self.is_manager])
