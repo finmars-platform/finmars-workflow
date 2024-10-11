@@ -79,9 +79,9 @@ Test:
 #    - coverage run manage.py migrate_all_schemes
 #    - coverage run manage.py test
 #    - coverage combine && coverage report && coverage html
-  artifacts:
-    paths:
-      - ./coverage_html_report
+#  artifacts:
+#    paths:
+#      - ./coverage_html_report
 
 # This new job will handle the versioning mechanism
 Versioning:
