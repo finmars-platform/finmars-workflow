@@ -43,7 +43,7 @@ class WorkflowTemplateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = WorkflowTemplate
-        fields = ['id', 'name', 'user_code',
+        fields = ['id', 'name', 'user_code', 'notes',
                   'owner', 'space',
                    'created', 'modified', 'data',
                   ]
