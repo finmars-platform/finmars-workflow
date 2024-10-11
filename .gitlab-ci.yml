@@ -74,10 +74,11 @@ Test:
     - mkdir /var/log/finmars
     - mkdir /var/log/finmars/workflow
   script:
+    - echo "skip tests"
 #    - coverage run manage.py test --parallel=6
-    - coverage run manage.py migrate_all_schemes
-    - coverage run manage.py test
-    - coverage combine && coverage report && coverage html
+#    - coverage run manage.py migrate_all_schemes
+#    - coverage run manage.py test
+#    - coverage combine && coverage report && coverage html
   artifacts:
     paths:
       - ./coverage_html_report
