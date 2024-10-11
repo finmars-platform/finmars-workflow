@@ -33,14 +33,19 @@ class WorkflowConfig(AppConfig):
 
     def bootstrap(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
 
-        _l.info("Bootstrapping Workflow Application")
+        try:
 
-        current_space_code = get_current_search_path()
+            _l.info("Bootstrapping Workflow Application")
 
-        _l.info("bootstrap: Current search path: %s" % current_space_code)
+            current_space_code = get_current_search_path()
 
-        self.create_space_if_not_exist()
-        self.create_finmars_bot()
+            _l.info("bootstrap: Current search path: %s" % current_space_code)
+
+            self.create_space_if_not_exist()
+            self.create_finmars_bot()
+
+        except Exception as e:
+            _l.info("bootstrap: failed: %e" % e)
 
 
     def create_space_if_not_exist(self):

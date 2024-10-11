@@ -378,6 +378,10 @@ system_workflow_manager = None
 def get_system_workflow_manager():
     global system_workflow_manager
 
+    if "makemigrations" in sys.argv or "migrate" in sys.argv:
+        _l.info("system_workflow_manager ignored - TEST MODE")
+        return
+
     if system_workflow_manager is None:
         system_workflow_manager = SystemWorkflowManager()
 
