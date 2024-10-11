@@ -84,4 +84,4 @@ class WorkflowConfig(AppConfig):
 
             user = User.objects.create(username='finmars_bot', is_bot=True)
 
-            _l.info("Finmars bot created")
+            _l.info("Finmars bot created %s" % e)
