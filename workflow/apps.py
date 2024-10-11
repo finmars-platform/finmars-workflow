@@ -24,10 +24,12 @@ class WorkflowConfig(AppConfig):
         import sys
         sys.stdout.close = lambda: (_ for _ in ()).throw(Exception('stdout close attempt detected'))
 
-        from workflow.system import get_system_workflow_manager
+        if not ("makemigrations" in sys.argv or "migrate" in sys.argv):
+            _l.info("system_workflow_manager ignored - TEST MODE")
+            from workflow.system import get_system_workflow_manager
 
-        system_workflow_manager = get_system_workflow_manager()
-        system_workflow_manager.register_workflows()
+            system_workflow_manager = get_system_workflow_manager()
+            system_workflow_manager.register_workflows()
 
         post_migrate.connect(self.bootstrap, sender=self)
 
