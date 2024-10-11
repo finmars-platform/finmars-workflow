@@ -334,7 +334,7 @@ LOGGING = {
             # 'when': 'D',
             'filename': '/var/log/finmars/workflow/django.log',
             'formatter': 'verbose'
-        }
+        },
     },
     'loggers': {
         'django.request': {
@@ -350,7 +350,12 @@ LOGGING = {
             "level": DJANGO_LOG_LEVEL,
             "handlers": ["console", "file"],
             "propagate": True
-        }
+        },
+        "celery": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": True
+        },
     }
 }
 
