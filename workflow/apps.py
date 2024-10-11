@@ -24,7 +24,7 @@ class WorkflowConfig(AppConfig):
         import sys
         sys.stdout.close = lambda: (_ for _ in ()).throw(Exception('stdout close attempt detected'))
 
-        if not ("makemigrations" in sys.argv or "migrate" in sys.argv):
+        if not ("makemigrations" in sys.argv or "migrate" in sys.argv or "migrate_all_schemes" in sys.argv):
             _l.info("system_workflow_manager ignored - TEST MODE")
             from workflow.system import get_system_workflow_manager
 
