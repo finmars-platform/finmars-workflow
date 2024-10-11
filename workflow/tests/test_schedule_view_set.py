@@ -48,6 +48,8 @@ class ScheduleViewSetTestCase(BaseTestCase):
     def test_create_schedule(self):
         data = {
             'user_code': 'new_workflow',
+            'name': 'new_workflow',
+            'workflow_user_code': 'new_workflow',
             'crontab_line': '0 * * * *',
             'payload': {"new": "data"}
         }
