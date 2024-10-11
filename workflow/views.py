@@ -265,7 +265,6 @@ class WorkflowViewSet(ModelViewSet):
                     "nodes": nodes,
                     "adjacency_list": adjacency_list,
                     "connections": connections,
-                    "previous_output": workflow.last_task_output,
                     "context": {
                         "realm_code": workflow.space.realm_code,
                         "space_code": workflow.space.space_code

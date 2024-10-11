@@ -340,7 +340,7 @@ def get_next_node_by_condition(current_node_id, condition_result, connections):
 
 
 @celery_app.task(bind=True)
-def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list, previous_output=None, **kwargs):
+def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list, **kwargs):
     context = kwargs.get('context')
     logger.info(f"execute_next_task context received: {context}")
     set_schema_from_context(context)
@@ -369,11 +369,45 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
 
         logger.info(f"Executing task for Node ID: {current_node_id}, Task Name: {workflow_user_code}")
 
+
+        payload = workflow.payload  # Default to the workflow payload
+        previous_output = None
+
+        if 'in' in current_node['inputs']:
+            # Identify the previous node connected to "in"
+            previous_node_id = None
+            for connection in kwargs.get('connections'):
+                if connection['target'] == current_node_id and connection['targetInput'] == 'in':
+                    previous_node_id = connection['source']
+                    break
+
+            if previous_node_id:
+                previous_task = Task.objects.filter(workflow=workflow, node_id=previous_node_id).order_by('-created').first()
+                if previous_task:
+                    previous_output = previous_task.result
+                    logger.info(f"Using previous output from node ID {previous_node_id}: {previous_output}")
+
+        # Find the previous task that provided the payload
+        if 'payload_input' in current_node['inputs']:
+            # Identify the payload generator node connected to "payload_input"
+            payload_generator_node_id = None
+            for connection in kwargs.get('connections'):
+                if connection['target'] == current_node_id and connection['targetInput'] == 'payload_input':
+                    payload_generator_node_id = connection['source']
+                    break
+
+            if payload_generator_node_id:
+                payload_task = Task.objects.filter(workflow=workflow, node_id=payload_generator_node_id).order_by('-created').first()
+                if payload_task:
+                    payload = payload_task.result
+                    logger.info(f"Using payload from node ID {payload_generator_node_id}: {payload}")
+
+
         # Create Celery signature for the current task
         task_id = uuid()
         signature = execute_workflow_step.s(
             workflow_id=workflow.id,
-            payload=workflow.payload,
+            payload=payload,
             context={
                 "realm_code": workflow.space.realm_code,
                 "space_code": workflow.space.space_code,
@@ -458,7 +492,6 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
                 "workflow_id": workflow_id,
                 "nodes": nodes,
                 "adjacency_list": adjacency_list,
-                "previous_output": output,
                 "context": kwargs.get('context'),
                 "connections": kwargs.get('connections')
             }, queue="workflow")
