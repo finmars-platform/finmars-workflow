@@ -429,7 +429,7 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
         if current_node['data']['node']['type'] == 'source_code' or current_node['data']['node']['type'] == 'condition':
             task.source_code = current_node['data']['source_code']
 
-        task.payload = workflow.payload # because of legacy json field
+        task.payload = payload # because of legacy json field
 
         task.save()
 
