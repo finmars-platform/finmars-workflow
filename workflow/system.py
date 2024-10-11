@@ -126,6 +126,9 @@ class SystemWorkflowManager:
             space_code = user_code.split('.')[0]
             path = user_code[len(space_code)+1:].replace('.', '/').replace(':', '/')
             module_path, _ = path.rsplit('/', maxsplit=1)
+
+            _l.info('get_by_user_code.path %s' % path)
+
             self.sync_remote_storage_to_local_storage_for_schema(module_path)
             self.register_workflows(space_code)
             workflow = self.workflows.get(user_code)

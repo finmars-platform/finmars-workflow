@@ -6,7 +6,6 @@ import logging
 import os
 import time
 from datetime import timedelta
-from unidecode import unidecode
 
 import jwt
 import pandas as pd
@@ -382,6 +381,7 @@ def poll_workflow_status(workflow_id, max_retries=100, wait_time=5):
 
     _l.info('Max retries reached. Workflow status not successful.')
     return None  # Indicate that the status was not found
+
 
 def _wait_procedure_to_complete_recursive(procedure_instance_id=None, retries=5, retry_interval=60, counter=None):
     if counter == retries:
@@ -786,31 +786,70 @@ class Utils():
 
 class Vault():
 
-    def get_secret(self, path):
+    # hashicorp
+    # finmars
+    def get_secret(self, path, provider="finmars"):
         refresh = get_refresh_token()  # TODO refactor, should be permission check
 
         # _l.info('refresh %s' % refresh.access_token)
 
-        pieces = path.split('/')
-        engine_name = pieces[0]
-        secret_path = pieces[1]
+        if provider == 'finmars':
 
-        headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-                   'Authorization': f'Bearer {refresh.access_token}'}
+            # pieces = path.split('/')
+            # engine_name = pieces[0]
+            # secret_path = pieces[1]
 
-        space = get_space()
+            headers = {'Content-type': 'application/json', 'Accept': 'application/json',
+                       'Authorization': f'Bearer {refresh.access_token}'}
 
-        if space.realm_code and space.realm_code != 'realm00000':
-            url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + f'/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}'
+            space = get_space()
+
+            url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + f'/api/v1/vault/vault-record/?user_code=' + path
+
+            response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
+
+            if response.status_code != 200:
+                raise Exception(response.text)
+
+            data = response.json()
+
+            secret_data = None
+
+            for item in data['results']:
+
+                if path == item['user_code']:
+                    secret_data = item['data']
+
+            if not secret_data:
+                raise Exception(f"Secret is {path} not found")
+
+            return secret_data
+
+        elif provider == 'hashicorp':
+
+            pieces = path.split('/')
+            engine_name = pieces[0]
+            secret_path = pieces[1]
+
+            headers = {'Content-type': 'application/json', 'Accept': 'application/json',
+                       'Authorization': f'Bearer {refresh.access_token}'}
+
+            space = get_space()
+
+            if space.realm_code and space.realm_code != 'realm00000':
+                url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + f'/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}'
+            else:
+                url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + f'/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}'
+
+            response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
+
+            if response.status_code != 200:
+                raise Exception(response.text)
+
+            return response.json()['data']['data']
+
         else:
-            url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + f'/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}'
-
-        response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
-
-        if response.status_code != 200:
-            raise Exception(response.text)
-
-        return response.json()['data']['data']
+            raise Exception("Unknown provider %s" % provider)
 
 
 storage = Storage()
