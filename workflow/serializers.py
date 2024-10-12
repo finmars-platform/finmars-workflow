@@ -86,6 +86,7 @@ class WorkflowSerializer(serializers.ModelSerializer):
                   'owner', 'space', 'node_id', 'current_node_id',
                   'status', 'workflow_template', 'workflow_template_object',
                   'payload', 'created', 'modified', 'tasks', 'periodic',
+                  'execution_status',
                   'is_manager']
 
 

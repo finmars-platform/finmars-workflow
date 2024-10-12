@@ -10,7 +10,8 @@ from workflow.models import Task, Workflow, User, Space
 from workflow.tasks.base import BaseTask
 from workflow.utils import set_schema_from_context
 from workflow_app import celery_app
-from django.db import close_old_connections
+
+from django.db import transaction
 
 logger = get_task_logger(__name__)
 import logging
@@ -190,7 +191,7 @@ def execute_workflow_step(self, *args, **kwargs):
             # Execute the source code in a dynamic scope
             exec_scope = {
                 "__name__": "__main__",  # simulate it as a standalone module
-                "self": self,            # allow use of self for things like logging
+                "self": self,  # allow use of self for things like logging
                 "args": args,
                 "kwargs": kwargs,
             }
@@ -269,6 +270,14 @@ def execute_dynamic_workflow(self, *args, **kwargs):
     nodes = {node['id']: node for node in workflow_data['workflow']['nodes']}
     connections = workflow_data['workflow']['connections']
 
+    execution_status = {}
+
+    for key, value in nodes.items():
+        execution_status[key] = {'status': 'init', 'node': value['data']['node']}
+
+    workflow.execution_status = execution_status
+    workflow.save()
+
     # Log nodes and connections
     logger.info(f"Nodes parsed from workflow data: {nodes}")
     logger.info(f"Connections parsed from workflow data: {connections}")
@@ -301,6 +310,40 @@ def execute_dynamic_workflow(self, *args, **kwargs):
     logger.info("All start nodes have been dispatched.")
 
 
+def are_inputs_ready(node_id, execution_status, connections):
+    # Get all nodes feeding into the current node
+    input_nodes = [conn['source'] for conn in connections if
+                   conn['target'] == node_id]
+
+    # _l.info('execution_status %s ' % execution_status)
+    # _l.info('input_nodes %s ' % input_nodes)
+
+    for input_node in input_nodes:
+        # If any input node is not complete, return False
+        if execution_status.get(input_node, {}).get("status") != "success":
+            return False
+    return True
+
+def update_execution_status(workflow, node_id, new_status):
+    """Updates the status of a node while ensuring parallel tasks don't overwrite each other."""
+
+    # Use transaction.atomic to prevent race conditions
+    with transaction.atomic():
+        # Fetch the latest workflow to get the most recent execution_status
+        workflow.refresh_from_db(fields=["execution_status"])
+
+        # Update the status of the specific node
+        execution_status = workflow.execution_status or {}
+
+        # Update only the relevant node's status, preserving the rest of the data
+        execution_status[node_id] = {"status": new_status}
+
+        # Assign the updated execution status back to the workflow
+        workflow.execution_status = execution_status
+
+        # Save the workflow object back to the database
+        workflow.save()
+
 def get_next_node_by_condition(current_node_id, condition_result, connections):
     """
     Determine the next node to execute based on the condition result and the connections.
@@ -325,7 +368,6 @@ def get_next_node_by_condition(current_node_id, condition_result, connections):
             output_to_follow = "out_false"
     else:
         raise Exception("Wrong condition_result")
-
 
     # Iterate through connections to find the target node
     for connection in connections:
@@ -360,6 +402,15 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
             workflow.save()
             return  # Exit the task without further execution
 
+        if not are_inputs_ready(current_node_id, workflow.execution_status, kwargs.get('connections')):
+            logger.info(f"Task for Node ID: {current_node_id}, inputs are not ready, wait")
+            update_execution_status(workflow, current_node_id, "waiting_for_inputs")
+            workflow.save(update_fields=['execution_status'])
+            return
+
+        update_execution_status(workflow, current_node_id, "progress")
+
+
         if current_node['data']['node']['type'] == 'source_code':
             workflow_user_code = 'custom_code'
         elif current_node['data']['node']['type'] == 'condition':
@@ -368,7 +419,6 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
             workflow_user_code = current_node['data']['workflow']['user_code']
 
         logger.info(f"Executing task for Node ID: {current_node_id}, Task Name: {workflow_user_code}")
-
 
         payload = workflow.payload  # Default to the workflow payload
         previous_output = None
@@ -382,7 +432,8 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
                     break
 
             if previous_node_id:
-                previous_task = Task.objects.filter(workflow=workflow, node_id=previous_node_id).order_by('-created').first()
+                previous_task = Task.objects.filter(workflow=workflow, node_id=previous_node_id).order_by(
+                    '-created').first()
                 if previous_task:
                     previous_output = previous_task.result
                     logger.info(f"Using previous output from node ID {previous_node_id}: {previous_output}")
@@ -397,11 +448,11 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
                     break
 
             if payload_generator_node_id:
-                payload_task = Task.objects.filter(workflow=workflow, node_id=payload_generator_node_id).order_by('-created').first()
+                payload_task = Task.objects.filter(workflow=workflow, node_id=payload_generator_node_id).order_by(
+                    '-created').first()
                 if payload_task:
                     payload = payload_task.result
                     logger.info(f"Using payload from node ID {payload_generator_node_id}: {payload}")
-
 
         # Create Celery signature for the current task
         task_id = uuid()
@@ -429,7 +480,7 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
         if current_node['data']['node']['type'] == 'source_code' or current_node['data']['node']['type'] == 'condition':
             task.source_code = current_node['data']['source_code']
 
-        task.payload = payload # because of legacy json field
+        task.payload = payload  # because of legacy json field
 
         task.save()
 
@@ -445,7 +496,7 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
 
         workflow.last_task_output = output
         workflow.current_node_id = current_node_id
-        workflow.save(update_fields=['last_task_output', 'current_node_id'])
+        update_execution_status(workflow, current_node_id, "success")
 
         logger.info(f"Task {workflow_user_code} executed successfully, result: {output}")
 
@@ -473,7 +524,6 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
             workflow.save()
             logger.info(f"Workflow ID {workflow.id} status updated to SUCCESS.")
             return
-
 
         # Decide what the next step will be, based on the current task's output
         for next_node_id in next_node_ids:

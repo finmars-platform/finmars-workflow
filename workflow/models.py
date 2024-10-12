@@ -136,6 +136,7 @@ class Workflow(TimeStampedModel):
     current_node_id = models.CharField(max_length=255, null=True, blank=True)  # Store the current node ID
     last_task_output = models.JSONField(null=True, blank=True)  # New field for storing last output
     node_id = models.CharField(max_length=255, blank=True, null=True, help_text="Node ID from the workflow JSON structure")
+    execution_status = models.JSONField(default=dict, blank=True, help_text="Store all graph of nodes and status of its execution")
 
     user_code = models.CharField(max_length=1024, null=True, blank=True,
                                  verbose_name=gettext_lazy('user_code'))
