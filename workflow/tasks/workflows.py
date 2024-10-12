@@ -5,13 +5,12 @@ import traceback
 from celery import chain
 from celery.utils import uuid
 from celery.utils.log import get_task_logger
+from django.db import transaction
 
 from workflow.models import Task, Workflow, User, Space
 from workflow.tasks.base import BaseTask
 from workflow.utils import set_schema_from_context
 from workflow_app import celery_app
-
-from django.db import transaction
 
 logger = get_task_logger(__name__)
 import logging
@@ -335,6 +334,7 @@ def are_inputs_ready(workflow, node_id, execution_status, connections):
                 return False
     return True
 
+
 def update_execution_status(workflow, node_id, new_status):
     """Updates the status of a node while ensuring parallel tasks don't overwrite each other."""
 
@@ -354,6 +354,7 @@ def update_execution_status(workflow, node_id, new_status):
 
         # Save the workflow object back to the database
         workflow.save()
+
 
 def get_next_node_by_condition(current_node_id, condition_result, connections):
     """
@@ -420,7 +421,6 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
             return
 
         update_execution_status(workflow, current_node_id, "progress")
-
 
         if current_node['data']['node']['type'] == 'source_code':
             workflow_user_code = 'custom_code'
