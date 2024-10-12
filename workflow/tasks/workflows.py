@@ -310,7 +310,7 @@ def execute_dynamic_workflow(self, *args, **kwargs):
     logger.info("All start nodes have been dispatched.")
 
 
-def are_inputs_ready(node_id, execution_status, connections):
+def are_inputs_ready(workflow, node_id, execution_status, connections):
     # Get all nodes feeding into the current node
     input_nodes = [conn['source'] for conn in connections if
                    conn['target'] == node_id]
@@ -320,8 +320,19 @@ def are_inputs_ready(node_id, execution_status, connections):
 
     for input_node in input_nodes:
         # If any input node is not complete, return False
-        if execution_status.get(input_node, {}).get("status") != "success":
-            return False
+        try:
+
+            task = Task.objects.get(workflow=workflow, node_id=input_node)
+
+            if task.status == Task.STATUS_SUCCESS:
+                update_execution_status(workflow, input_node, 'success')
+            else:
+                return False
+
+        except Exception as e:
+
+            if execution_status.get(input_node, {}).get("status") != "success":
+                return False
     return True
 
 def update_execution_status(workflow, node_id, new_status):
@@ -402,7 +413,7 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
             workflow.save()
             return  # Exit the task without further execution
 
-        if not are_inputs_ready(current_node_id, workflow.execution_status, kwargs.get('connections')):
+        if not are_inputs_ready(workflow, current_node_id, workflow.execution_status, kwargs.get('connections')):
             logger.info(f"Task for Node ID: {current_node_id}, inputs are not ready, wait")
             update_execution_status(workflow, current_node_id, "waiting_for_inputs")
             workflow.save(update_fields=['execution_status'])
