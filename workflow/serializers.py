@@ -78,7 +78,7 @@ class WorkflowSerializer(serializers.ModelSerializer):
 
     workflow_template_object = WorkflowTemplateSerializer(read_only=True, source="workflow_template")
     payload = serializers.JSONField(allow_null=True, required=False)
-    tasks = TaskSerializer(many=True)
+    tasks = TaskSerializer(many=True, read_only=True)
 
     class Meta:
         model = Workflow
