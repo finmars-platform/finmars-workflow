@@ -30,7 +30,7 @@ class TaskSerializer(serializers.ModelSerializer):
                   'previous', 'is_hook',
                   'payload', 'result', 'progress',
 
-                  'created', 'modified', 'log', 'worker_name',
+                  'created_at', 'modified_at', 'log', 'worker_name',
                   'error_message',
                   'finished_at'
                   ]
@@ -45,7 +45,7 @@ class WorkflowTemplateSerializer(serializers.ModelSerializer):
         model = WorkflowTemplate
         fields = ['id', 'name', 'user_code', 'notes',
                   'owner', 'space',
-                   'created', 'modified', 'data',
+                   'created_at', 'modified_at', 'data',
                   ]
 
     def save_to_storage(self, instance):
@@ -85,7 +85,7 @@ class WorkflowSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'user_code',
                   'owner', 'space', 'node_id', 'current_node_id',
                   'status', 'workflow_template', 'workflow_template_object',
-                  'payload', 'created', 'modified', 'tasks', 'periodic',
+                  'payload', 'created_at', 'modified_at', 'tasks', 'periodic',
                   'is_manager']
 
 
@@ -97,7 +97,7 @@ class WorkflowLightSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'user_code',
                   'owner',
                   'status',
-                  'created', 'modified', 'periodic',
+                  'created_at', 'modified_at', 'periodic',
                   'is_manager', 'crontab_line']
 
     def get_crontab_line(self, obj):
@@ -140,7 +140,7 @@ class ScheduleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Schedule
-        fields = ['id', 'user_code', 'name', 'space', 'owner', 'created', 'modified', 'payload', 'crontab_line', 'is_manager',
+        fields = ['id', 'user_code', 'name', 'space', 'owner', 'created_at', 'modified_at', 'payload', 'crontab_line', 'is_manager',
                   'workflow_user_code', 'notes', 'next_run_at', 'last_run_at',
                   'enabled', 'owner_id', 'owner_username']
 

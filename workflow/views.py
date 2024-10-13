@@ -71,7 +71,7 @@ class WorkflowTemplateViewSet(ModelViewSet):
     ]
     search_fields = ['payload_data']
     ordering_fields = [
-        'name', 'user_code', 'created', 'modified', 'owner',
+        'name', 'user_code', 'created_at', 'modified_at', 'owner',
     ]
 
     @action(detail=False, methods=['POST'], url_path='run-workflow', serializer_class=RunWorkflowSerializer)
@@ -123,7 +123,7 @@ class WorkflowViewSet(ModelViewSet):
     ]
     search_fields = ['payload_data']
     ordering_fields = [
-        'name', 'user_code', 'created', 'modified', 'status', 'owner', 'is_manager',
+        'name', 'user_code', 'created_at', 'modified_at', 'status', 'owner', 'is_manager',
     ]
 
     @action(

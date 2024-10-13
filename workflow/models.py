@@ -69,15 +69,15 @@ class User(AbstractUser):
 
 
 class TimeStampedModel(models.Model):
-    created = models.DateTimeField(auto_now_add=True, editable=False, db_index=True,
+    created_at = models.DateTimeField(auto_now_add=True, editable=False, db_index=True,
                                    verbose_name=gettext_lazy('created'))
-    modified = models.DateTimeField(auto_now=True, editable=False, db_index=True,
+    modified_at = models.DateTimeField(auto_now=True, editable=False, db_index=True,
                                     verbose_name=gettext_lazy('modified'))
 
     class Meta:
         abstract = True
-        get_latest_by = 'modified'
-        ordering = ['created', ]
+        get_latest_by = 'modified_at'
+        ordering = ['created_at', ]
 
 
 class Space(TimeStampedModel):
@@ -163,7 +163,7 @@ class Workflow(TimeStampedModel):
 
     class Meta:
         get_latest_by = 'modified'
-        ordering = ['-created', 'id']
+        ordering = ['-created_at', 'id']
 
     @property
     def payload(self):
@@ -315,7 +315,7 @@ class Task(TimeStampedModel):
                               on_delete=models.CASCADE, related_name="tasks")
 
     class Meta:
-        ordering = ['-created']
+        ordering = ['-created_at']
 
     def __str__(self):
         return '<Task: {0.pk} ({0.status})>'.format(self)

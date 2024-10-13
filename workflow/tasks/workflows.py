@@ -365,7 +365,7 @@ def process_next_node(self, current_node_id, workflow_id, nodes, adjacency_list,
 
             if previous_node_id:
                 previous_task = Task.objects.filter(workflow=workflow, node_id=previous_node_id).order_by(
-                    '-created').first()
+                    '-created_at').first()
                 if previous_task:
                     previous_output = previous_task.result
                     logger.info(f"Using previous output from node ID {previous_node_id}: {previous_output}")
@@ -381,7 +381,7 @@ def process_next_node(self, current_node_id, workflow_id, nodes, adjacency_list,
 
             if payload_generator_node_id:
                 payload_task = Task.objects.filter(workflow=workflow, node_id=payload_generator_node_id).order_by(
-                    '-created').first()
+                    '-created_at').first()
                 if payload_task:
                     payload = payload_task.result
                     logger.info(f"Using payload from node ID {payload_generator_node_id}: {payload}")
