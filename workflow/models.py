@@ -22,6 +22,9 @@ TIMEZONE_COMMON_CHOICES = sorted(list((k, k) for k in pytz.common_timezones))
 from django.utils.translation import gettext_lazy as _
 from workflow_app import celery_app
 from django.utils.timezone import now
+from croniter import croniter
+from datetime import datetime
+import pytz
 
 import logging
 
@@ -464,8 +467,10 @@ class Schedule(PeriodicTask, TimeStampedModel):
         )
         self.kwargs = json.dumps({
             "context": {"realm_code": self.space.realm_code, "space_code": self.space.space_code},
-            "crontab_id": self.crontab.id
+            "crontab_id": self.crontab.id,
+            "schedule_id": self.id
         })
+        _l.info("Schedule save: %s" % self.kwargs)
         return super().save(*args, **kwargs)
 
     def __str__(self):
@@ -475,3 +480,17 @@ class Schedule(PeriodicTask, TimeStampedModel):
     @property
     def schedule(self):
         return self.crontab.schedule
+
+
+    def get_next_run_at(self):
+        try:
+            # Assuming `crontab_line` is in standard cron format (minute, hour, day, month, weekday)
+            cron_expression = self.crontab_line
+            now = datetime.now(pytz.UTC)  # Ensure the current time is in UTC
+            cron_iter = croniter(cron_expression, now)
+            next_run_time = cron_iter.get_next(datetime)
+            return next_run_time
+        except Exception as e:
+            # Handle errors, for example, invalid cron expression
+            print(f"Error calculating next run time: {e}")
+            return None

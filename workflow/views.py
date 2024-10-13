@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import traceback
@@ -466,3 +467,33 @@ class ScheduleViewSet(ModelViewSet):
     ]
     filter_backends = ModelViewSet.filter_backends + [
     ]
+
+    @action(detail=True, methods=['put'], url_path='run-manual')
+    def run_manual(self, request, *args, **kwargs):
+        try:
+            schedule = self.get_object()  # Get the schedule instance
+
+            if not schedule.enabled:
+                return Response({"message": "Cannot run a disabled schedule."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+            from workflow.tasks.workflows import execute
+
+
+            # Trigger the Celery task to run the workflow manually
+            execute.apply_async(
+                args=[f"{schedule.space.space_code}.{schedule.workflow_user_code}", schedule.payload, schedule.is_manager],
+                kwargs={
+                    "context": {"realm_code": schedule.space.realm_code, "space_code": schedule.space.space_code},
+                    "crontab_id": schedule.crontab.id,
+                    "schedule_id": schedule.id
+                },
+                queue="workflow"
+            )
+
+            return Response({"message": "Schedule is being run manually."}, status=status.HTTP_202_ACCEPTED)
+
+        except Schedule.DoesNotExist:
+            return Response({"error": "Schedule not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

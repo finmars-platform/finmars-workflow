@@ -135,10 +135,13 @@ class ScheduleSerializer(serializers.ModelSerializer):
     # user_code = serializers.ChoiceField(choices=[])
     owner_username = serializers.SerializerMethodField()
 
+    last_run_at = serializers.DateTimeField(read_only=True)
+    next_run_at = serializers.SerializerMethodField()
+
     class Meta:
         model = Schedule
         fields = ['id', 'user_code', 'name', 'space', 'owner', 'created', 'modified', 'payload', 'crontab_line', 'is_manager',
-                  'workflow_user_code', 'notes',
+                  'workflow_user_code', 'notes', 'next_run_at', 'last_run_at',
                   'enabled', 'owner_id', 'owner_username']
 
     def __init__(self, *args, **kwargs):
@@ -158,6 +161,11 @@ class ScheduleSerializer(serializers.ModelSerializer):
 
     def get_owner_username(self, obj):
         return obj.owner.username
+
+    def get_next_run_at(self, obj):
+        # Get the next run time using the model method
+        next_run_at = obj.get_next_run_at()
+        return next_run_at if next_run_at else None
 
 
 class ResumeWorkflowSerializer(serializers.Serializer):

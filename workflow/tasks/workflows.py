@@ -5,9 +5,9 @@ import traceback
 from celery import chain
 from celery.utils import uuid
 from celery.utils.log import get_task_logger
+from django.utils.timezone import now
 
-
-from workflow.models import Task, Workflow, User, Space
+from workflow.models import Task, Workflow, User, Space, Schedule
 from workflow.tasks.base import BaseTask
 from workflow.utils import set_schema_from_context, are_inputs_ready, \
     get_next_node_by_condition
@@ -147,29 +147,24 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
 
         set_schema_from_context(context)
 
+        logger.info(args)
+        logger.info(kwargs)
+
+        schedule_id = kwargs.get('schedule_id')
+
+        logger.info("periodic.schedule_id %s" % schedule_id)
+
+        schedule = Schedule.objects.get(id=schedule_id)
+
+        schedule.last_run_at = now()
+        schedule.save()
+
         finmars_bot = User.objects.get(username='finmars_bot')
         space = Space.objects.get(space_code=context.get('space_code'))
 
         from workflow.workflows import execute_workflow
         data = execute_workflow(finmars_bot, user_code, payload, space.realm_code, space.space_code,
                                 None, crontab_id=kwargs.get('crontab_id'))
-
-        # c_obj = Workflow(owner=finmars_bot, space=space, user_code=user_code, payload=payload, periodic=True,
-        #                  is_manager=is_manager, crontab_id=kwargs.get('crontab_id'))
-        # c_obj.save()
-        #
-        # manager.get_by_user_code(user_code, sync_remote=True)
-        #
-        # # Build the workflow and execute it
-        # from workflow.builder import WorkflowBuilder
-        # workflow = WorkflowBuilder(c_obj.id)
-        # workflow.run()
-        #
-        # c_obj_dict = c_obj.to_dict()
-        #
-        # # Force commit before ending the function to ensure the ongoing transaction
-        # # does not end up in a "idle in transaction" state on PostgreSQL
-        # c_obj.commit()
 
         return data
 
@@ -193,37 +188,38 @@ def execute_workflow_step(self, *args, **kwargs):
     _l.info(f"execute_workflow_step {workflow} {self.task}")
 
     if self.task.source_code:
-            logger.info(f"Executing user-provided source code for node {self.task}")
+        logger.info(f"Executing user-provided source code for node {self.task}")
 
-            try:
-                # Execute the source code in a dynamic scope
-                exec_scope = {
-                    "__name__": "__main__",  # simulate it as a standalone module
-                    "self": self,  # allow use of self for things like logging
-                    "args": args,
-                    "kwargs": kwargs,
-                }
+        try:
+            # Execute the source code in a dynamic scope
+            exec_scope = {
+                "__name__": "__main__",  # simulate it as a standalone module
+                "self": self,  # allow use of self for things like logging
+                "args": args,
+                "kwargs": kwargs,
+            }
 
-                # Execute the source code
-                exec(self.task.source_code, exec_scope)
+            # Execute the source code
+            exec(self.task.source_code, exec_scope)
 
-                # If the code has defined a `main()` function, call it
-                if "main" in exec_scope:
-                    # logger.info(f"Executing main() function in user-provided source code for node {self.task.source_code}")
-                    result = exec_scope["main"](self, *args, **kwargs)
-                    return result
-                else:
-                    logger.warning(f"No main() function found in source code for node. Skipping execution.")
+            # If the code has defined a `main()` function, call it
+            if "main" in exec_scope:
+                # logger.info(f"Executing main() function in user-provided source code for node {self.task.source_code}")
+                result = exec_scope["main"](self, *args, **kwargs)
+                return result
+            else:
+                logger.warning(f"No main() function found in source code for node. Skipping execution.")
 
-            except Exception as e:
-                logger.error(f"Error executing custom source code for node {self.task.source_code}: {e}")
-                raise e
+        except Exception as e:
+            logger.error(f"Error executing custom source code for node {self.task.source_code}: {e}")
+            raise e
 
     else:
 
         target_workflow_user_code = self.task.name
 
-        target_wf = manager.get_by_user_code(f"{context.get('space_code')}.{target_workflow_user_code}", sync_remote=True)
+        target_wf = manager.get_by_user_code(f"{context.get('space_code')}.{target_workflow_user_code}",
+                                             sync_remote=True)
 
         _l.info(f"execute_workflow_step: Target Workflow Version {target_wf.get('version')}")
 
