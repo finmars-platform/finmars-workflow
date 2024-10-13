@@ -8,7 +8,7 @@ from workflow.tasks.workflows import execute_workflow_v2
 _l = logging.getLogger('workflow')
 
 
-def execute_workflow(username, user_code, payload={}, realm_code=None, space_code=None, platform_task_id=None):
+def execute_workflow(username, user_code, payload={}, realm_code=None, space_code=None, platform_task_id=None, crontab_id=None):
     user = User.objects.get(username=username)
 
     from workflow.system import get_system_workflow_manager
@@ -31,7 +31,7 @@ def execute_workflow(username, user_code, payload={}, realm_code=None, space_cod
     # Create the workflow in DB
     obj = Workflow(owner=user, space=space, user_code=user_code, payload=payload,
                    workflow_template=workflow_template,
-                   is_manager=wf['workflow'].get('is_manager', False), platform_task_id=platform_task_id)
+                   is_manager=wf['workflow'].get('is_manager', False), platform_task_id=platform_task_id, crontab_id=crontab_id)
     obj.save()
 
     # Build the workflow and execute it

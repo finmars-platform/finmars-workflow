@@ -150,24 +150,28 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
         finmars_bot = User.objects.get(username='finmars_bot')
         space = Space.objects.get(space_code=context.get('space_code'))
 
-        c_obj = Workflow(owner=finmars_bot, space=space, user_code=user_code, payload=payload, periodic=True,
-                         is_manager=is_manager, crontab_id=kwargs.get('crontab_id'))
-        c_obj.save()
+        from workflow.workflows import execute_workflow
+        data = execute_workflow(finmars_bot, user_code, payload, space.realm_code, space.space_code,
+                                None, crontab_id=kwargs.get('crontab_id'))
 
-        manager.get_by_user_code(user_code, sync_remote=True)
-
-        # Build the workflow and execute it
-        from workflow.builder import WorkflowBuilder
-        workflow = WorkflowBuilder(c_obj.id)
-        workflow.run()
-
-        c_obj_dict = c_obj.to_dict()
+        # c_obj = Workflow(owner=finmars_bot, space=space, user_code=user_code, payload=payload, periodic=True,
+        #                  is_manager=is_manager, crontab_id=kwargs.get('crontab_id'))
+        # c_obj.save()
+        #
+        # manager.get_by_user_code(user_code, sync_remote=True)
+        #
+        # # Build the workflow and execute it
+        # from workflow.builder import WorkflowBuilder
+        # workflow = WorkflowBuilder(c_obj.id)
+        # workflow.run()
+        #
+        # c_obj_dict = c_obj.to_dict()
         #
         # # Force commit before ending the function to ensure the ongoing transaction
         # # does not end up in a "idle in transaction" state on PostgreSQL
         # c_obj.commit()
 
-        return c_obj_dict
+        return data
 
     except Exception as e:
         logger.error('periodic task error: %s' % e, exc_info=True)
