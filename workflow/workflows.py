@@ -3,7 +3,7 @@ import logging
 from workflow.builder import WorkflowBuilder
 
 from workflow.models import Workflow, User, Space, WorkflowTemplate
-from workflow.tasks.workflows import execute_dynamic_workflow
+from workflow.tasks.workflows import execute_workflow_v2
 
 _l = logging.getLogger('workflow')
 
@@ -40,7 +40,7 @@ def execute_workflow(username, user_code, payload={}, realm_code=None, space_cod
 
         _l.info("Execute new version")
 
-        execute_dynamic_workflow.apply_async(kwargs={"workflow_id": obj.id, 'context': {
+        execute_workflow_v2.apply_async(kwargs={"workflow_id": obj.id, 'context': {
             'space_code': space_code,
             'realm_code': realm_code
         }}, queue="workflow")

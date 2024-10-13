@@ -5,7 +5,7 @@ import traceback
 from celery import chain
 from celery.utils import uuid
 from celery.utils.log import get_task_logger
-from django.db import transaction
+
 
 from workflow.models import Task, Workflow, User, Space
 from workflow.tasks.base import BaseTask
@@ -245,7 +245,7 @@ def execute_workflow_step(self, *args, **kwargs):
 
 
 @celery_app.task(bind=True)
-def execute_dynamic_workflow(self, *args, **kwargs):
+def execute_workflow_v2(self, *args, **kwargs):
     logger.info(f"Opening the workflow with ID: {kwargs.get('workflow_id', None)}")
 
     # Log the context passed to the workflow
@@ -298,7 +298,7 @@ def execute_dynamic_workflow(self, *args, **kwargs):
     for start_node in start_nodes:
         logger.info(f"Dispatching task for start node: {start_node}")
 
-        execute_next_task.apply_async(kwargs={
+        process_next_node.apply_async(kwargs={
             "current_node_id": start_node,
             "workflow_id": workflow_id,
             "nodes": nodes,
@@ -311,9 +311,9 @@ def execute_dynamic_workflow(self, *args, **kwargs):
 
 
 @celery_app.task(bind=True)
-def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list, **kwargs):
+def process_next_node(self, current_node_id, workflow_id, nodes, adjacency_list, **kwargs):
     context = kwargs.get('context')
-    logger.info(f"execute_next_task context received: {context}")
+    logger.info(f"process_next_node context received: {context}")
     set_schema_from_context(context)
 
     try:
@@ -464,8 +464,8 @@ def execute_next_task(self, current_node_id, workflow_id, nodes, adjacency_list,
 
             # Check if the workflow is in WAIT state
 
-            # Execute the next task recursively by calling `execute_next_task` again
-            execute_next_task.apply_async(kwargs={
+            # Execute the next task recursively by calling `process_next_node` again
+            process_next_node.apply_async(kwargs={
                 "current_node_id": next_node_id,
                 "workflow_id": workflow_id,
                 "nodes": nodes,

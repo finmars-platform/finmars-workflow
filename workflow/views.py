@@ -248,7 +248,7 @@ class WorkflowViewSet(ModelViewSet):
             workflow.status = Workflow.STATUS_PROGRESS
             workflow.save()
 
-            from workflow.tasks.workflows import execute_next_task
+            from workflow.tasks.workflows import process_next_node
             # Trigger the next task from the stored `current_node_id`
             if workflow.current_node_id:
 
@@ -258,7 +258,7 @@ class WorkflowViewSet(ModelViewSet):
                 for connection in connections:
                     adjacency_list[connection['source']].append(connection['target'])
 
-                execute_next_task.apply_async(kwargs={
+                process_next_node.apply_async(kwargs={
                     "current_node_id": workflow.current_node_id,
                     "workflow_id": workflow.id,
                     # Fetch nodes, adjacency_list, and connections from the workflow data

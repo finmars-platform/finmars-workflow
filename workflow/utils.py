@@ -7,6 +7,7 @@ import string
 from celery.schedules import crontab
 from jsonschema.validators import validator_for
 from django.db import connection
+from django.db import transaction
 
 from workflow.exceptions import WorkflowSyntaxError
 
