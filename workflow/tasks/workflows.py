@@ -452,6 +452,7 @@ def process_next_node(self, current_node_id, workflow_id, nodes, adjacency_list,
             logger.info(f'workflow owner {workflow.owner}')
             # If there are no next nodes, update the workflow status to SUCCESS
             workflow.status = Workflow.STATUS_SUCCESS
+            workflow.finished_at =  now()
             workflow.save()
             logger.info(f"Workflow ID {workflow.id} status updated to SUCCESS.")
             return

@@ -1,10 +1,10 @@
 import json
+
 from rest_framework import serializers
 
 from workflow.fields import SpaceField, OwnerField
 from workflow.finmars import Storage
 from workflow.models import Workflow, Task, Schedule, WorkflowTemplate
-from workflow.system import get_system_workflow_manager
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -45,13 +45,11 @@ class WorkflowTemplateSerializer(serializers.ModelSerializer):
         model = WorkflowTemplate
         fields = ['id', 'name', 'user_code', 'notes',
                   'owner', 'space',
-                   'created_at', 'modified_at', 'data',
+                  'created_at', 'modified_at', 'data',
                   ]
 
     def save_to_storage(self, instance):
-
         storage = Storage()
-
 
         pieces = instance.user_code.split(':')
 
@@ -73,6 +71,7 @@ class WorkflowTemplateSerializer(serializers.ModelSerializer):
         self.save_to_storage(instance)
         return instance
 
+
 class WorkflowSerializer(serializers.ModelSerializer):
     space = SpaceField()
 
@@ -86,6 +85,7 @@ class WorkflowSerializer(serializers.ModelSerializer):
                   'owner', 'space', 'node_id', 'current_node_id',
                   'status', 'workflow_template', 'workflow_template_object',
                   'payload', 'created_at', 'modified_at', 'tasks', 'periodic',
+                  'finished_at',
                   'is_manager']
 
 
@@ -140,7 +140,8 @@ class ScheduleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Schedule
-        fields = ['id', 'user_code', 'name', 'space', 'owner', 'created_at', 'modified_at', 'payload', 'crontab_line', 'is_manager',
+        fields = ['id', 'user_code', 'name', 'space', 'owner', 'created_at', 'modified_at', 'payload', 'crontab_line',
+                  'is_manager',
                   'workflow_user_code', 'notes', 'next_run_at', 'last_run_at',
                   'enabled', 'owner_id', 'owner_username']
 
@@ -169,4 +170,5 @@ class ScheduleSerializer(serializers.ModelSerializer):
 
 
 class ResumeWorkflowSerializer(serializers.Serializer):
-    payload = serializers.JSONField(required=False, help_text="Optional payload to update the workflow before resuming.")
+    payload = serializers.JSONField(required=False,
+                                    help_text="Optional payload to update the workflow before resuming.")

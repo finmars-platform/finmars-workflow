@@ -161,6 +161,9 @@ class Workflow(TimeStampedModel):
     crontab = models.ForeignKey(CrontabSchedule, verbose_name=gettext_lazy('crontab'),
                                 null=True, on_delete=models.SET_NULL, related_name="workflows")
 
+    finished_at = models.DateTimeField(null=True, db_index=True,
+                                       verbose_name=gettext_lazy('finished at'))
+
     class Meta:
         get_latest_by = 'modified'
         ordering = ['-created_at', 'id']
