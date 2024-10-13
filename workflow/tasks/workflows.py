@@ -188,64 +188,80 @@ def execute_workflow_step(self, *args, **kwargs):
     context = kwargs.get('context')
     set_schema_from_context(context)
 
+    workflow = self.task.workflow
+
+    _l.info(f"execute_workflow_step {workflow} {self.task}")
+
     if self.task.source_code:
-        logger.info(f"Executing user-provided source code for node {self.task}")
+            logger.info(f"Executing user-provided source code for node {self.task}")
 
-        try:
-            # Execute the source code in a dynamic scope
-            exec_scope = {
-                "__name__": "__main__",  # simulate it as a standalone module
-                "self": self,  # allow use of self for things like logging
-                "args": args,
-                "kwargs": kwargs,
-            }
+            try:
+                # Execute the source code in a dynamic scope
+                exec_scope = {
+                    "__name__": "__main__",  # simulate it as a standalone module
+                    "self": self,  # allow use of self for things like logging
+                    "args": args,
+                    "kwargs": kwargs,
+                }
 
-            # Execute the source code
-            exec(self.task.source_code, exec_scope)
+                # Execute the source code
+                exec(self.task.source_code, exec_scope)
 
-            # If the code has defined a `main()` function, call it
-            if "main" in exec_scope:
-                # logger.info(f"Executing main() function in user-provided source code for node {self.task.source_code}")
-                result = exec_scope["main"](self, *args, **kwargs)
-                return result
-            else:
-                logger.warning(f"No main() function found in source code for node. Skipping execution.")
+                # If the code has defined a `main()` function, call it
+                if "main" in exec_scope:
+                    # logger.info(f"Executing main() function in user-provided source code for node {self.task.source_code}")
+                    result = exec_scope["main"](self, *args, **kwargs)
+                    return result
+                else:
+                    logger.warning(f"No main() function found in source code for node. Skipping execution.")
 
-        except Exception as e:
-            logger.error(f"Error executing custom source code for node {self.task.source_code}: {e}")
-            raise e
+            except Exception as e:
+                logger.error(f"Error executing custom source code for node {self.task.source_code}: {e}")
+                raise e
 
     else:
 
-        path = self.task.name
-        if path.endswith('.task'):
-            path = path[:-5]
-        module_path = path.replace('.', '/').replace(':', '/')
+        target_workflow_user_code = self.task.name
 
-        manager.sync_remote_storage_to_local_storage_for_schema(module_path)
-        manager.import_user_tasks(module_path, raise_exception=True)
+        target_wf = manager.get_by_user_code(f"{context.get('space_code')}.{target_workflow_user_code}", sync_remote=True)
 
-        imports = kwargs.get('imports') or {}
-        if isinstance(imports, dict):
-            imports = imports.get('dirs')
-        if isinstance(imports, list):
-            for extra_path in imports:
-                extra_path = os.path.normpath(os.path.join(module_path, extra_path))
-                last_segment = extra_path.split('/')[-1]
-                if '*' in last_segment or '?' in last_segment:
-                    # given a wildcard for file name
-                    extra_path, pattern = extra_path.rsplit('/', maxsplit=1)
-                else:
-                    pattern = '*.*'
-                manager.sync_remote_storage_to_local_storage_for_schema(extra_path, [pattern])
+        _l.info(f"execute_workflow_step: Target Workflow Version {target_wf.get('version')}")
 
-        func = get_registered_task()
-        if func:
-            logger.info('executing %s', func.__name__)
-            result = func(self, *args, **kwargs)
-            return result
+        if target_wf.get('version') == 2:
+
+            raise Exception("Nested Workflows are not implemented")
+
         else:
-            raise Exception(f'no function to execute for {self.task.name}')
+
+            path = self.task.name
+            if path.endswith('.task'):
+                path = path[:-5]
+            module_path = path.replace('.', '/').replace(':', '/')
+
+            manager.sync_remote_storage_to_local_storage_for_schema(module_path)
+            manager.import_user_tasks(module_path, raise_exception=True)
+
+            imports = kwargs.get('imports') or {}
+            if isinstance(imports, dict):
+                imports = imports.get('dirs')
+            if isinstance(imports, list):
+                for extra_path in imports:
+                    extra_path = os.path.normpath(os.path.join(module_path, extra_path))
+                    last_segment = extra_path.split('/')[-1]
+                    if '*' in last_segment or '?' in last_segment:
+                        # given a wildcard for file name
+                        extra_path, pattern = extra_path.rsplit('/', maxsplit=1)
+                    else:
+                        pattern = '*.*'
+                    manager.sync_remote_storage_to_local_storage_for_schema(extra_path, [pattern])
+
+            func = get_registered_task()
+            if func:
+                logger.info('executing %s', func.__name__)
+                result = func(self, *args, **kwargs)
+                return result
+            else:
+                raise Exception(f'no function to execute for {self.task.name}')
 
 
 @celery_app.task(bind=True)
