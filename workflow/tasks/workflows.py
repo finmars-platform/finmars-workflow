@@ -9,7 +9,7 @@ from celery.utils.log import get_task_logger
 
 from workflow.models import Task, Workflow, User, Space
 from workflow.tasks.base import BaseTask
-from workflow.utils import set_schema_from_context, update_execution_status, are_inputs_ready, \
+from workflow.utils import set_schema_from_context, are_inputs_ready, \
     get_next_node_by_condition
 from workflow_app import celery_app
 
@@ -290,14 +290,6 @@ def execute_workflow_v2(self, *args, **kwargs):
     nodes = {node['id']: node for node in workflow_data['workflow']['nodes']}
     connections = workflow_data['workflow']['connections']
 
-    execution_status = {}
-
-    for key, value in nodes.items():
-        execution_status[key] = {'status': 'init', 'node': value['data']['node']}
-
-    workflow.execution_status = execution_status
-    workflow.save()
-
     # Log nodes and connections
     logger.info(f"Nodes parsed from workflow data: {nodes}")
     logger.info(f"Connections parsed from workflow data: {connections}")
@@ -351,13 +343,9 @@ def process_next_node(self, current_node_id, workflow_id, nodes, adjacency_list,
             workflow.save()
             return  # Exit the task without further execution
 
-        if not are_inputs_ready(workflow, current_node_id, workflow.execution_status, kwargs.get('connections')):
+        if not are_inputs_ready(workflow, current_node_id, kwargs.get('connections')):
             logger.info(f"Task for Node ID: {current_node_id}, inputs are not ready, wait")
-            update_execution_status(workflow, current_node_id, "waiting_for_inputs")
-            workflow.save(update_fields=['execution_status'])
             return
-
-        update_execution_status(workflow, current_node_id, "progress")
 
         if current_node['data']['node']['type'] == 'source_code':
             workflow_user_code = 'custom_code'
@@ -444,7 +432,6 @@ def process_next_node(self, current_node_id, workflow_id, nodes, adjacency_list,
 
         workflow.last_task_output = output
         workflow.current_node_id = current_node_id
-        update_execution_status(workflow, current_node_id, "success")
 
         logger.info(f"Task {workflow_user_code} executed successfully, result: {output}")
 

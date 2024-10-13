@@ -11,7 +11,9 @@ from django.db import transaction
 
 from workflow.exceptions import WorkflowSyntaxError
 
+
 _l = logging.getLogger('workflow')
+
 
 
 def validate(payload, schema):
@@ -206,12 +208,14 @@ def generate_random_string(N):
 
 
 
-def are_inputs_ready(workflow, node_id, execution_status, connections):
+def are_inputs_ready(workflow, node_id, connections):
     # Get all nodes feeding into the current node
+
+    from workflow.models import Task
+
     input_nodes = [conn['source'] for conn in connections if
                    conn['target'] == node_id]
 
-    # _l.info('execution_status %s ' % execution_status)
     # _l.info('input_nodes %s ' % input_nodes)
 
     for input_node in input_nodes:
@@ -221,36 +225,14 @@ def are_inputs_ready(workflow, node_id, execution_status, connections):
             task = Task.objects.get(workflow=workflow, node_id=input_node)
 
             if task.status == Task.STATUS_SUCCESS:
-                update_execution_status(workflow, input_node, 'success')
+                pass
             else:
                 return False
 
         except Exception as e:
-
-            if execution_status.get(input_node, {}).get("status") != "success":
-                return False
+            _l.error(f'are_inputs_ready workflow: {workflow} e: {e}' )
+            return False
     return True
-
-
-def update_execution_status(workflow, node_id, new_status):
-    """Updates the status of a node while ensuring parallel tasks don't overwrite each other."""
-
-    # Use transaction.atomic to prevent race conditions
-    with transaction.atomic():
-        # Fetch the latest workflow to get the most recent execution_status
-        workflow.refresh_from_db(fields=["execution_status"])
-
-        # Update the status of the specific node
-        execution_status = workflow.execution_status or {}
-
-        # Update only the relevant node's status, preserving the rest of the data
-        execution_status[node_id] = {"status": new_status}
-
-        # Assign the updated execution status back to the workflow
-        workflow.execution_status = execution_status
-
-        # Save the workflow object back to the database
-        workflow.save()
 
 
 def get_next_node_by_condition(current_node_id, condition_result, connections):
@@ -265,7 +247,7 @@ def get_next_node_by_condition(current_node_id, condition_result, connections):
     Returns:
     - The ID of the next node to execute.
     """
-    logger.info(f"Evaluating condition for node {current_node_id}, result: {condition_result}")
+    _l.info(f"Evaluating condition for node {current_node_id}, result: {condition_result}")
 
     # Define which output to follow based on condition result
 
@@ -282,9 +264,9 @@ def get_next_node_by_condition(current_node_id, condition_result, connections):
     for connection in connections:
         if connection['source'] == current_node_id and connection['sourceOutput'] == output_to_follow:
             next_node_id = connection['target']
-            logger.info(f"Following output '{output_to_follow}' to next node {next_node_id}")
+            _l.info(f"Following output '{output_to_follow}' to next node {next_node_id}")
             return next_node_id
 
     # If no matching connection is found, return None and log a warning
-    logger.warning(f"No matching connection found for node {current_node_id} with output '{output_to_follow}'")
+    _l.warning(f"No matching connection found for node {current_node_id} with output '{output_to_follow}'")
     return None
