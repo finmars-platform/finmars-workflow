@@ -86,6 +86,15 @@ def on_failure(task_id, exception, args, einfo, **kwargs):
     task.save()
     workflow.save()
 
+    if task.workflow.parent:
+        logger.info(f"task_failureWorkflow has a parent with ID {task.workflow.parent.id}. Triggering next task.")
+        parent_workflow = task.workflow.parent
+
+        parent_task = Task.objects.get(workflow=parent_workflow, node_id=task.workflow.node_id, space=task.workflow.space)
+
+        parent_task.status = Task.STATUS_ERROR
+        on_failure(parent_task.celery_task_id, exception, args, einfo, **kwargs)
+
     send_alert(workflow)
     logger.info(f"Task {task_id} is now in error")
 
@@ -183,76 +192,6 @@ class BaseTask(_Task):
         set_schema_from_context(context)
 
         task = Task.objects.get(celery_task_id=task_id)
-        task.status = Task.STATUS_SUCCESS
-        if retval:
-            task.result = retval
-        else:
-            task.result = {"message": "Task finished successfully. No results returned"}
-        task.mark_task_as_finished()
-        task.save()
 
-
-        from workflow.tasks.workflows import process_next_node
-
-        workflow_data = task.workflow.workflow_template.data
-        nodes = {node['id']: node for node in workflow_data['workflow']['nodes']}
-        connections = workflow_data['workflow']['connections']
-
-        adjacency_list = {node_id: [] for node_id in nodes}
-        for connection in connections:
-            adjacency_list[connection['source']].append(connection['target'])
-
-        current_node_id = task.node_id
-        current_node = nodes[current_node_id]
-
-        task.workflow.last_task_output = retval
-        task.workflow.current_node_id = current_node_id
-
-        logger.info(f"Task {task.name} executed successfully, result: {retval}")
-
-        next_node_ids = []
-        if current_node['data']['node']['type'] == "condition":
-            # Use the condition result to determine the next path
-            logger.info(f"Processing conditional node {current_node_id}, result: {retval}")
-            next_node_id = get_next_node_by_condition(current_node_id, retval, connections)
-            if next_node_id:
-                next_node_ids.append(next_node_id)
-        else:
-            # Normal node, just proceed to the next nodes from adjacency list
-            next_node_ids = adjacency_list.get(current_node_id, [])
-
-        if not next_node_ids:
-            logger.info(f"No next nodes found for current node ID: {current_node_id}. Marking workflow as complete.")
-
-            logger.info(f'workflow owner {task.workflow.owner}')
-            # If there are no next nodes, update the workflow status to SUCCESS
-            task.workflow.status = Workflow.STATUS_SUCCESS
-            task.workflow.finished_at =  now()
-            task.workflow.save()
-            logger.info(f"Workflow ID {task.workflow.id} status updated to SUCCESS.")
-            return
-
-        # Decide what the next step will be, based on the current task's output
-        for next_node_id in next_node_ids:
-            next_node = nodes.get(next_node_id)
-            if not next_node:
-                logger.error(f"Next node with ID {next_node_id} does not exist in the workflow nodes.")
-                continue
-
-            logger.info(f"Processing next node: {next_node_id}, Name: {next_node['name']}")
-
-            # Check if the workflow is in WAIT state
-
-            # Execute the next task recursively by calling `process_next_node` again
-            process_next_node.apply_async(kwargs={
-                "current_node_id": next_node_id,
-                "workflow_id": task.workflow.id,
-                "nodes": nodes,
-                "adjacency_list": adjacency_list,
-                "context": {
-                    "realm_code": task.workflow.space.realm_code,
-                    "space_code": task.workflow.space.space_code,
-                },
-                "connections": connections
-            }, queue="workflow")
+        task.handle_task_success(retval)
 

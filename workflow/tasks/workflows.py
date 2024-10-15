@@ -7,7 +7,7 @@ from celery.utils import uuid
 from celery.utils.log import get_task_logger
 from django.utils.timezone import now
 
-from workflow.models import Task, Workflow, User, Space, Schedule
+from workflow.models import Task, Workflow, User, Space, Schedule, WorkflowTemplate
 from workflow.tasks.base import BaseTask
 from workflow.utils import set_schema_from_context, are_inputs_ready, \
     get_next_node_by_condition
@@ -223,9 +223,44 @@ def execute_workflow_step(self, *args, **kwargs):
 
         _l.info(f"execute_workflow_step: Target Workflow Version {target_wf.get('version')}")
 
-        if target_wf.get('version') == 2:
+        if int(target_wf.get('version', 1)) == 2:
 
-            raise Exception("Nested Workflows are not implemented")
+            target_workflow_template = None
+
+            parent_workflow = workflow  # Current workflow is the parent
+
+            try:
+                target_workflow_template = WorkflowTemplate.objects.get(user_code=target_workflow_user_code, space=parent_workflow.space)
+            except Exception as e:
+                _l.error("No target_workflow_template exist, abort")
+                raise Exception(e)
+
+            child_workflow = Workflow.objects.create(
+                owner=parent_workflow.owner,
+                space=parent_workflow.space,
+                user_code=target_workflow_user_code,
+                node_id=self.task.node_id, # in that case Workflow and Task has same node_id
+                status=Workflow.STATUS_INIT,
+                payload=kwargs.get('payload'),
+                parent=parent_workflow,
+                workflow_template=target_workflow_template,
+            )
+
+            _l.info(f"Executing nested workflow: {child_workflow.user_code}")
+
+            # Execute the nested workflow
+            execute_workflow_v2.apply_async(kwargs={
+                "workflow_id": child_workflow.id,
+                'context': {
+                    'space_code': context.get('space_code'),
+                    'realm_code': context.get('realm_code')
+                }
+            }, queue="workflow")
+
+            self.task.status = Task.STATUS_NESTED_PROGRESS
+            self.task.save()
+
+            return  # Exit since we are delegating to the nested workflow
 
         else:
 

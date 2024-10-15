@@ -71,8 +71,8 @@ class WorkflowTemplateSerializer(serializers.ModelSerializer):
         self.save_to_storage(instance)
         return instance
 
+class SimpleWorkflowSerializer(serializers.ModelSerializer):
 
-class WorkflowSerializer(serializers.ModelSerializer):
     space = SpaceField()
 
     workflow_template_object = WorkflowTemplateSerializer(read_only=True, source="workflow_template")
@@ -81,11 +81,29 @@ class WorkflowSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Workflow
+
         fields = ['id', 'name', 'user_code',
                   'owner', 'space', 'node_id', 'current_node_id',
                   'status', 'workflow_template', 'workflow_template_object',
                   'payload', 'created_at', 'modified_at', 'tasks', 'periodic',
                   'finished_at',
+                  'is_manager']
+
+class WorkflowSerializer(serializers.ModelSerializer):
+    space = SpaceField()
+
+    workflow_template_object = WorkflowTemplateSerializer(read_only=True, source="workflow_template")
+    payload = serializers.JSONField(allow_null=True, required=False)
+    tasks = TaskSerializer(many=True, read_only=True)
+    parent = SimpleWorkflowSerializer(read_only=True)
+
+    class Meta:
+        model = Workflow
+        fields = ['id', 'name', 'user_code',
+                  'owner', 'space', 'node_id', 'current_node_id',
+                  'status', 'workflow_template', 'workflow_template_object',
+                  'payload', 'created_at', 'modified_at', 'tasks', 'periodic',
+                  'finished_at', 'parent',
                   'is_manager']
 
 
