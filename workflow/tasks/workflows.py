@@ -417,66 +417,10 @@ def process_next_node(self, current_node_id, workflow_id, nodes, adjacency_list,
         task.save()
 
         # Run the task synchronously and get the result
-        result = signature.apply()  # Execute the task and get the result immediately
-        output = result.result  # This is the output from execute_workflow_step
+        signature.apply()  # Execute the task and get the result immediately
 
-        # TODO, szhitenev
-        # important, somehow context is changed after execute_workflow_step
-        # research later
-        context = kwargs.get('context')
-        set_schema_from_context(context)
+        logger.info("next node is executed, exit process_next_node")
 
-        workflow.last_task_output = output
-        workflow.current_node_id = current_node_id
-
-        logger.info(f"Task {workflow_user_code} executed successfully, result: {output}")
-
-        # Check for next nodes to execute
-        # what if two branches in parallel and one finished before other?
-        # TODO szhitenev
-
-        next_node_ids = []
-        if current_node['data']['node']['type'] == "condition":
-            # Use the condition result to determine the next path
-            logger.info(f"Processing conditional node {current_node_id}, result: {output}")
-            next_node_id = get_next_node_by_condition(current_node_id, output, kwargs.get('connections'))
-            if next_node_id:
-                next_node_ids.append(next_node_id)
-        else:
-            # Normal node, just proceed to the next nodes from adjacency list
-            next_node_ids = adjacency_list.get(current_node_id, [])
-
-        if not next_node_ids:
-            logger.info(f"No next nodes found for current node ID: {current_node_id}. Marking workflow as complete.")
-
-            logger.info(f'workflow owner {workflow.owner}')
-            # If there are no next nodes, update the workflow status to SUCCESS
-            workflow.status = Workflow.STATUS_SUCCESS
-            workflow.finished_at =  now()
-            workflow.save()
-            logger.info(f"Workflow ID {workflow.id} status updated to SUCCESS.")
-            return
-
-        # Decide what the next step will be, based on the current task's output
-        for next_node_id in next_node_ids:
-            next_node = nodes.get(next_node_id)
-            if not next_node:
-                logger.error(f"Next node with ID {next_node_id} does not exist in the workflow nodes.")
-                continue
-
-            logger.info(f"Processing next node: {next_node_id}, Name: {next_node['name']}")
-
-            # Check if the workflow is in WAIT state
-
-            # Execute the next task recursively by calling `process_next_node` again
-            process_next_node.apply_async(kwargs={
-                "current_node_id": next_node_id,
-                "workflow_id": workflow_id,
-                "nodes": nodes,
-                "adjacency_list": adjacency_list,
-                "context": kwargs.get('context'),
-                "connections": kwargs.get('connections')
-            }, queue="workflow")
 
     except Exception as e:
         logger.error(f"Error executing task : {e}")

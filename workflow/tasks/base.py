@@ -3,9 +3,10 @@ from celery.signals import task_prerun, task_postrun, task_failure, task_interna
 from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
 from celery.utils.log import get_task_logger
 from django.db import connection
+from django.utils.timezone import now
 
 from workflow.models import Task, Workflow
-from workflow.utils import send_alert, schema_exists, set_schema_from_context
+from workflow.utils import send_alert, schema_exists, set_schema_from_context, get_next_node_by_condition
 from workflow_app import celery_app
 
 logger = get_task_logger(__name__)
@@ -173,6 +174,8 @@ class BaseTask(_Task):
 
     def on_success(self, retval, task_id, args, kwargs):
 
+        super(BaseTask, self).on_success(retval, task_id, args, kwargs)
+
         logger.info("BaseTask.on_success.task_id %s" % task_id)
         logger.info("BaseTask.on_success.kwargs: %s" % kwargs)
 
@@ -188,5 +191,68 @@ class BaseTask(_Task):
         task.mark_task_as_finished()
         task.save()
 
-        logger.info(f"Task {task_id} is now in success. Retval {retval}")
-        super(BaseTask, self).on_success(retval, task_id, args, kwargs)
+
+        from workflow.tasks.workflows import process_next_node
+
+        workflow_data = task.workflow.workflow_template.data
+        nodes = {node['id']: node for node in workflow_data['workflow']['nodes']}
+        connections = workflow_data['workflow']['connections']
+
+        adjacency_list = {node_id: [] for node_id in nodes}
+        for connection in connections:
+            adjacency_list[connection['source']].append(connection['target'])
+
+        current_node_id = task.node_id
+        current_node = nodes[current_node_id]
+
+        task.workflow.last_task_output = retval
+        task.workflow.current_node_id = current_node_id
+
+        logger.info(f"Task {task.name} executed successfully, result: {retval}")
+
+        next_node_ids = []
+        if current_node['data']['node']['type'] == "condition":
+            # Use the condition result to determine the next path
+            logger.info(f"Processing conditional node {current_node_id}, result: {retval}")
+            next_node_id = get_next_node_by_condition(current_node_id, retval, connections)
+            if next_node_id:
+                next_node_ids.append(next_node_id)
+        else:
+            # Normal node, just proceed to the next nodes from adjacency list
+            next_node_ids = adjacency_list.get(current_node_id, [])
+
+        if not next_node_ids:
+            logger.info(f"No next nodes found for current node ID: {current_node_id}. Marking workflow as complete.")
+
+            logger.info(f'workflow owner {task.workflow.owner}')
+            # If there are no next nodes, update the workflow status to SUCCESS
+            task.workflow.status = Workflow.STATUS_SUCCESS
+            task.workflow.finished_at =  now()
+            task.workflow.save()
+            logger.info(f"Workflow ID {task.workflow.id} status updated to SUCCESS.")
+            return
+
+        # Decide what the next step will be, based on the current task's output
+        for next_node_id in next_node_ids:
+            next_node = nodes.get(next_node_id)
+            if not next_node:
+                logger.error(f"Next node with ID {next_node_id} does not exist in the workflow nodes.")
+                continue
+
+            logger.info(f"Processing next node: {next_node_id}, Name: {next_node['name']}")
+
+            # Check if the workflow is in WAIT state
+
+            # Execute the next task recursively by calling `process_next_node` again
+            process_next_node.apply_async(kwargs={
+                "current_node_id": next_node_id,
+                "workflow_id": task.workflow.id,
+                "nodes": nodes,
+                "adjacency_list": adjacency_list,
+                "context": {
+                    "realm_code": task.workflow.space.realm_code,
+                    "space_code": task.workflow.space.space_code,
+                },
+                "connections": connections
+            }, queue="workflow")
+

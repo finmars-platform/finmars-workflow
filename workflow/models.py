@@ -164,6 +164,15 @@ class Workflow(TimeStampedModel):
     finished_at = models.DateTimeField(null=True, db_index=True,
                                        verbose_name=gettext_lazy('finished at'))
 
+    parent = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        related_name="children",
+        verbose_name=gettext_lazy("parent"),
+        on_delete=models.SET_NULL,
+    )
+
     class Meta:
         get_latest_by = 'modified'
         ordering = ['-created_at', 'id']
