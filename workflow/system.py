@@ -120,14 +120,15 @@ class SystemWorkflowManager:
             _l.error(f"Error loading workflows for schema {schema}: {e}")
 
     def get_by_user_code(self, user_code, sync_remote=False):
+
+        _l.info("get_by_user_code %s" % user_code)
+
         workflow = self.workflows.get(user_code)
 
         if not workflow and sync_remote:
             space_code = user_code.split('.')[0]
             path = user_code[len(space_code)+1:].replace('.', '/').replace(':', '/')
             module_path, _ = path.rsplit('/', maxsplit=1)
-
-            _l.info('get_by_user_code.path %s' % path)
 
             self.sync_remote_storage_to_local_storage_for_schema(module_path)
             self.register_workflows(space_code)

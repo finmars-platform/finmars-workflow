@@ -218,6 +218,12 @@ def execute_workflow_step(self, *args, **kwargs):
 
         target_workflow_user_code = self.task.name
 
+
+        if target_workflow_user_code.endswith('.task'):
+            target_workflow_user_code = target_workflow_user_code[:-5]
+
+        _l.info('target_workflow_user_code %s' % target_workflow_user_code)
+
         target_wf = manager.get_by_user_code(f"{context.get('space_code')}.{target_workflow_user_code}",
                                              sync_remote=True)
 
