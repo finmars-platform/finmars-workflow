@@ -159,11 +159,11 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
         schedule.last_run_at = now()
         schedule.save()
 
-        finmars_bot = User.objects.get(username='finmars_bot')
+        owner = User.objects.get(username=schedule.owner.username)
         space = Space.objects.get(space_code=context.get('space_code'))
 
         from workflow.workflows import execute_workflow
-        data = execute_workflow(finmars_bot, user_code, payload, space.realm_code, space.space_code,
+        data = execute_workflow(owner, user_code, payload, space.realm_code, space.space_code,
                                 None, crontab_id=kwargs.get('crontab_id'))
 
         return data
