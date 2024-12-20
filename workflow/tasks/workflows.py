@@ -159,7 +159,7 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
         schedule.last_run_at = now()
         schedule.save()
 
-        owner = User.objects.get(username='finmars_bot')
+        owner = User.objects.get(username=schedule.owner.username)
         space = Space.objects.get(space_code=context.get('space_code'))
 
         from workflow.workflows import execute_workflow
