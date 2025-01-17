@@ -99,7 +99,7 @@ class WorkflowFilterSet(FilterSet):
     name = django_filters.CharFilter()
     user_code = django_filters.CharFilter()
     status = django_filters.MultipleChoiceFilter(field_name='status', choices=Workflow.STATUS_CHOICES)
-    created = django_filters.DateFromToRangeFilter()
+    created_at = django_filters.DateFromToRangeFilter()
 
     class Meta:
         model = Workflow
