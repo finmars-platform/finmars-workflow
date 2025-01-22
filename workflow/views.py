@@ -47,7 +47,7 @@ system_workflow_manager = get_system_workflow_manager()
 class WorkflowTemplateFilterSet(FilterSet):
     name = django_filters.CharFilter()
     user_code = django_filters.CharFilter()
-    created = django_filters.DateFromToRangeFilter()
+    created_at = django_filters.DateFromToRangeFilter()
 
     class Meta:
         model = WorkflowTemplate
