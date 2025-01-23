@@ -18,7 +18,7 @@ class WorkflowQueryFilter(BaseFilterBackend):
             id_q = Q()
             name_q = Q()
             user_code_q = Q()
-            created_q = Q()
+            created_at_q = Q()
             status_q = Q()
 
 
@@ -26,7 +26,7 @@ class WorkflowQueryFilter(BaseFilterBackend):
                 id_q.add(Q(id__icontains=piece), Q.AND)
                 name_q.add(Q(name__icontains=piece), Q.AND)
                 user_code_q.add(Q(user_code__icontains=piece), Q.AND)
-                created_q.add(Q(created__icontains=piece), Q.AND)
+                created_at_q.add(Q(created_at__icontains=piece), Q.AND)
                 status_q.add(Q(status__icontains=piece), Q.AND)
 
 
@@ -35,7 +35,7 @@ class WorkflowQueryFilter(BaseFilterBackend):
             options.add(id_q, Q.OR)
             options.add(name_q, Q.OR)
             options.add(user_code_q, Q.OR)
-            options.add(created_q, Q.OR)
+            options.add(created_at_q, Q.OR)
             options.add(status_q, Q.OR)
 
             return queryset.filter(options)
@@ -73,12 +73,12 @@ class WorkflowSearchParamFilter(BaseFilterBackend):
         
         if date_from:
             date = datetime.strptime(date_from, "%Y-%m-%d")
-            queryset = queryset.filter(created__gte=date)
+            queryset = queryset.filter(created_at__gte=date)
 
         if date_to:
             date = datetime.strptime(date_to, "%Y-%m-%d") + timedelta(
                 days=1, microseconds=-1)
-            queryset = queryset.filter(created__lte=date)
+            queryset = queryset.filter(created_at__lte=date)
 
         if status:
             status_list = status.split(',')

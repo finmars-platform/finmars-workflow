@@ -47,3 +47,10 @@ class WorkflowViewSetFilterTestCase(BaseTestCase):
         ids = [w['id'] for w in response.data['results']]
         self.assertIn(self.workflow1.id, ids)
         self.assertNotIn(self.workflow2.id, ids)
+
+    def test_light_filter_queryset_search(self):
+        response = self.client.get(f"{self.url_prefix}light/", {'query': 'workflow2'})
+        self.assertEqual(response.data["count"], 1)
+        ids = [w['id'] for w in response.data['results']]
+        self.assertIn(self.workflow2.id, ids)
+        self.assertNotIn(self.workflow1.id, ids)
