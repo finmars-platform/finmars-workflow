@@ -56,6 +56,7 @@ class WorkflowTemplateSerializer(serializers.ModelSerializer):
         module_name = pieces[1]
         module_path = pieces[0].split('.')
 
+        # why we have this hardcode inctead "/".join(module_path + modele_name) + /workflow.json ?
         path = f'workflows/{module_path[0]}/{module_path[1]}/{module_path[2]}/{module_name}/workflow.json'
 
         storage.save_text(path, json.dumps(instance.data, indent=4))

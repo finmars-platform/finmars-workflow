@@ -69,7 +69,7 @@ class WorkflowTemplateViewSet(ModelViewSet):
         WholeWordsSearchFilter,
         OrderingFilter,
     ]
-    search_fields = ['payload_data']
+    search_fields = ['data']
     ordering_fields = [
         'name', 'user_code', 'created_at', 'modified_at', 'owner',
     ]
