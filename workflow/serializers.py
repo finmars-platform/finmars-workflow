@@ -97,6 +97,7 @@ class WorkflowSerializer(serializers.ModelSerializer):
     payload = serializers.JSONField(allow_null=True, required=False)
     tasks = TaskSerializer(many=True, read_only=True)
     parent = SimpleWorkflowSerializer(read_only=True)
+    workflow_version = serializers.SerializerMethodField()
 
     class Meta:
         model = Workflow
@@ -104,8 +105,18 @@ class WorkflowSerializer(serializers.ModelSerializer):
                   'owner', 'space', 'node_id', 'current_node_id',
                   'status', 'workflow_template', 'workflow_template_object',
                   'payload', 'created_at', 'modified_at', 'tasks', 'periodic',
-                  'finished_at', 'parent',
-                  'is_manager']
+                  'finished_at', 'parent', 'workflow_version', 'is_manager']
+
+    def get_workflow_version(self, obj) -> int:
+        if obj.workflow_template:
+            if workflow_template_data:= WorkflowTemplateSerializer(obj.workflow_template).data:
+                if (data:= workflow_template_data.get('data')):
+                    if isinstance(data, str):
+                        data = json.loads(data)
+
+                    if (version:= data.get('version')) and isinstance(version, str) and version.isdigit():
+                        return int(version)
+        return 1
 
 
 class WorkflowLightSerializer(serializers.ModelSerializer):
