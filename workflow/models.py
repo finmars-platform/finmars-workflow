@@ -108,6 +108,8 @@ class WorkflowTemplate(TimeStampedModel):
     owner = models.ForeignKey(User, verbose_name=gettext_lazy('owner'),
                               on_delete=models.CASCADE, related_name="workflow_templates")
 
+    class Meta:
+        unique_together = [['user_code', 'space']]    
 
 
 class Workflow(TimeStampedModel):
