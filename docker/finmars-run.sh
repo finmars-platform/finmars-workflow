@@ -29,35 +29,6 @@ chmod 777 /var/app/app-data
 : "${INSTANCE_TYPE:=workflow}"
 
 if [ "$INSTANCE_TYPE" = "workflow" ]; then
-############################################
-
-  echo "Migrating"
-  python /var/app/manage.py migrate_all_schemes
-
-  echo "Sync remote storage to local storage"
-  python /var/app/manage.py sync_remote_storage_to_local_storage_all_spaces
-  #echo "Create cache table"
-  #
-  #/var/app-venv/bin/python /var/app/manage.py createcachetable
-
-  #echo "Clear sessions"
-
-  #python /var/app/manage.py clearsessions
-
-  #echo "Collect static"
-
-  echo "Build documentation"
-
-  cd /var/app/docs && mkdocs build --site-dir ../workflow/static/documentation
-
-
-
-  echo "Copy js/css files"
-  cd /var/app && python /var/app/manage.py copy_css_libs
-  cd /var/app && python /var/app/manage.py copy_js_libs
-
-  python /var/app/manage.py collectstatic -c --noinput
-
   supervisord
 
   echo "Run CeleryBeat"
