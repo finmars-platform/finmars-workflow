@@ -15,3 +15,4 @@ cd /var/app && python /var/app/manage.py copy_js_libs
 
 echo "Collect static"
 python /var/app/manage.py collectstatic -c --noinput
+
