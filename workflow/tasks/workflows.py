@@ -278,14 +278,16 @@ def execute_workflow_step(self, *args, **kwargs):
             module_path = path.replace('.', '/').replace(':', '/')
 
             manager.sync_remote_storage_to_local_storage_for_schema(module_path)
-            manager.import_user_tasks(module_path, raise_exception=True)
 
-            imports = manager.get_imports(target_space_workflow_user_code)
+            # imports = manager.get_imports(target_space_workflow_user_code)
+            imports = kwargs.get('imports')
+            _l.info(f'imports {imports}')
 
             if isinstance(imports, dict):
                 imports = imports.get('dirs')
             if isinstance(imports, list):
                 for extra_path in imports:
+                    logger.info(f'importing {extra_path}')
                     extra_path = os.path.normpath(os.path.join(module_path, extra_path))
                     last_segment = extra_path.split('/')[-1]
                     if '*' in last_segment or '?' in last_segment:
@@ -294,6 +296,8 @@ def execute_workflow_step(self, *args, **kwargs):
                     else:
                         pattern = '*.*'
                     manager.sync_remote_storage_to_local_storage_for_schema(extra_path, [pattern])
+
+            manager.import_user_tasks(module_path, raise_exception=True)
 
             func = get_registered_task()
             if func:
