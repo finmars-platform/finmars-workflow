@@ -223,8 +223,10 @@ def execute_workflow_step(self, *args, **kwargs):
             target_workflow_user_code = target_workflow_user_code[:-5]
 
         _l.info('target_workflow_user_code %s' % target_workflow_user_code)
+        
+        target_space_workflow_user_code = f"{context.get('space_code')}.{target_workflow_user_code}"
 
-        target_wf = manager.get_by_user_code(f"{context.get('space_code')}.{target_workflow_user_code}",
+        target_wf = manager.get_by_user_code(target_space_workflow_user_code,
                                              sync_remote=True)
 
         _l.info(f"execute_workflow_step: Target Workflow Version {target_wf.get('version')}")
@@ -278,7 +280,8 @@ def execute_workflow_step(self, *args, **kwargs):
             manager.sync_remote_storage_to_local_storage_for_schema(module_path)
             manager.import_user_tasks(module_path, raise_exception=True)
 
-            imports = kwargs.get('imports') or {}
+            imports = manager.get_imports(target_space_workflow_user_code)
+
             if isinstance(imports, dict):
                 imports = imports.get('dirs')
             if isinstance(imports, list):
