@@ -9,8 +9,7 @@ from django.utils.timezone import now
 
 from workflow.models import Task, Workflow, User, Space, Schedule, WorkflowTemplate
 from workflow.tasks.base import BaseTask
-from workflow.utils import set_schema_from_context, are_inputs_ready, \
-    get_next_node_by_condition
+from workflow.utils import set_schema_from_context, are_inputs_ready
 from workflow_app import celery_app
 
 logger = get_task_logger(__name__)
