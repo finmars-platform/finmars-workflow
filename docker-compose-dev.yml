@@ -1,5 +1,26 @@
 version: '2'
 services:
+
+  web:
+    build: .
+    env_file: ".env"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - rabbitmq
+
+
+  worker:
+    build: .
+    env_file: ".env"
+    environment:
+      - INSTANCE_TYPE=worker
+      - QUEUES=workflow
+    depends_on:
+      - db
+      - rabbitmq
+
   db:
     image: postgres:13-alpine
     environment:
@@ -10,3 +31,10 @@ services:
     tty: true
     ports:
       - "5441:5432"
+
+  rabbitmq:
+    image: rabbitmq
+    ports:
+      - "5672:5672"
+    stdin_open: true
+    tty: true

@@ -10,10 +10,11 @@ from workflow_app import celery_app
 
 logger = get_task_logger(__name__)
 
-
 @celery_app.task(bind=True)
 def call_export_backend_historical_records(self, *args, **kwargs):
     logger.info("Calling export backend historical records")
+
+    days = kwargs.get("days", 90)
 
     refresh = get_refresh_token()
     space = get_space()
@@ -21,9 +22,7 @@ def call_export_backend_historical_records(self, *args, **kwargs):
     headers = {"Content-type": "application/json", "Accept": "application/json",
                "Authorization": f"Bearer {refresh.access_token}"}
 
-    data = {
-        "date_to": (datetime.now() - timedelta(days=90)).datetime.now().strftime("%Y-%m-%d"),
-    }
+    data = {"date_to": (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")}
 
     if space.realm_code and space.realm_code != "realm00000":
         url = "https://" + settings.DOMAIN_NAME + "/" + space.realm_code + "/" + space.space_code + "/api/v1/history/historical-record/export/"
