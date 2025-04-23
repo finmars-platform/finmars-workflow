@@ -3,23 +3,46 @@ services:
 
   web:
     build: .
-    env_file: ".env"
-    ports:
-      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./workflow:/var/app/workflow
     depends_on:
       - db
       - rabbitmq
-
+      - migration
+    ports:
+      - "8080:8080"
 
   worker:
     build: .
-    env_file: ".env"
+    env_file:
+      - .env
     environment:
       - INSTANCE_TYPE=worker
       - QUEUES=workflow
     depends_on:
       - db
       - rabbitmq
+
+  scheduler:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - INSTANCE_TYPE=beat
+    depends_on:
+      - db
+      - rabbitmq
+
+  migration:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - INSTANCE_TYPE=job
+    depends_on:
+      - db
 
   db:
     image: postgres:13-alpine
@@ -31,6 +54,8 @@ services:
     tty: true
     ports:
       - "5441:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
 
   rabbitmq:
     image: rabbitmq
@@ -38,3 +63,6 @@ services:
       - "5672:5672"
     stdin_open: true
     tty: true
+
+volumes:
+  postgres_data:
