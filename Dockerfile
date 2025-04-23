@@ -1,44 +1,36 @@
-# Use an official Python runtime as a parent image
 FROM python:3.10-bullseye
 
-# Update and install packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     vim htop wget supervisor nfs-common npm && \
     rm -rf /var/lib/apt/lists/*
 
-# Set working directory in the container
 WORKDIR /var/app
 
-# Copy the requirements file into the container
-COPY requirements.txt .
-COPY package.json .
-
-RUN npm install
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the current directory contents into the container
-COPY . .
-
-# Create necessary directories and change their permissions
-RUN mkdir -p /var/app/app-data/import/configs/ /var/app/app-data/import/files/ \
-            /var/app/finmars_data /var/app/app-data/media/ /var/log/finmars/workflow/ \
-            /var/log/celery/ && \
+RUN mkdir -p \
+    /var/app/app-data/import/configs/ \
+    /var/app/app-data/import/files/ \
+    /var/app/finmars_data \
+    /var/app/app-data/media/ \
+    /var/log/finmars/workflow/ \
+    /var/log/celery/ && \
     chmod 777 /var/app/finmars_data
 
-# Copy supervisor configs
-COPY docker/supervisor/*.conf /etc/supervisor/conf.d/
+COPY package.json .
+RUN npm install
 
-# Change permission of the shell script
-RUN chmod +x /var/app/docker/finmars-run.sh
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Set environment variables
+COPY finmars_standardized_errors ./finmars_standardized_errors
+COPY healthcheck ./healthcheck
+COPY logstash ./logstash
+COPY workflow_app ./workflow_app
+COPY workflow ./workflow
+COPY manage.py ./
+
 ENV LC_ALL=C.UTF-8 \
     LANG=C.UTF-8
 
-# Make port 8080 available to the world outside this container
 EXPOSE 8080
 
-# Run the command on container startup
-CMD ["/bin/bash", "/var/app/docker/finmars-run.sh"]
+CMD ["gunicorn", "workflow_app.wsgi", "--config", "workflow_app/gunicorn.py"]
