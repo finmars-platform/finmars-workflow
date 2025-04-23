@@ -17,7 +17,7 @@ from workflow.authentication import FinmarsRefreshToken
 from workflow.models import User, Space
 from workflow_app import settings
 
-_l = logging.getLogger('workflow')
+_l = logging.getLogger("workflow")
 
 
 class DjangoStorageHandler(logging.Handler):
@@ -41,21 +41,23 @@ def get_access_token(ttl_minutes=60 * 8, *args, **kwargs):
     bot = User.objects.get(username="finmars_bot")
 
     # Define the expiration time +1 hour from now
-    expiration_time = datetime.datetime.utcnow() + datetime.timedelta(minutes=ttl_minutes)
+    expiration_time = datetime.datetime.utcnow() + datetime.timedelta(
+        minutes=ttl_minutes
+    )
 
     space = Space.objects.all().first()
 
     # Define the payload with the expiration time and username
     payload = {
-        'username': bot.username,
-        'realm_code': space.realm_code,
-        'space_code': space.realm_code,
-        'exp': expiration_time,
-        'iat': datetime.datetime.utcnow()  # Issued at time
+        "username": bot.username,
+        "realm_code": space.realm_code,
+        "space_code": space.realm_code,
+        "exp": expiration_time,
+        "iat": datetime.datetime.utcnow(),  # Issued at time
     }
 
     # Encode the JWT token
-    jwt_token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    jwt_token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
     token = FinmarsRefreshToken(jwt_token)
 
@@ -67,21 +69,23 @@ def get_refresh_token(ttl_minutes=60 * 8, *args, **kwargs):
     bot = User.objects.get(username="finmars_bot")
 
     # Define the expiration time +1 hour from now
-    expiration_time = datetime.datetime.utcnow() + datetime.timedelta(minutes=ttl_minutes)
+    expiration_time = datetime.datetime.utcnow() + datetime.timedelta(
+        minutes=ttl_minutes
+    )
 
     space = Space.objects.all().first()
 
     # Define the payload with the expiration time and username
     payload = {
-        'username': bot.username,
-        'realm_code': space.realm_code,
-        'space_code': space.realm_code,
-        'exp': expiration_time,
-        'iat': datetime.datetime.utcnow()  # Issued at time
+        "username": bot.username,
+        "realm_code": space.realm_code,
+        "space_code": space.realm_code,
+        "exp": expiration_time,
+        "iat": datetime.datetime.utcnow(),  # Issued at time
     }
 
     # Encode the JWT token
-    jwt_token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    jwt_token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
     token = FinmarsRefreshToken(jwt_token)
 
@@ -106,7 +110,7 @@ def get_space_code():
 
 def get_base_path():
     # TODO http or https?
-    return 'https://' + get_domain() + '/' + get_realm_code() + '/' + get_space_code()
+    return "https://" + get_domain() + "/" + get_realm_code() + "/" + get_space_code()
 
 
 def get_realm_code():
@@ -139,22 +143,38 @@ def execute_expression(expression):
 
     # _l.info('refresh %s' % refresh.access_token)
 
-    headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': f'Bearer {refresh.access_token}'}
-
-    data = {
-        'expression': expression,
-        'is_eval': True
+    headers = {
+        "Content-type": "application/json",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {refresh.access_token}",
     }
+
+    data = {"expression": expression, "is_eval": True}
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != 'realm00000':
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/utils/expression/'
+    if space.realm_code and space.realm_code != "realm00000":
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/utils/expression/"
+        )
     else:
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/utils/expression/'
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/utils/expression/"
+        )
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -167,19 +187,38 @@ def execute_expression_procedure(payload):
 
     # _l.info('refresh %s' % refresh.access_token)
 
-    headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': f'Bearer {refresh.access_token}'}
+    headers = {
+        "Content-type": "application/json",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {refresh.access_token}",
+    }
 
     data = payload
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != 'realm00000':
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/procedures/expression-procedure/execute/'
+    if space.realm_code and space.realm_code != "realm00000":
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/procedures/expression-procedure/execute/"
+        )
     else:
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/procedures/expression-procedure/execute/'
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/procedures/expression-procedure/execute/"
+        )
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -192,19 +231,38 @@ def execute_data_procedure(payload):
 
     # _l.info('refresh %s' % refresh.access_token)
 
-    headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': f'Bearer {refresh.access_token}'}
+    headers = {
+        "Content-type": "application/json",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {refresh.access_token}",
+    }
 
     data = payload
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != 'realm00000':
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/procedures/data-procedure/execute/'
+    if space.realm_code and space.realm_code != "realm00000":
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/procedures/data-procedure/execute/"
+        )
     else:
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/procedures/data-procedure/execute/'
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/procedures/data-procedure/execute/"
+        )
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -217,15 +275,32 @@ def get_data_procedure_instance(id):
 
     # _l.info('refresh %s' % refresh.access_token)
 
-    headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': f'Bearer {refresh.access_token}'}
+    headers = {
+        "Content-type": "application/json",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {refresh.access_token}",
+    }
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != 'realm00000':
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/procedures/data-procedure-instance/%s/' % id
+    if space.realm_code and space.realm_code != "realm00000":
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/procedures/data-procedure-instance/%s/" % id
+        )
     else:
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/procedures/data-procedure-instance/%s/' % id
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/procedures/data-procedure-instance/%s/" % id
+        )
 
     response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
@@ -240,19 +315,38 @@ def execute_pricing_procedure(payload):
 
     # _l.info('refresh %s' % refresh.access_token)
 
-    headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': f'Bearer {refresh.access_token}'}
+    headers = {
+        "Content-type": "application/json",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {refresh.access_token}",
+    }
 
     data = payload
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != 'realm00000':
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/procedures/pricing-procedure/execute/'
+    if space.realm_code and space.realm_code != "realm00000":
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/procedures/pricing-procedure/execute/"
+        )
     else:
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/procedures/pricing-procedure/execute/'
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/procedures/pricing-procedure/execute/"
+        )
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -265,22 +359,38 @@ def execute_task(task_name, payload={}):
 
     # _l.info('refresh %s' % refresh.access_token)
 
-    headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': f'Bearer {refresh.access_token}'}
-
-    data = {
-        'task_name': task_name,
-        'payload': payload
+    headers = {
+        "Content-type": "application/json",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {refresh.access_token}",
     }
+
+    data = {"task_name": task_name, "payload": payload}
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != 'realm00000':
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/tasks/task/execute/'
+    if space.realm_code and space.realm_code != "realm00000":
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/tasks/task/execute/"
+        )
     else:
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/tasks/task/execute/'
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/tasks/task/execute/"
+        )
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -290,17 +400,22 @@ def execute_task(task_name, payload={}):
 
 def update_task_status(platform_task_id, status, result=None, error=None):
     refresh = get_refresh_token()
-    headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': f'Bearer {refresh.access_token}'}
-
-    data = {
-        'status': status,
-        'result': result,
-        'error': error,
+    headers = {
+        "Content-type": "application/json",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {refresh.access_token}",
     }
 
-    url = f'{get_base_path()}/api/v1/tasks/task/{platform_task_id}/update-status/'
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    data = {
+        "status": status,
+        "result": result,
+        "error": error,
+    }
+
+    url = f"{get_base_path()}/api/v1/tasks/task/{platform_task_id}/update-status/"
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
     try:
         response.raise_for_status()
         return response.json()
@@ -313,15 +428,32 @@ def get_task(id):
 
     # _l.info('refresh %s' % refresh.access_token)
 
-    headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': f'Bearer {refresh.access_token}'}
+    headers = {
+        "Content-type": "application/json",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {refresh.access_token}",
+    }
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != 'realm00000':
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/tasks/task/%s/' % id
+    if space.realm_code and space.realm_code != "realm00000":
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/tasks/task/%s/" % id
+        )
     else:
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/tasks/task/%s/' % id
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/tasks/task/%s/" % id
+        )
 
     response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
@@ -331,14 +463,16 @@ def get_task(id):
     return response.json()
 
 
-def _wait_task_to_complete_recursive(task_id=None, retries=5, retry_interval=60, counter=None):
+def _wait_task_to_complete_recursive(
+    task_id=None, retries=5, retry_interval=60, counter=None
+):
     if counter == retries:
         raise Exception("Task exceeded retries %s count" % retries)
 
     try:
         result = get_task(task_id)
 
-        if result['status'] not in ['progress', 'P', 'I']:
+        if result["status"] not in ["progress", "P", "I"]:
             return result
     except Exception as e:
         _l.error("_wait_task_to_complete_recursive %s" % e)
@@ -347,43 +481,47 @@ def _wait_task_to_complete_recursive(task_id=None, retries=5, retry_interval=60,
 
     time.sleep(retry_interval)
 
-    return _wait_task_to_complete_recursive(task_id=task_id, retries=retries, retry_interval=retry_interval,
-                                            counter=counter)
+    return _wait_task_to_complete_recursive(
+        task_id=task_id, retries=retries, retry_interval=retry_interval, counter=counter
+    )
 
 
 def wait_task_to_complete(task_id=None, retries=5, retry_interval=60):
     counter = 0
     result = None
 
-    result = _wait_task_to_complete_recursive(task_id=task_id, retries=retries, retry_interval=retry_interval,
-                                              counter=counter)
+    result = _wait_task_to_complete_recursive(
+        task_id=task_id, retries=retries, retry_interval=retry_interval, counter=counter
+    )
 
     return result
 
 
 def poll_workflow_status(workflow_id, max_retries=100, wait_time=5):
-    url = f'/workflow/api/workflow/{workflow_id}/'  # Replace with your actual API endpoint
+    url = f"/workflow/api/workflow/{workflow_id}/"  # Replace with your actual API endpoint
 
     for attempt in range(max_retries):
         data = request_api(url)
 
         if data:
-            status = data.get('status')
-            _l.info(f'Attempt {attempt + 1}: Workflow status is {status}')
+            status = data.get("status")
+            _l.info(f"Attempt {attempt + 1}: Workflow status is {status}")
 
-            if status in ['success', 'error']:
+            if status in ["success", "error"]:
                 return status  # Return the status when it's success or error
 
         else:
-            _l.error(f'Error fetching status')
+            _l.error(f"Error fetching status")
 
         time.sleep(wait_time)  # Wait before the next attempt
 
-    _l.info('Max retries reached. Workflow status not successful.')
+    _l.info("Max retries reached. Workflow status not successful.")
     return None  # Indicate that the status was not found
 
 
-def _wait_procedure_to_complete_recursive(procedure_instance_id=None, retries=5, retry_interval=60, counter=None):
+def _wait_procedure_to_complete_recursive(
+    procedure_instance_id=None, retries=5, retry_interval=60, counter=None
+):
     if counter == retries:
         raise Exception("Task exceeded retries %s count" % retries)
 
@@ -391,21 +529,31 @@ def _wait_procedure_to_complete_recursive(procedure_instance_id=None, retries=5,
 
     counter = counter + 1
 
-    if result['status'] not in ['progress', 'P', 'I']:
+    if result["status"] not in ["progress", "P", "I"]:
         return result
 
     time.sleep(retry_interval)
 
-    return _wait_procedure_to_complete_recursive(procedure_instance_id=procedure_instance_id, retries=retries,
-                                                 retry_interval=retry_interval, counter=counter)
+    return _wait_procedure_to_complete_recursive(
+        procedure_instance_id=procedure_instance_id,
+        retries=retries,
+        retry_interval=retry_interval,
+        counter=counter,
+    )
 
 
-def wait_procedure_to_complete(procedure_instance_id=None, retries=5, retry_interval=60):
+def wait_procedure_to_complete(
+    procedure_instance_id=None, retries=5, retry_interval=60
+):
     counter = 0
     result = None
 
-    result = _wait_procedure_to_complete_recursive(procedure_instance_id=procedure_instance_id, retries=retries,
-                                                   retry_interval=retry_interval, counter=counter)
+    result = _wait_procedure_to_complete_recursive(
+        procedure_instance_id=procedure_instance_id,
+        retries=retries,
+        retry_interval=retry_interval,
+        counter=counter,
+    )
 
     return result
 
@@ -415,18 +563,37 @@ def execute_transaction_import(payload):
 
     # _l.info('refresh %s' % refresh.access_token)
 
-    headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': f'Bearer {refresh.access_token}'}
+    headers = {
+        "Content-type": "application/json",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {refresh.access_token}",
+    }
     data = payload
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != 'realm00000':
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/import/transaction-import/execute/'
+    if space.realm_code and space.realm_code != "realm00000":
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/import/transaction-import/execute/"
+        )
     else:
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/import/transaction-import/execute/'
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/import/transaction-import/execute/"
+        )
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -439,19 +606,38 @@ def execute_simple_import(payload):
 
     # _l.info('refresh %s' % refresh.access_token)
 
-    headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': f'Bearer {refresh.access_token}'}
+    headers = {
+        "Content-type": "application/json",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {refresh.access_token}",
+    }
 
     data = payload
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != 'realm00000':
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + '/api/v1/import/simple-import/execute/'
+    if space.realm_code and space.realm_code != "realm00000":
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/import/simple-import/execute/"
+        )
     else:
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + '/api/v1/import/simple-import/execute/'
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/import/simple-import/execute/"
+        )
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -459,42 +645,58 @@ def execute_simple_import(payload):
     return response.json()
 
 
-def request_api(path, method='get', data=None):
+def request_api(path, method="get", data=None):
     refresh = get_refresh_token()
 
-    headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-               'Authorization': f'Bearer {refresh.access_token}'}
+    headers = {
+        "Content-type": "application/json",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {refresh.access_token}",
+    }
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != 'realm00000':
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + path
+    if space.realm_code and space.realm_code != "realm00000":
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + path
+        )
     else:
-        url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + path
+        url = "https://" + settings.DOMAIN_NAME + "/" + space.space_code + path
 
     response = None
 
-    if method.lower() == 'get':
-
+    if method.lower() == "get":
         response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
-    elif method.lower() == 'post':
+    elif method.lower() == "post":
+        response = requests.post(
+            url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+        )
 
-        response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    elif method.lower() == "put":
+        response = requests.put(
+            url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+        )
 
-    elif method.lower() == 'put':
+    elif method.lower() == "patch":
+        response = requests.patch(
+            url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+        )
 
-        response = requests.put(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
-
-    elif method.lower() == 'patch':
-
-        response = requests.patch(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
-
-    elif method.lower() == 'delete':
-
+    elif method.lower() == "delete":
         response = requests.delete(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
-    if response.status_code != 200 and response.status_code != 201 and response.status_code != 204:
+    if (
+        response.status_code != 200
+        and response.status_code != 201
+        and response.status_code != 204
+    ):
         raise Exception(response.text)
 
     if response.status_code != 204:
@@ -503,47 +705,42 @@ def request_api(path, method='get', data=None):
     return {"status": "no_content"}
 
 
-class Storage():
-
+class Storage:
     def __init__(self):
-
         from workflow.storage import get_storage
 
         self.storage = get_storage()
 
     def get_base_path(self):
-
         space = Space.objects.all().first()
 
         return space.space_code
 
     def listdir(self, path):
-        return self.storage.listdir('/' + self.get_base_path() + path)
+        return self.storage.listdir("/" + self.get_base_path() + path)
 
-    def open(self, name, mode='rb'):
-
+    def open(self, name, mode="rb"):
         # TODO permission check
 
-        if name[0] == '/':
+        if name[0] == "/":
             name = self.get_base_path() + name
         else:
-            name = self.get_base_path() + '/' + name
+            name = self.get_base_path() + "/" + name
 
         return self.storage.open(name, mode)
 
-    def read_json(self, filepath, mode='rb'):
+    def read_json(self, filepath, mode="rb"):
         with self.open(filepath, mode) as state:
             state_content = json.loads(state.read())
         return state_content
 
-    def read_csv(self, filepath, mode='rb'):
+    def read_csv(self, filepath, mode="rb"):
         with self.open(filepath, mode) as f:
             reader = csv.DictReader(f)
             data = list(reader)
         return data
 
-    def read(self, filepath, mode='rb'):
-
+    def read(self, filepath, mode="rb"):
         # Open the file from your storage backend
         file_obj = self.open(filepath, mode)  # 'rb' is to read in binary mode
 
@@ -556,64 +753,58 @@ class Storage():
             file_obj.close()
 
     def delete(self, name):
-
         # TODO permission check
 
-        if name[0] == '/':
+        if name[0] == "/":
             name = self.get_base_path() + name
         else:
-            name = self.get_base_path() + '/' + name
+            name = self.get_base_path() + "/" + name
 
         return self.storage.delete(name)
 
     def exists(self, name):
-
         # TODO permission check
 
-        if name[0] == '/':
+        if name[0] == "/":
             name = self.get_base_path() + name
         else:
-            name = self.get_base_path() + '/' + name
+            name = self.get_base_path() + "/" + name
 
         return self.storage.exists(name)
 
     def save(self, name, content):
-
-        if name[0] == '/':
+        if name[0] == "/":
             name = self.get_base_path() + name
         else:
-            name = self.get_base_path() + '/' + name
+            name = self.get_base_path() + "/" + name
 
         return self.storage.save(name, content)
 
     def save_text(self, name, content):
-
-        if name[0] == '/':
+        if name[0] == "/":
             name = self.get_base_path() + name
         else:
-            name = self.get_base_path() + '/' + name
+            name = self.get_base_path() + "/" + name
 
-        return self.storage.save(name, ContentFile(content.encode('utf-8')))
+        return self.storage.save(name, ContentFile(content.encode("utf-8")))
 
     def append_text(self, name, content):
-
         if self.storage.exists(name):
-            with self.open(name, 'r') as file:
+            with self.open(name, "r") as file:
                 content = file.read()
-                content = content + content + '\n'
+                content = content + content + "\n"
 
-        return self.storage.save(name, ContentFile(content.encode('utf-8')))
+        return self.storage.save(name, ContentFile(content.encode("utf-8")))
 
 
-class Utils():
-
+class Utils:
     def get_current_space_code(self):
         space = Space.objects.all().first()
         return space.space_code
 
     def get_list_of_dates_between_two_dates(self, date_from, date_to, to_string=False):
         result = []
-        format = '%Y-%m-%d'
+        format = "%Y-%m-%d"
 
         if not isinstance(date_from, datetime.date):
             date_from = datetime.datetime.strptime(date_from, format).date()
@@ -635,14 +826,18 @@ class Utils():
     def is_business_day(self, date):
         return bool(len(pd.bdate_range(date, date)))
 
-    def get_yesterday(self, ):
+    def get_yesterday(
+        self,
+    ):
         today = datetime.now()
         yesterday = today - timedelta(days=1)
         return yesterday
 
-    def get_list_of_business_days_between_two_dates(self, date_from, date_to, to_string=False):
+    def get_list_of_business_days_between_two_dates(
+        self, date_from, date_to, to_string=False
+    ):
         result = []
-        format = '%Y-%m-%d'
+        format = "%Y-%m-%d"
 
         if not isinstance(date_from, datetime.date):
             date_from = datetime.datetime.strptime(date_from, format).date()
@@ -656,7 +851,6 @@ class Utils():
             day = date_from + timedelta(days=i)
 
             if self.is_business_day(day):
-
                 if to_string:
                     result.append(str(day))
                 else:
@@ -669,18 +863,29 @@ class Utils():
 
         space = get_space()
 
-        if file_path[0] == '/':
-            file_path = os.path.join(settings.WORKFLOW_STORAGE_ROOT + '/tasks/' + space.space_code + file_path)
+        if file_path[0] == "/":
+            file_path = os.path.join(
+                settings.WORKFLOW_STORAGE_ROOT
+                + "/tasks/"
+                + space.space_code
+                + file_path
+            )
         else:
-            file_path = os.path.join(settings.WORKFLOW_STORAGE_ROOT + '/tasks/' + space.space_code + '/' + file_path)
+            file_path = os.path.join(
+                settings.WORKFLOW_STORAGE_ROOT
+                + "/tasks/"
+                + space.space_code
+                + "/"
+                + file_path
+            )
 
-        _l.info('import_from_storage.file_path %s' % file_path)
+        _l.info("import_from_storage.file_path %s" % file_path)
 
         directory, filename = os.path.split(file_path)
         module_name, _ = os.path.splitext(filename)
 
-        _l.info('import_from_storage.module_name %s' % module_name)
-        _l.info('import_from_storage.file_path %s' % file_path)
+        _l.info("import_from_storage.module_name %s" % module_name)
+        _l.info("import_from_storage.file_path %s" % file_path)
 
         loader = importlib.machinery.SourceFileLoader(module_name, file_path)
         module = loader.load_module()
@@ -700,7 +905,6 @@ class Utils():
         return module
 
     def relative_import_from_storage(self, file_path, base_path):
-
         """
         Imports a module from a given file path, resolving the path from a specified base path.
 
@@ -739,7 +943,6 @@ class Utils():
         return module
 
     def tree_to_flat(self, data, **kwargs):
-
         return flatten(data, **kwargs)
 
     # Example conversions:
@@ -766,26 +969,27 @@ class Utils():
         input_string = input_string.lower()
 
         # Convert spaces and dots to underscores
-        modified_string = input_string.replace(' ', '_').replace('.', '_')
+        modified_string = input_string.replace(" ", "_").replace(".", "_")
 
         # Function to convert each character
         def to_ascii_or_unicode(char):
             try:
                 # Try to encode the character in ASCII
-                ascii_char = char.encode('ascii')
-                return ascii_char.decode()  # Return as string if it's a valid ASCII character
+                ascii_char = char.encode("ascii")
+                return (
+                    ascii_char.decode()
+                )  # Return as string if it's a valid ASCII character
             except UnicodeEncodeError:
                 # If it's not an ASCII character, return its Unicode code point
                 return f"U{ord(char)}"
 
         # Apply the conversion to each character in the string
-        ascii_string = ''.join(to_ascii_or_unicode(c) for c in modified_string)
+        ascii_string = "".join(to_ascii_or_unicode(c) for c in modified_string)
 
         return ascii_string
 
 
-class Vault():
-
+class Vault:
     # hashicorp
     # finmars
     def get_secret(self, path, provider="finmars"):
@@ -793,20 +997,33 @@ class Vault():
 
         # _l.info('refresh %s' % refresh.access_token)
 
-        if provider == 'finmars':
-
+        if provider == "finmars":
             # pieces = path.split('/')
             # engine_name = pieces[0]
             # secret_path = pieces[1]
 
-            headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-                       'Authorization': f'Bearer {refresh.access_token}'}
+            headers = {
+                "Content-type": "application/json",
+                "Accept": "application/json",
+                "Authorization": f"Bearer {refresh.access_token}",
+            }
 
             space = get_space()
 
-            url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + f'/api/v1/vault/vault-record/?user_code=' + path
+            url = (
+                "https://"
+                + settings.DOMAIN_NAME
+                + "/"
+                + space.realm_code
+                + "/"
+                + space.space_code
+                + f"/api/v1/vault/vault-record/?user_code="
+                + path
+            )
 
-            response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
+            response = requests.get(
+                url=url, headers=headers, verify=settings.VERIFY_SSL
+            )
 
             if response.status_code != 200:
                 raise Exception(response.text)
@@ -815,38 +1032,55 @@ class Vault():
 
             secret_data = None
 
-            for item in data['results']:
-
-                if path == item['user_code']:
-                    secret_data = item['data']
+            for item in data["results"]:
+                if path == item["user_code"]:
+                    secret_data = item["data"]
 
             if not secret_data:
                 raise Exception(f"Secret is {path} not found")
 
             return secret_data
 
-        elif provider == 'hashicorp':
-
-            pieces = path.split('/')
+        elif provider == "hashicorp":
+            pieces = path.split("/")
             engine_name = pieces[0]
             secret_path = pieces[1]
 
-            headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-                       'Authorization': f'Bearer {refresh.access_token}'}
+            headers = {
+                "Content-type": "application/json",
+                "Accept": "application/json",
+                "Authorization": f"Bearer {refresh.access_token}",
+            }
 
             space = get_space()
 
-            if space.realm_code and space.realm_code != 'realm00000':
-                url = 'https://' + settings.DOMAIN_NAME + '/' + space.realm_code + '/' + space.space_code + f'/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}'
+            if space.realm_code and space.realm_code != "realm00000":
+                url = (
+                    "https://"
+                    + settings.DOMAIN_NAME
+                    + "/"
+                    + space.realm_code
+                    + "/"
+                    + space.space_code
+                    + f"/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}"
+                )
             else:
-                url = 'https://' + settings.DOMAIN_NAME + '/' + space.space_code + f'/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}'
+                url = (
+                    "https://"
+                    + settings.DOMAIN_NAME
+                    + "/"
+                    + space.space_code
+                    + f"/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}"
+                )
 
-            response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
+            response = requests.get(
+                url=url, headers=headers, verify=settings.VERIFY_SSL
+            )
 
             if response.status_code != 200:
                 raise Exception(response.text)
 
-            return response.json()['data']['data']
+            return response.json()["data"]["data"]
 
         else:
             raise Exception("Unknown provider %s" % provider)

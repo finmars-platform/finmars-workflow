@@ -32,12 +32,14 @@ from workflow.serializers import (
     WorkflowLightSerializer,
     BulkSerializer,
     RunWorkflowSerializer,
-    ScheduleSerializer, WorkflowTemplateSerializer, ResumeWorkflowSerializer,
+    ScheduleSerializer,
+    WorkflowTemplateSerializer,
+    ResumeWorkflowSerializer,
 )
 from workflow.user_sessions import create_session, execute_code, sessions, execute_file
 from workflow.workflows import execute_workflow
 
-_l = logging.getLogger('workflow')
+_l = logging.getLogger("workflow")
 
 from workflow.system import get_system_workflow_manager
 
@@ -56,12 +58,10 @@ class WorkflowTemplateFilterSet(FilterSet):
 
 class WorkflowTemplateViewSet(ModelViewSet):
     queryset = WorkflowTemplate.objects.select_related(
-        'owner',
+        "owner",
     )
     serializer_class = WorkflowTemplateSerializer
-    permission_classes = ModelViewSet.permission_classes + [
-
-    ]
+    permission_classes = ModelViewSet.permission_classes + []
     filter_class = WorkflowTemplateFilterSet
     filter_backends = ModelViewSet.filter_backends + [
         WorkflowSearchParamFilter,
@@ -69,28 +69,43 @@ class WorkflowTemplateViewSet(ModelViewSet):
         WholeWordsSearchFilter,
         OrderingFilter,
     ]
-    search_fields = ['data']
+    search_fields = ["data"]
     ordering_fields = [
-        'name', 'user_code', 'created_at', 'modified_at', 'owner',
+        "name",
+        "user_code",
+        "created_at",
+        "modified_at",
+        "owner",
     ]
 
-    @action(detail=False, methods=['POST'], url_path='run-workflow', serializer_class=RunWorkflowSerializer)
+    @action(
+        detail=False,
+        methods=["POST"],
+        url_path="run-workflow",
+        serializer_class=RunWorkflowSerializer,
+    )
     def run_workflow(self, request, pk=None, *args, **kwargs):
         user_code, payload, platform_task_id = (
             request.data["user_code"],
             request.data["payload"],
-            request.data.get("platform_task_id")
+            request.data.get("platform_task_id"),
         )
 
         if request.space_code not in user_code:
-            user_code = f'{request.space_code}.{user_code}'
+            user_code = f"{request.space_code}.{user_code}"
 
         system_workflow_manager.get_by_user_code(user_code, sync_remote=True)
 
-        data = execute_workflow(request.user.username, user_code, payload, request.realm_code, request.space_code,
-                                platform_task_id)
+        data = execute_workflow(
+            request.user.username,
+            user_code,
+            payload,
+            request.realm_code,
+            request.space_code,
+            platform_task_id,
+        )
 
-        _l.info('data %s' % data)
+        _l.info("data %s" % data)
 
         return Response(data)
 
@@ -98,7 +113,9 @@ class WorkflowTemplateViewSet(ModelViewSet):
 class WorkflowFilterSet(FilterSet):
     name = django_filters.CharFilter()
     user_code = django_filters.CharFilter()
-    status = django_filters.MultipleChoiceFilter(field_name='status', choices=Workflow.STATUS_CHOICES)
+    status = django_filters.MultipleChoiceFilter(
+        field_name="status", choices=Workflow.STATUS_CHOICES
+    )
     created_at = django_filters.DateFromToRangeFilter()
 
     class Meta:
@@ -107,13 +124,9 @@ class WorkflowFilterSet(FilterSet):
 
 
 class WorkflowViewSet(ModelViewSet):
-    queryset = Workflow.objects.select_related(
-        'owner', 'crontab'
-    )
+    queryset = Workflow.objects.select_related("owner", "crontab")
     serializer_class = WorkflowSerializer
-    permission_classes = ModelViewSet.permission_classes + [
-
-    ]
+    permission_classes = ModelViewSet.permission_classes + []
     filter_class = WorkflowFilterSet
     filter_backends = ModelViewSet.filter_backends + [
         WorkflowSearchParamFilter,
@@ -121,9 +134,15 @@ class WorkflowViewSet(ModelViewSet):
         WholeWordsSearchFilter,
         OrderingFilter,
     ]
-    search_fields = ['payload_data']
+    search_fields = ["payload_data"]
     ordering_fields = [
-        'name', 'user_code', 'created_at', 'modified_at', 'status', 'owner', 'is_manager',
+        "name",
+        "user_code",
+        "created_at",
+        "modified_at",
+        "status",
+        "owner",
+        "is_manager",
     ]
 
     @action(
@@ -139,106 +158,153 @@ class WorkflowViewSet(ModelViewSet):
 
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=False, methods=['POST'], url_path='run-workflow', serializer_class=RunWorkflowSerializer)
+    @action(
+        detail=False,
+        methods=["POST"],
+        url_path="run-workflow",
+        serializer_class=RunWorkflowSerializer,
+    )
     def run_workflow(self, request, pk=None, *args, **kwargs):
         user_code, payload, platform_task_id = (
             request.data["user_code"],
             request.data["payload"],
-            request.data.get("platform_task_id")
+            request.data.get("platform_task_id"),
         )
 
         if request.space_code not in user_code:
-            user_code = f'{request.space_code}.{user_code}'
+            user_code = f"{request.space_code}.{user_code}"
 
-        _l.info('user_code %s' % user_code)
+        _l.info("user_code %s" % user_code)
 
         system_workflow_manager.get_by_user_code(user_code, sync_remote=True)
 
-        data = execute_workflow(request.user.username, user_code, payload, request.realm_code, request.space_code,
-                                platform_task_id)
+        data = execute_workflow(
+            request.user.username,
+            user_code,
+            payload,
+            request.realm_code,
+            request.space_code,
+            platform_task_id,
+        )
 
-        _l.info('data %s' % data)
+        _l.info("data %s" % data)
 
         return Response(data)
 
-    @action(detail=True, methods=('POST',), url_path='relaunch')
+    @action(detail=True, methods=("POST",), url_path="relaunch")
     def relaunch(self, request, pk=None, *args, **kwargs):
         obj = Workflow.objects.get(id=pk)
-        data = execute_workflow(request.user.username, obj.user_code, obj.payload, request.realm_code,
-                                request.space_code)
+        data = execute_workflow(
+            request.user.username,
+            obj.user_code,
+            obj.payload,
+            request.realm_code,
+            request.space_code,
+        )
 
         return Response(data)
 
-    @action(detail=True, methods=('POST',), url_path='cancel')
+    @action(detail=True, methods=("POST",), url_path="cancel")
     def cancel(self, request, pk=None, *args, **kwargs):
         workflow = Workflow.objects.get(id=pk)
         workflow.cancel()
 
         return Response(workflow.to_dict())
 
-    @action(detail=False, methods=('POST',), url_path='bulk-cancel', serializer_class=BulkSerializer)
+    @action(
+        detail=False,
+        methods=("POST",),
+        url_path="bulk-cancel",
+        serializer_class=BulkSerializer,
+    )
     def bulk_cancel(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         valid = serializer.is_valid(raise_exception=False)
 
         data = serializer.validated_data
-        workflows = Workflow.objects.filter(id__in=data['ids'], status=Workflow.STATUS_PROGRESS)
+        workflows = Workflow.objects.filter(
+            id__in=data["ids"], status=Workflow.STATUS_PROGRESS
+        )
         for workflow in workflows:
             workflow.cancel()
 
-        return Response({'status': 'ok'})
+        return Response({"status": "ok"})
 
-    @action(detail=False, methods=('POST',), url_path='bulk-delete', serializer_class=BulkSerializer)
+    @action(
+        detail=False,
+        methods=("POST",),
+        url_path="bulk-delete",
+        serializer_class=BulkSerializer,
+    )
     def bulk_delete(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        workflows = Workflow.objects.filter(id__in=data['ids'])
+        workflows = Workflow.objects.filter(id__in=data["ids"])
         for workflow in workflows:
             workflow.cancel()
             workflow.delete()
 
-        return Response({'status': 'ok'})
+        return Response({"status": "ok"})
 
     # Pause Workflow Action
-    @action(detail=True, methods=['PUT'], url_path='pause')
+    @action(detail=True, methods=["PUT"], url_path="pause")
     def pause_workflow(self, request, pk=None, *args, **kwargs):
         try:
             workflow = self.get_object()  # Get the workflow instance
             if workflow.status != Workflow.STATUS_PROGRESS:
-                return Response({"message": "Cannot pause workflow that is not in progress."},
-                                status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"message": "Cannot pause workflow that is not in progress."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             workflow.status = Workflow.STATUS_WAIT
             workflow.save()
 
-            return Response({"message": f"Workflow {workflow.id} paused successfully."}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": f"Workflow {workflow.id} paused successfully."},
+                status=status.HTTP_200_OK,
+            )
 
         except Workflow.DoesNotExist:
-            return Response({"message": "Workflow not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"message": "Workflow not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
     # Resume Workflow Action
-    @action(detail=True, methods=['PUT'], url_path='resume', serializer_class=ResumeWorkflowSerializer)
+    @action(
+        detail=True,
+        methods=["PUT"],
+        url_path="resume",
+        serializer_class=ResumeWorkflowSerializer,
+    )
     def resume_workflow(self, request, pk=None, *args, **kwargs):
         try:
-
             # Use the serializer to validate the input data
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
 
             workflow = self.get_object()  # Get the workflow instance
             if workflow.status != Workflow.STATUS_WAIT:
-                return Response({"message": "Cannot resume workflow that is not paused."},
-                                status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"message": "Cannot resume workflow that is not paused."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             # Check if there are any running tasks associated with this workflow
-            active_tasks = Task.objects.filter(workflow_id=workflow.id,
-                                               status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT])
+            active_tasks = Task.objects.filter(
+                workflow_id=workflow.id,
+                status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT],
+            )
 
             if active_tasks.exists():
-                return Response({"message": "Cannot resume workflow while there are active tasks running."},
-                                status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {
+                        "message": "Cannot resume workflow while there are active tasks running."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             # Update the payload if provided
             new_payload = serializer.validated_data.get("payload")
@@ -250,50 +316,61 @@ class WorkflowViewSet(ModelViewSet):
             workflow.save()
 
             from workflow.tasks.workflows import process_next_node
+
             # Trigger the next task from the stored `current_node_id`
             if workflow.current_node_id:
-
-                nodes = {node['id']: node for node in workflow.workflow_template.data['workflow']['nodes']}
-                connections = workflow.workflow_template.data['workflow']['connections']
+                nodes = {
+                    node["id"]: node
+                    for node in workflow.workflow_template.data["workflow"]["nodes"]
+                }
+                connections = workflow.workflow_template.data["workflow"]["connections"]
                 adjacency_list = {node_id: [] for node_id in nodes}
                 for connection in connections:
-                    adjacency_list[connection['source']].append(connection['target'])
+                    adjacency_list[connection["source"]].append(connection["target"])
 
-                process_next_node.apply_async(kwargs={
-                    "current_node_id": workflow.current_node_id,
-                    "workflow_id": workflow.id,
-                    # Fetch nodes, adjacency_list, and connections from the workflow data
-                    "nodes": nodes,
-                    "adjacency_list": adjacency_list,
-                    "connections": connections,
-                    "context": {
-                        "realm_code": workflow.space.realm_code,
-                        "space_code": workflow.space.space_code
+                process_next_node.apply_async(
+                    kwargs={
+                        "current_node_id": workflow.current_node_id,
+                        "workflow_id": workflow.id,
+                        # Fetch nodes, adjacency_list, and connections from the workflow data
+                        "nodes": nodes,
+                        "adjacency_list": adjacency_list,
+                        "connections": connections,
+                        "context": {
+                            "realm_code": workflow.space.realm_code,
+                            "space_code": workflow.space.space_code,
+                        },
                     },
-                }, queue="workflow")
+                    queue="workflow",
+                )
 
-                return Response({"message": f"Workflow {workflow.id} resumed successfully."}, status=status.HTTP_200_OK)
+                return Response(
+                    {"message": f"Workflow {workflow.id} resumed successfully."},
+                    status=status.HTTP_200_OK,
+                )
             else:
-                return Response({"message": "No node to resume from."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"message": "No node to resume from."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         except Workflow.DoesNotExist:
-            return Response({"message": "Workflow not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"message": "Workflow not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
 
 class TaskViewSet(ModelViewSet):
-    queryset = Task.objects.select_related(
-        'workflow'
-    )
+    queryset = Task.objects.select_related("workflow")
     serializer_class = TaskSerializer
-    permission_classes = ModelViewSet.permission_classes + [
-
-    ]
-    filter_backends = ModelViewSet.filter_backends + [
-    ]
+    permission_classes = ModelViewSet.permission_classes + []
+    filter_backends = ModelViewSet.filter_backends + []
 
 
 class PingViewSet(ViewSet):
-    permission_classes = [AllowAny, ]
+    permission_classes = [
+        AllowAny,
+    ]
     authentication_classes = []
 
     def get_bearer_token(self, request):
@@ -310,33 +387,34 @@ class PingViewSet(ViewSet):
     def list(self, request, *args, **kwargs):
         status_code = status.HTTP_200_OK
 
-        serializer = PingSerializer(instance={
-            'message': 'pong',
-            'version': request.version,
-            'now': timezone.template_localtime(timezone.now()),
-        })
+        serializer = PingSerializer(
+            instance={
+                "message": "pong",
+                "version": request.version,
+                "now": timezone.template_localtime(timezone.now()),
+            }
+        )
 
         return Response(serializer.data, status=status_code)
 
 
 class RefreshStorageViewSet(ViewSet):
-
     def list(self, request, *args, **kwargs):
-
         try:
-
             # c = pexpect.spawn("supervisorctl stop celery", timeout=240)
             # result = c.read()
             # _l.info('RefreshStorageViewSet.stop celery result %s' % result)
             c = pexpect.spawn("supervisorctl stop celerybeat", timeout=240)
             result = c.read()
-            _l.info('RefreshStorageViewSet.stop celerybeat result %s' % result)
+            _l.info("RefreshStorageViewSet.stop celerybeat result %s" % result)
             c = pexpect.spawn("supervisorctl stop flower", timeout=240)
             result = c.read()
-            _l.info('RefreshStorageViewSet.stop flower result %s' % result)
+            _l.info("RefreshStorageViewSet.stop flower result %s" % result)
 
             # c = pexpect.spawn("python /var/app/manage.py sync_remote_storage_to_local_storage", timeout=240)
-            system_workflow_manager.sync_remote_storage_to_local_storage(request.space_code)
+            system_workflow_manager.sync_remote_storage_to_local_storage(
+                request.space_code
+            )
 
             # c = pexpect.spawn("supervisorctl start celery", timeout=240)
             # result = c.read()
@@ -344,22 +422,21 @@ class RefreshStorageViewSet(ViewSet):
             c = pexpect.spawn("supervisorctl start celerybeat", timeout=240)
 
             result = c.read()
-            _l.info('RefreshStorageViewSet.celerybeat result %s' % result)
+            _l.info("RefreshStorageViewSet.celerybeat result %s" % result)
 
             c = pexpect.spawn("supervisorctl start flower", timeout=240)
             result = c.read()
-            _l.info('RefreshStorageViewSet.flower result %s' % result)
+            _l.info("RefreshStorageViewSet.flower result %s" % result)
 
             system_workflow_manager.register_workflows(request.space_code)
         except Exception as e:
             _l.info("Could not restart celery.exception %s" % e)
             _l.info("Could not restart celery.traceback %s" % traceback.format_exc())
 
-        return Response({'status': 'ok'})
+        return Response({"status": "ok"})
 
 
 class DefinitionViewSet(ViewSet):
-
     def list(self, request, *args, **kwargs):
         workflow_definitions = []
 
@@ -368,7 +445,7 @@ class DefinitionViewSet(ViewSet):
 
             if definition["workflow"]["space_code"] == request.space_code:
                 workflow_definitions.append(
-                    {"user_code": user_code, **definition['workflow']}
+                    {"user_code": user_code, **definition["workflow"]}
                 )
 
         return Response(workflow_definitions)
@@ -376,7 +453,7 @@ class DefinitionViewSet(ViewSet):
 
 class LogFileViewSet(ViewSet):
     def list(self, request, *args, **kwargs):
-        log_file_path = '/var/log/finmars/workflow/django.log'
+        log_file_path = "/var/log/finmars/workflow/django.log"
 
         if not os.path.exists(log_file_path):
             return Response({"error": "Log file not found"}, status=404)
@@ -384,7 +461,7 @@ class LogFileViewSet(ViewSet):
         # Read the last 2MB of your log file
         bytes_to_read = 2 * 1024 * 1024  # 2MB in bytes
 
-        with open(log_file_path, 'r') as log_file:
+        with open(log_file_path, "r") as log_file:
             log_file.seek(max(0, log_file.tell() - bytes_to_read), 0)
 
             log_content = log_file.read()
@@ -393,15 +470,14 @@ class LogFileViewSet(ViewSet):
 
 
 class CodeExecutionViewSet(ViewSet):
-
     def create(self, request, *args, **kwargs):
         """
         This function handles POST request to execute code.
         It expects 'code' and 'file_path' in the request data.
         """
         user_id = request.user.id  # or however you get the user's ID
-        code = request.data.get('code')
-        file_path = request.data.get('file_path')
+        code = request.data.get("code")
+        file_path = request.data.get("file_path")
 
         # Ensure the user session is created
         if user_id not in sessions:
@@ -418,7 +494,6 @@ class CodeExecutionViewSet(ViewSet):
 
 
 class FileExecutionViewSet(ViewSet):
-
     # force serializer to make it visible in Django Browserable API
     def create(self, request, *args, **kwargs):
         """
@@ -426,8 +501,8 @@ class FileExecutionViewSet(ViewSet):
         It expects 'code' and 'file_path' in the request data.
         """
         user_id = request.user.id  # or however you get the user's ID
-        data = request.data.get('data', {})
-        file_path = request.data.get('file_path')
+        data = request.data.get("data", {})
+        file_path = request.data.get("file_path")
 
         # Ensure the user session is created
         if user_id not in sessions:
@@ -444,7 +519,9 @@ class FileExecutionViewSet(ViewSet):
 
 
 class RealmMigrateSchemeView(ViewSet):
-    permission_classes = [AllowAny, ]
+    permission_classes = [
+        AllowAny,
+    ]
     authentication_classes = []
 
     def create(self, request, *args, **kwargs):
@@ -461,39 +538,52 @@ class RealmMigrateSchemeView(ViewSet):
 
 
 class ScheduleViewSet(ModelViewSet):
-    queryset = Schedule.objects.select_related('owner', 'crontab')
+    queryset = Schedule.objects.select_related("owner", "crontab")
     serializer_class = ScheduleSerializer
-    permission_classes = ModelViewSet.permission_classes + [
-    ]
-    filter_backends = ModelViewSet.filter_backends + [
-    ]
+    permission_classes = ModelViewSet.permission_classes + []
+    filter_backends = ModelViewSet.filter_backends + []
 
-    @action(detail=True, methods=['put'], url_path='run-manual')
+    @action(detail=True, methods=["put"], url_path="run-manual")
     def run_manual(self, request, *args, **kwargs):
         try:
             schedule = self.get_object()  # Get the schedule instance
 
             if not schedule.enabled:
-                return Response({"message": "Cannot run a disabled schedule."}, status=status.HTTP_400_BAD_REQUEST)
-
+                return Response(
+                    {"message": "Cannot run a disabled schedule."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             from workflow.tasks.workflows import execute
 
-
             # Trigger the Celery task to run the workflow manually
             execute.apply_async(
-                args=[f"{schedule.space.space_code}.{schedule.workflow_user_code}", schedule.payload, schedule.is_manager],
+                args=[
+                    f"{schedule.space.space_code}.{schedule.workflow_user_code}",
+                    schedule.payload,
+                    schedule.is_manager,
+                ],
                 kwargs={
-                    "context": {"realm_code": schedule.space.realm_code, "space_code": schedule.space.space_code},
+                    "context": {
+                        "realm_code": schedule.space.realm_code,
+                        "space_code": schedule.space.space_code,
+                    },
                     "crontab_id": schedule.crontab.id,
-                    "schedule_id": schedule.id
+                    "schedule_id": schedule.id,
                 },
-                queue="workflow"
+                queue="workflow",
             )
 
-            return Response({"message": "Schedule is being run manually."}, status=status.HTTP_202_ACCEPTED)
+            return Response(
+                {"message": "Schedule is being run manually."},
+                status=status.HTTP_202_ACCEPTED,
+            )
 
         except Schedule.DoesNotExist:
-            return Response({"error": "Schedule not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Schedule not found."}, status=status.HTTP_404_NOT_FOUND
+            )
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
