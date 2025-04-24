@@ -5,7 +5,7 @@ import threading
 import traceback
 import uuid
 
-_l = logging.getLogger('workflow')
+_l = logging.getLogger("workflow")
 import contextlib
 import io
 
@@ -13,6 +13,7 @@ import sys
 import matplotlib.pyplot as plt
 import base64
 import json
+
 
 class UserSession:
     def __init__(self):
@@ -23,16 +24,19 @@ class UserSession:
             self.files[file_path] = {}
         return self.files[file_path]
 
+
 sessions = {}
+
 
 def create_session(user_id):
     sessions[user_id] = UserSession()
+
 
 def execute_code(user_id, file_path, code):
     session = sessions[user_id]
     context = session.get_file_context(file_path)
 
-    _l.info('execute_code.context %s' % context)
+    _l.info("execute_code.context %s" % context)
 
     # Create a StringIO object to capture the standard output
     stdout = io.StringIO()
@@ -61,8 +65,8 @@ def execute_code(user_id, file_path, code):
 
 
 def get_base_path():
-
     from workflow.models import Space
+
     space = Space.objects.all().first()
 
     return space.space_code
@@ -70,14 +74,16 @@ def get_base_path():
 
 thread_local = threading.local()
 
+
 # for execute_file method
 def get_thread_local_buffers():
     # Initialize output and error buffers if they don't exist in the current thread
-    if not hasattr(thread_local, 'output_buffer'):
+    if not hasattr(thread_local, "output_buffer"):
         thread_local.output_buffer = io.StringIO()
-    if not hasattr(thread_local, 'error_buffer'):
+    if not hasattr(thread_local, "error_buffer"):
         thread_local.error_buffer = io.StringIO()
     return thread_local.output_buffer, thread_local.error_buffer
+
 
 def _execute_code(code, context):
     # Get thread-local buffers
@@ -86,7 +92,10 @@ def _execute_code(code, context):
     current_thread_id = threading.get_ident()
     _l.info(f"Executing code in thread ID: {current_thread_id}")
 
-    with contextlib.redirect_stdout(output_buffer), contextlib.redirect_stderr(error_buffer):
+    with (
+        contextlib.redirect_stdout(output_buffer),
+        contextlib.redirect_stderr(error_buffer),
+    ):
         try:
             # Execute the code
             exec(code, context)
@@ -95,11 +104,11 @@ def _execute_code(code, context):
             # Handle image output if matplotlib is used
             if plt.get_fignums():
                 image_buffer = io.BytesIO()
-                plt.savefig(image_buffer, format='png')
+                plt.savefig(image_buffer, format="png")
                 plt.close()
                 image_buffer.seek(0)
-                image_data = base64.b64encode(image_buffer.read()).decode('utf-8')
-                return {'type': 'image', 'data': image_data}
+                image_data = base64.b64encode(image_buffer.read()).decode("utf-8")
+                return {"type": "image", "data": image_data}
 
             # If no image, return text output
             output = output_buffer.getvalue()
@@ -107,17 +116,19 @@ def _execute_code(code, context):
                 try:
                     # Attempt to parse the output as JSON
                     json_output = json.loads(output)
-                    return {'type': 'json', 'data': json_output}
+                    return {"type": "json", "data": json_output}
                 except json.JSONDecodeError:
                     # If not JSON, return as text
-                    return {'type': 'text', 'data': output}
+                    return {"type": "text", "data": output}
             elif error:
-                return {'type': 'error', 'data': error}
+                return {"type": "error", "data": error}
 
         except Exception as e:
             # Handle any errors that occur during execution
-            traceback_str = ''.join(traceback.format_exception(None, e, e.__traceback__))
-            return {'type': 'error', 'data': traceback_str}
+            traceback_str = "".join(
+                traceback.format_exception(None, e, e.__traceback__)
+            )
+            return {"type": "error", "data": traceback_str}
 
         finally:
             # Reset buffers for next use
@@ -131,30 +142,31 @@ def execute_file(user_id, file_path, data):
     session = sessions[user_id]
     context = {}
 
-    _l.info('execute_file.context %s' % context)
+    _l.info("execute_file.context %s" % context)
 
     # Create a StringIO object to capture the standard output
 
     from workflow.storage import get_storage
+
     storage = get_storage()
 
-    true_file_path = get_base_path() + '/' + file_path
+    true_file_path = get_base_path() + "/" + file_path
 
     file = storage.open(true_file_path)
 
     content = file.read()
 
-    data['execution_id'] = str(uuid.uuid4())
+    data["execution_id"] = str(uuid.uuid4())
 
-    context.update({'execution_context': data})
+    context.update({"execution_context": data})
 
     # _l.info('execute_file %s' % content)
 
     code = None
 
-    if '.ipynb' in file_path:
+    if ".ipynb" in file_path:
         json_content = json.loads(content)
-        code = json_content['cells'][0]['source']
+        code = json_content["cells"][0]["source"]
     else:
         code = content
 

@@ -12,8 +12,7 @@ from django.db import transaction
 from workflow.exceptions import WorkflowSyntaxError
 
 
-_l = logging.getLogger('workflow')
-
+_l = logging.getLogger("workflow")
 
 
 def validate(payload, schema):
@@ -36,7 +35,7 @@ def format_schema_errors(e):
 def build_celery_schedule(workflow_name, data):
     """A celery schedule can accept seconds or crontab"""
 
-    _l.info('build_celery_schedule %s' % workflow_name)
+    _l.info("build_celery_schedule %s" % workflow_name)
 
     def _handle_schedule(schedule):
         try:
@@ -98,23 +97,24 @@ def send_alert(workflow):
     import json
 
     if workflow.status == Workflow.STATUS_ERROR:
-
         # _l.info("Going to report Error to Finmars")
 
         try:
-
             bot = User.objects.get(username="finmars_bot")
 
             refresh = RefreshToken.for_user(bot)
 
             # _l.info('refresh %s' % refresh.access_token)
 
-            headers = {'Content-type': 'application/json', 'Accept': 'application/json',
-                       'Authorization': 'Bearer %s' % refresh.access_token}
+            headers = {
+                "Content-type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Bearer %s" % refresh.access_token,
+            }
 
             error_task = workflow.tasks.filter(status=Task.STATUS_ERROR).first()
 
-            error_description = 'Unknown'
+            error_description = "Unknown"
 
             if error_task:
                 error_description = str(error_task.error_message)
@@ -122,18 +122,39 @@ def send_alert(workflow):
             _l.info("Going to report Error to Finmars")
 
             data = {
-                "expression": "send_system_message(type='error', title='Workflow Failed. " + str(
-                    workflow.user_code) + " (" + str(
-                    workflow.id) + ")', description='Something Went Wrong. See Task for the details', action_status='required')",
-                "is_eval": True
+                "expression": "send_system_message(type='error', title='Workflow Failed. "
+                + str(workflow.user_code)
+                + " ("
+                + str(workflow.id)
+                + ")', description='Something Went Wrong. See Task for the details', action_status='required')",
+                "is_eval": True,
             }
 
             if workflow.space.realm_code:
-                url = 'https://' + settings.DOMAIN_NAME + '/' + workflow.space.realm_code + '/' + workflow.space.space_code + '/api/v1/utils/expression/'
+                url = (
+                    "https://"
+                    + settings.DOMAIN_NAME
+                    + "/"
+                    + workflow.space.realm_code
+                    + "/"
+                    + workflow.space.space_code
+                    + "/api/v1/utils/expression/"
+                )
             else:
-                url = 'https://' + settings.DOMAIN_NAME + '/' + workflow.space.space_code + '/api/v1/utils/expression/'
+                url = (
+                    "https://"
+                    + settings.DOMAIN_NAME
+                    + "/"
+                    + workflow.space.space_code
+                    + "/api/v1/utils/expression/"
+                )
 
-            response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+            response = requests.post(
+                url=url,
+                data=json.dumps(data),
+                headers=headers,
+                verify=settings.VERIFY_SSL,
+            )
 
             # _l.info('response %s' % response.text)
 
@@ -147,11 +168,14 @@ def construct_path(*args):
 
 def schema_exists(schema_name):
     with connection.cursor() as cursor:
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT schema_name
             FROM information_schema.schemata
             WHERE schema_name = %s;
-        """, [schema_name])
+        """,
+            [schema_name],
+        )
         return cursor.fetchone() is not None
 
 
@@ -178,34 +202,38 @@ def get_all_tenant_schemas():
 
 def is_special_execution_context():
     """Check if the current execution context is for special operations like migrations or tests."""
-    special_commands = {'test', 'makemigrations', 'migrate', 'migrate_all_schemes', 'clearsessions', 'collectstatic', 'sync_remote_storage_to_local_storage_all_spaces'}
+    special_commands = {
+        "test",
+        "makemigrations",
+        "migrate",
+        "migrate_all_schemes",
+        "clearsessions",
+        "collectstatic",
+        "sync_remote_storage_to_local_storage_all_spaces",
+    }
     return any(cmd in sys.argv for cmd in special_commands)
 
 
 def set_schema_from_context(context):
-
     if context:
-        if context.get('space_code'):
-
-            if schema_exists(context.get('space_code')):
-
-                space_code = context.get('space_code')
+        if context.get("space_code"):
+            if schema_exists(context.get("space_code")):
+                space_code = context.get("space_code")
                 with connection.cursor() as cursor:
                     cursor.execute(f"SET search_path TO {space_code};")
 
             else:
-                raise Exception('No space_code in database schemas')
+                raise Exception("No space_code in database schemas")
         else:
-            raise Exception('No space_code in context')
+            raise Exception("No space_code in context")
     else:
-        raise Exception('No context in kwargs')
-
-
+        raise Exception("No context in kwargs")
 
 
 def generate_random_string(N):
-    return ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(N))
-
+    return "".join(
+        random.choice(string.ascii_lowercase + string.digits) for _ in range(N)
+    )
 
 
 def are_inputs_ready(workflow, node_id, connections):
@@ -213,15 +241,13 @@ def are_inputs_ready(workflow, node_id, connections):
 
     from workflow.models import Task
 
-    input_nodes = [conn['source'] for conn in connections if
-                   conn['target'] == node_id]
+    input_nodes = [conn["source"] for conn in connections if conn["target"] == node_id]
 
     # _l.info('input_nodes %s ' % input_nodes)
 
     for input_node in input_nodes:
         # If any input node is not complete, return False
         try:
-
             task = Task.objects.get(workflow=workflow, node_id=input_node)
 
             if task.status == Task.STATUS_SUCCESS:
@@ -230,7 +256,7 @@ def are_inputs_ready(workflow, node_id, connections):
                 return False
 
         except Exception as e:
-            _l.error(f'are_inputs_ready workflow: {workflow} e: {e}' )
+            _l.error(f"are_inputs_ready workflow: {workflow} e: {e}")
             return False
     return True
 
@@ -247,12 +273,13 @@ def get_next_node_by_condition(current_node_id, condition_result, connections):
     Returns:
     - The ID of the next node to execute.
     """
-    _l.info(f"Evaluating condition for node {current_node_id}, result: {condition_result}")
+    _l.info(
+        f"Evaluating condition for node {current_node_id}, result: {condition_result}"
+    )
 
     # Define which output to follow based on condition result
 
     if "result" in condition_result:
-
         if condition_result["result"]:
             output_to_follow = "out_true"
         else:
@@ -262,11 +289,18 @@ def get_next_node_by_condition(current_node_id, condition_result, connections):
 
     # Iterate through connections to find the target node
     for connection in connections:
-        if connection['source'] == current_node_id and connection['sourceOutput'] == output_to_follow:
-            next_node_id = connection['target']
-            _l.info(f"Following output '{output_to_follow}' to next node {next_node_id}")
+        if (
+            connection["source"] == current_node_id
+            and connection["sourceOutput"] == output_to_follow
+        ):
+            next_node_id = connection["target"]
+            _l.info(
+                f"Following output '{output_to_follow}' to next node {next_node_id}"
+            )
             return next_node_id
 
     # If no matching connection is found, return None and log a warning
-    _l.warning(f"No matching connection found for node {current_node_id} with output '{output_to_follow}'")
+    _l.warning(
+        f"No matching connection found for node {current_node_id} with output '{output_to_follow}'"
+    )
     return None
