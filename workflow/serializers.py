@@ -17,23 +17,36 @@ class TaskSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        if representation['worker_name']:
-            representation['worker_name'] = representation['worker_name'].replace('celery@', '')
+        if representation["worker_name"]:
+            representation["worker_name"] = representation["worker_name"].replace(
+                "celery@", ""
+            )
         return representation
 
     class Meta:
         model = Task
-        fields = ['id',
-                  'space',
-                  'name', 'source_code', 'node_id',
-                  'workflow', 'status', 'celery_task_id', 'source_code',
-                  'previous', 'is_hook',
-                  'payload', 'result', 'progress',
-
-                  'created_at', 'modified_at', 'log', 'worker_name',
-                  'error_message',
-                  'finished_at'
-                  ]
+        fields = [
+            "id",
+            "space",
+            "name",
+            "source_code",
+            "node_id",
+            "workflow",
+            "status",
+            "celery_task_id",
+            "source_code",
+            "previous",
+            "is_hook",
+            "payload",
+            "result",
+            "progress",
+            "created_at",
+            "modified_at",
+            "log",
+            "worker_name",
+            "error_message",
+            "finished_at",
+        ]
 
 
 class WorkflowTemplateSerializer(serializers.ModelSerializer):
@@ -43,21 +56,28 @@ class WorkflowTemplateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = WorkflowTemplate
-        fields = ['id', 'name', 'user_code', 'notes',
-                  'owner', 'space',
-                  'created_at', 'modified_at', 'data',
-                  ]
+        fields = [
+            "id",
+            "name",
+            "user_code",
+            "notes",
+            "owner",
+            "space",
+            "created_at",
+            "modified_at",
+            "data",
+        ]
 
     def save_to_storage(self, instance):
         storage = Storage()
 
-        pieces = instance.user_code.split(':')
+        pieces = instance.user_code.split(":")
 
         module_name = pieces[1]
-        module_path = pieces[0].split('.')
+        module_path = pieces[0].split(".")
 
         # why we have this hardcode inctead "/".join(module_path + modele_name) + /workflow.json ?
-        path = f'workflows/{module_path[0]}/{module_path[1]}/{module_path[2]}/{module_name}/workflow.json'
+        path = f"workflows/{module_path[0]}/{module_path[1]}/{module_path[2]}/{module_name}/workflow.json"
 
         storage.save_text(path, json.dumps(instance.data, indent=4))
 
@@ -72,28 +92,46 @@ class WorkflowTemplateSerializer(serializers.ModelSerializer):
         self.save_to_storage(instance)
         return instance
 
-class SimpleWorkflowSerializer(serializers.ModelSerializer):
 
+class SimpleWorkflowSerializer(serializers.ModelSerializer):
     space = SpaceField()
 
-    workflow_template_object = WorkflowTemplateSerializer(read_only=True, source="workflow_template")
+    workflow_template_object = WorkflowTemplateSerializer(
+        read_only=True, source="workflow_template"
+    )
     payload = serializers.JSONField(allow_null=True, required=False)
     tasks = TaskSerializer(many=True, read_only=True)
 
     class Meta:
         model = Workflow
 
-        fields = ['id', 'name', 'user_code',
-                  'owner', 'space', 'node_id', 'current_node_id',
-                  'status', 'workflow_template', 'workflow_template_object',
-                  'payload', 'created_at', 'modified_at', 'tasks', 'periodic',
-                  'finished_at',
-                  'is_manager']
+        fields = [
+            "id",
+            "name",
+            "user_code",
+            "owner",
+            "space",
+            "node_id",
+            "current_node_id",
+            "status",
+            "workflow_template",
+            "workflow_template_object",
+            "payload",
+            "created_at",
+            "modified_at",
+            "tasks",
+            "periodic",
+            "finished_at",
+            "is_manager",
+        ]
+
 
 class WorkflowSerializer(serializers.ModelSerializer):
     space = SpaceField()
 
-    workflow_template_object = WorkflowTemplateSerializer(read_only=True, source="workflow_template")
+    workflow_template_object = WorkflowTemplateSerializer(
+        read_only=True, source="workflow_template"
+    )
     payload = serializers.JSONField(allow_null=True, required=False)
     tasks = TaskSerializer(many=True, read_only=True)
     parent = SimpleWorkflowSerializer(read_only=True)
@@ -101,20 +139,42 @@ class WorkflowSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Workflow
-        fields = ['id', 'name', 'user_code',
-                  'owner', 'space', 'node_id', 'current_node_id',
-                  'status', 'workflow_template', 'workflow_template_object',
-                  'payload', 'created_at', 'modified_at', 'tasks', 'periodic',
-                  'finished_at', 'parent', 'workflow_version', 'is_manager']
+        fields = [
+            "id",
+            "name",
+            "user_code",
+            "owner",
+            "space",
+            "node_id",
+            "current_node_id",
+            "status",
+            "workflow_template",
+            "workflow_template_object",
+            "payload",
+            "created_at",
+            "modified_at",
+            "tasks",
+            "periodic",
+            "finished_at",
+            "parent",
+            "workflow_version",
+            "is_manager",
+        ]
 
     def get_workflow_version(self, obj) -> int:
         if obj.workflow_template:
-            if workflow_template_data:= WorkflowTemplateSerializer(obj.workflow_template).data:
-                if (data:= workflow_template_data.get('data')):
+            if workflow_template_data := WorkflowTemplateSerializer(
+                obj.workflow_template
+            ).data:
+                if data := workflow_template_data.get("data"):
                     if isinstance(data, str):
                         data = json.loads(data)
 
-                    if (version:= data.get('version')) and isinstance(version, str) and version.isdigit():
+                    if (
+                        (version := data.get("version"))
+                        and isinstance(version, str)
+                        and version.isdigit()
+                    ):
                         return int(version)
         return 1
 
@@ -124,11 +184,18 @@ class WorkflowLightSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Workflow
-        fields = ['id', 'name', 'user_code',
-                  'owner',
-                  'status',
-                  'created_at', 'modified_at', 'periodic',
-                  'is_manager', 'crontab_line']
+        fields = [
+            "id",
+            "name",
+            "user_code",
+            "owner",
+            "status",
+            "created_at",
+            "modified_at",
+            "periodic",
+            "is_manager",
+            "crontab_line",
+        ]
 
     def get_crontab_line(self, obj):
         if obj.crontab:
@@ -170,10 +237,25 @@ class ScheduleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Schedule
-        fields = ['id', 'user_code', 'name', 'space', 'owner', 'created_at', 'modified_at', 'payload', 'crontab_line',
-                  'is_manager',
-                  'workflow_user_code', 'notes', 'next_run_at', 'last_run_at',
-                  'enabled', 'owner_id', 'owner_username']
+        fields = [
+            "id",
+            "user_code",
+            "name",
+            "space",
+            "owner",
+            "created_at",
+            "modified_at",
+            "payload",
+            "crontab_line",
+            "is_manager",
+            "workflow_user_code",
+            "notes",
+            "next_run_at",
+            "last_run_at",
+            "enabled",
+            "owner_id",
+            "owner_username",
+        ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -185,9 +267,11 @@ class ScheduleSerializer(serializers.ModelSerializer):
 
     def validate_crontab_line(self, value):
         try:
-            minute, hour, day, month, weekday = value.split(' ')
+            minute, hour, day, month, weekday = value.split(" ")
         except ValueError:
-            raise serializers.ValidationError("Wrong crontab format. Make sure there are 5 space-separated values")
+            raise serializers.ValidationError(
+                "Wrong crontab format. Make sure there are 5 space-separated values"
+            )
         return value
 
     def get_owner_username(self, obj):
@@ -200,5 +284,7 @@ class ScheduleSerializer(serializers.ModelSerializer):
 
 
 class ResumeWorkflowSerializer(serializers.Serializer):
-    payload = serializers.JSONField(required=False,
-                                    help_text="Optional payload to update the workflow before resuming.")
+    payload = serializers.JSONField(
+        required=False,
+        help_text="Optional payload to update the workflow before resuming.",
+    )
