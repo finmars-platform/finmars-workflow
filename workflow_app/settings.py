@@ -514,9 +514,7 @@ REDOC_SETTINGS = {
 }
 
 # SENTRY
-SENTRY_DSN = ENV_STR("SENTRY_DSN", None)
-if SENTRY_DSN is None:
-    SENTRY_DSN = "https://d7c2e86d381f4010987f909e89b0d570@sentry.finmars.com/4"
+SENTRY_DSN = ENV_STR("SENTRY_DSN", "https://bbc302cc7bd5bbb2719b030ace26222a@sentry.finmars.com/2")
 
 if SERVER_TYPE != "local":
     sentry_sdk.init(
