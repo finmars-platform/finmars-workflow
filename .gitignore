@@ -160,3 +160,7 @@ workflow/static/scripts
 workflow/static/css
 node_modules
 workflow_storage
+
+postgres_data/
+rabbitmq_data/
+redis_data/
