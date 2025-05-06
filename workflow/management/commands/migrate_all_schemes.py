@@ -17,7 +17,7 @@ class Command(BaseCommand):
                 cursor.execute(f"SET search_path TO {schema};")
 
             # Programmatically call the migrate command
-            call_command('migrate', *args, **options)
+            call_command("migrate", *args, **options)
 
             # Optionally, reset the search path to default after migrating
             with connection.cursor() as cursor:

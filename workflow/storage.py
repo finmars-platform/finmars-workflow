@@ -15,12 +15,12 @@ from storages.backends.sftpstorage import SFTPStorage
 
 from workflow_app import settings
 
-_l = logging.getLogger('poms.common')
+_l = logging.getLogger("poms.common")
 
 
 def download_local_folder_as_zip(folder_path):
     zip_file_path = f"{folder_path}.zip"
-    with ZipFile(zip_file_path, 'w') as zipf:
+    with ZipFile(zip_file_path, "w") as zipf:
         for root, _, files in os.walk(folder_path):
             for file in files:
                 file_path = os.path.join(root, file)
@@ -36,24 +36,22 @@ class NamedBytesIO(BytesIO):
 
 
 class EncryptedStorage(object):
-
     def get_symmetric_key(self):
-
         if settings.ENCRYPTION_KEY:
-
             self.symmetric_key = bytes.fromhex(settings.ENCRYPTION_KEY)
 
         else:
             # TODO move from Encryption Key to Vault
             # TODO PROCEED ONLY AFTER NEW WAY OF SETTING UP SPACE IS READY
             try:
-
                 # self.vault_client = Client(url='https://your-vault-url', token='your-vault-token')
                 # Retrieve encryption and decryption keys from Vault
                 self.symmetric_key = self._get_symmetric_key_from_vault()
 
             except Exception as e:
-                raise Exception("Could not connect to Vault symmetric_key is not set. Error %s" % e)
+                raise Exception(
+                    "Could not connect to Vault symmetric_key is not set. Error %s" % e
+                )
 
     def _get_symmetric_key_from_vault(self):
         # Retrieve the symmetric key from Vault
@@ -104,19 +102,19 @@ class EncryptedStorage(object):
 
         return decrypted_file_instance
 
-    def open_skip_decrypt(self, name, mode='rb'):
+    def open_skip_decrypt(self, name, mode="rb"):
         file = super()._open(name, mode)
 
-        if settings.SERVER_TYPE == 'local':  # Do not decrypt on local server
+        if settings.SERVER_TYPE == "local":  # Do not decrypt on local server
             return file
 
         return file
 
-    def _open(self, name, mode='rb'):
+    def _open(self, name, mode="rb"):
         # Open the file and decrypt its content
         file = super()._open(name, mode)
 
-        if settings.SERVER_TYPE == 'local':  # Do not decrypt on local server
+        if settings.SERVER_TYPE == "local":  # Do not decrypt on local server
             return file
 
         return self._decrypt_file(file)
@@ -124,7 +122,7 @@ class EncryptedStorage(object):
     def _save(self, name, content):
         # Encrypt the file content and save it
 
-        if settings.SERVER_TYPE == 'local':  # Do not encrypt on local server
+        if settings.SERVER_TYPE == "local":  # Do not encrypt on local server
             return super()._save(name, content)
 
         encrypted_content = self._encrypt_file(content)
@@ -132,9 +130,9 @@ class EncryptedStorage(object):
 
 
 class FinmarsStorage(EncryptedStorage):
-    '''
+    """
     To ensure that storage overwrite passed filepath insead of appending a number to it
-    '''
+    """
 
     def get_available_name(self, name, max_length=None):
         self.delete(name)
@@ -151,8 +149,8 @@ class FinmarsStorage(EncryptedStorage):
 
     def folder_exists_and_has_files(self, folder_path):
         # Ensure the folder path ends with a '/'
-        if not folder_path.endswith('/'):
-            folder_path += '/'
+        if not folder_path.endswith("/"):
+            folder_path += "/"
 
         try:  # TODO maybe wrong implementation
             if not self.listdir:
@@ -166,8 +164,7 @@ class FinmarsStorage(EncryptedStorage):
             return False
 
     def download_file_and_save_locally(self, storage_file_path, local_file_path):
-
-        with self.open(storage_file_path, 'rb') as remote_file:
+        with self.open(storage_file_path, "rb") as remote_file:
             # Read the file content
             file_content = remote_file.read()
 
@@ -175,13 +172,13 @@ class FinmarsStorage(EncryptedStorage):
         os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
 
         # Write the file content to the local file
-        with open(local_file_path, 'wb') as local_file:
+        with open(local_file_path, "wb") as local_file:
             local_file.write(file_content)
 
         return local_file_path
 
     def zip_directory(self, directory_path, zip_file_path):
-        with ZipFile(zip_file_path, 'w', ZIP_DEFLATED) as zip_file:
+        with ZipFile(zip_file_path, "w", ZIP_DEFLATED) as zip_file:
             for root, _, files in os.walk(directory_path):
                 for file in files:
                     file_path = os.path.join(root, file)
@@ -189,29 +186,34 @@ class FinmarsStorage(EncryptedStorage):
                     zip_file.write(file_path, archive_path)
 
     def download_paths_as_zip(self, paths):
+        zip_filename = "archive.zip"
 
-        zip_filename = 'archive.zip'
-
-        temp_dir_path = os.path.join(os.path.dirname(zip_filename), 'tmp/temp_download')
+        temp_dir_path = os.path.join(os.path.dirname(zip_filename), "tmp/temp_download")
         os.makedirs(temp_dir_path, exist_ok=True)
 
         from workflow.models import Space
+
         space = Space.objects.all().first()
 
         for path in paths:
-            local_filename = temp_dir_path + '/' + path
-            if path.endswith('/'):  # Assuming the path is a directory
-
-                if path[0] == '/':
+            local_filename = temp_dir_path + "/" + path
+            if path.endswith("/"):  # Assuming the path is a directory
+                if path[0] == "/":
                     self.download_directory(space.space_code + path, local_filename)
                 else:
-                    self.download_directory(space.space_code + '/' + path, local_filename)
+                    self.download_directory(
+                        space.space_code + "/" + path, local_filename
+                    )
 
             else:
-                if path[0] == '/':
-                    self.download_file_and_save_locally(space.space_code + path, local_filename)
+                if path[0] == "/":
+                    self.download_file_and_save_locally(
+                        space.space_code + path, local_filename
+                    )
                 else:
-                    self.download_file_and_save_locally(space.space_code + '/' + path, local_filename)
+                    self.download_file_and_save_locally(
+                        space.space_code + "/" + path, local_filename
+                    )
 
         self.zip_directory(temp_dir_path, zip_filename)
 
@@ -221,7 +223,6 @@ class FinmarsStorage(EncryptedStorage):
 
 
 class FinmarsSFTPStorage(FinmarsStorage, SFTPStorage):
-
     def delete_directory(self, directory_path):
         for root, _, files in self.sftp_client.walk(directory_path):
             for file in files:
@@ -235,18 +236,18 @@ class FinmarsSFTPStorage(FinmarsStorage, SFTPStorage):
         for root, _, files in self.sftp_client.walk(directory_path):
             for file in files:
                 remote_path = os.path.join(root, file)
-                local_path = os.path.join(local_destination_path, os.path.relpath(remote_path, directory_path))
+                local_path = os.path.join(
+                    local_destination_path, os.path.relpath(remote_path, directory_path)
+                )
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 self.sftp_client.get(remote_path, local_path)
 
 
 class FinmarsAzureStorage(FinmarsStorage, AzureStorage):
-
     def get_created_time(self, path):
         return self.get_modified_time(path)
 
     def delete_directory(self, directory_path):
-
         # List all files in the folder
         blob_list = self.client.list_blobs(name_starts_with=directory_path)
 
@@ -255,7 +256,6 @@ class FinmarsAzureStorage(FinmarsStorage, AzureStorage):
             self.client.delete_blob(blob.name)
 
     def download_directory(self, directory_path, local_destination_path):
-
         folder = os.path.dirname(local_destination_path)
         if folder:
             os.makedirs(folder, exist_ok=True)
@@ -267,7 +267,9 @@ class FinmarsAzureStorage(FinmarsStorage, AzureStorage):
         for blob in blob_list:
             # Check if the blob is inside the folder
             if blob.name.startswith(directory_path):
-                local_path = os.path.join(local_destination_path, os.path.relpath(blob.name, directory_path))
+                local_path = os.path.join(
+                    local_destination_path, os.path.relpath(blob.name, directory_path)
+                )
 
                 # Create the local directory structure
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
@@ -279,7 +281,6 @@ class FinmarsAzureStorage(FinmarsStorage, AzureStorage):
                     local_file.write(download_stream.readall())
 
     def download_directory_as_zip(self, directory_path):
-
         # Download all files from the remote folder to the temporary local directory
 
         blob_list = self.client.list_blobs(name_starts_with=directory_path)
@@ -289,7 +290,9 @@ class FinmarsAzureStorage(FinmarsStorage, AzureStorage):
         for blob in blob_list:
             # Check if the blob is inside the folder
             if blob.name.startswith(directory_path):
-                local_path = os.path.join(temp_dir, os.path.relpath(blob.name, directory_path))
+                local_path = os.path.join(
+                    temp_dir, os.path.relpath(blob.name, directory_path)
+                )
 
                 # Create the local directory structure
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
@@ -310,12 +313,10 @@ class FinmarsAzureStorage(FinmarsStorage, AzureStorage):
 
 
 class FinmarsS3Storage(FinmarsStorage, S3Boto3Storage):
-
     def get_created_time(self, path):
         return self.get_modified_time(path)
 
     def delete_directory(self, directory_path):
-
         objects_to_delete = []
 
         # List all files in the folder
@@ -324,32 +325,32 @@ class FinmarsS3Storage(FinmarsStorage, S3Boto3Storage):
 
         # Delete files in the folder
         if objects_to_delete:
-            self.bucket.delete_objects(
-                Delete={"Objects": objects_to_delete}
-            )
+            self.bucket.delete_objects(Delete={"Objects": objects_to_delete})
 
     def download_directory(self, directory_path, local_destination_path):
-
-        _l.info('directory_path %s' % directory_path)
+        _l.info("directory_path %s" % directory_path)
 
         folder = os.path.dirname(local_destination_path)
         if folder:
             os.makedirs(folder, exist_ok=True)
 
         for obj in self.bucket.objects.filter(Prefix=directory_path):
-            local_path = os.path.join(local_destination_path, os.path.relpath(obj.key, directory_path))
+            local_path = os.path.join(
+                local_destination_path, os.path.relpath(obj.key, directory_path)
+            )
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
             self.bucket.download_file(obj.key, local_path)
 
     def download_directory_as_zip(self, directory_path):
-
         _l.info("S3 download zip")
 
         temp_dir = tempfile.mkdtemp()
 
         # Download all files from the remote folder to the temporary local directory
         for obj in self.bucket.objects.filter(Prefix=directory_path):
-            local_path = os.path.join(temp_dir, os.path.relpath(obj.key, directory_path))
+            local_path = os.path.join(
+                temp_dir, os.path.relpath(obj.key, directory_path)
+            )
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
             self.bucket.download_file(obj.key, local_path)
 
@@ -363,14 +364,11 @@ class FinmarsS3Storage(FinmarsStorage, S3Boto3Storage):
 
 
 class FinmarsLocalFileSystemStorage(FinmarsStorage, FileSystemStorage):
-
     def path(self, name):
-
-        if name[0] == '/':
+        if name[0] == "/":
             return settings.MEDIA_ROOT + name
 
-        return settings.MEDIA_ROOT + '/' + name
-
+        return settings.MEDIA_ROOT + "/" + name
 
     def listdir(self, path):
         path = self.path(path)

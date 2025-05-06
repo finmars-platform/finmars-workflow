@@ -1,0 +1,40 @@
+version: '2'
+services:
+
+  web:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./workflow:/var/app/workflow
+    depends_on:
+      - migration
+    ports:
+      - "8080:8080"
+
+  worker:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=workflow_app.settings # remove after change manage.py location
+      - INSTANCE_TYPE=worker
+      - QUEUES=workflow
+
+  scheduler:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=workflow_app.settings # remove after change manage.py location
+      - INSTANCE_TYPE=beat
+
+  migration:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - INSTANCE_TYPE=job
+
+volumes:
+  postgres_data:

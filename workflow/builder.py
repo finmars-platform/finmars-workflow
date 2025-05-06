@@ -5,10 +5,15 @@ from celery.utils import uuid
 
 from workflow.exceptions import WorkflowSyntaxError
 from workflow.models import Workflow, Task
-from workflow.tasks.workflows import start, end, failure_hooks_launcher, execute_workflow_step
+from workflow.tasks.workflows import (
+    start,
+    end,
+    failure_hooks_launcher,
+    execute_workflow_step,
+)
 from workflow_app import celery_app
 
-_l = logging.getLogger('workflow')
+_l = logging.getLogger("workflow")
 
 from workflow.system import get_system_workflow_manager
 
@@ -19,8 +24,9 @@ class WorkflowBuilder(object):
     def __init__(self, workflow_id, workflow_data):
         self.workflow_id = workflow_id
         self._workflow = None
-        self.workflow_data = workflow_data  # Pass in the workflow data (which might have a version)
-
+        self.workflow_data = (
+            workflow_data  # Pass in the workflow data (which might have a version)
+        )
 
     @property
     def workflow(self):
@@ -31,7 +37,7 @@ class WorkflowBuilder(object):
     def new_task(self, task_name, is_hook=False, single=True, node_id=None):
         task_id = uuid()
 
-        prefixed_name = self.workflow.space.space_code + '.' + task_name
+        prefixed_name = self.workflow.space.space_code + "." + task_name
         queue = self.custom_queues.get(prefixed_name, self.queue)
 
         signature = execute_workflow_step.subtask(
@@ -42,7 +48,7 @@ class WorkflowBuilder(object):
                     "realm_code": self.workflow.space.realm_code,
                     "space_code": self.workflow.space.space_code,
                 },
-                "imports": self.imports
+                "imports": self.imports,
             },
             queue=queue,
             task_id=task_id,
@@ -100,7 +106,6 @@ class WorkflowBuilder(object):
         return canvas
 
     def build(self):
-
         self.custom_queues = {}
 
         self.canvas = []
@@ -110,15 +115,20 @@ class WorkflowBuilder(object):
         self.queue = system_workflow_manager.get_queue(str(self.workflow))
         self.tasks = system_workflow_manager.get_tasks(str(self.workflow))
 
-
         # Initialize hooks
-        self.failure_hook = system_workflow_manager.get_failure_hook_task(str(self.workflow))
+        self.failure_hook = system_workflow_manager.get_failure_hook_task(
+            str(self.workflow)
+        )
         self.failure_hook_canvas = []
 
-        self.success_hook = system_workflow_manager.get_success_hook_task(str(self.workflow))
+        self.success_hook = system_workflow_manager.get_success_hook_task(
+            str(self.workflow)
+        )
         self.success_hook_canvas = []
 
-        self.before_start_hook = system_workflow_manager.get_before_start_hook_task(str(self.workflow))
+        self.before_start_hook = system_workflow_manager.get_before_start_hook_task(
+            str(self.workflow)
+        )
 
         self.parse_queues()
 
@@ -132,24 +142,37 @@ class WorkflowBuilder(object):
         if self.before_start_hook:
             initial_previous = self.previous
             self.previous = None
-            self.before_start_hook_canvas = self.parse_flat_tasks([self.before_start_hook], True)[0]
+            self.before_start_hook_canvas = self.parse_flat_tasks(
+                [self.before_start_hook], True
+            )[0]
 
-            _l.info(f'Before start hook canvas: {self.before_start_hook_canvas}')
+            _l.info(f"Before start hook canvas: {self.before_start_hook_canvas}")
 
             self.canvas.insert(0, self.before_start_hook_canvas.set(queue=self.queue))
             self.previous = initial_previous
 
         # Add Workflow Start
-        self.canvas.insert(0, start.si(self.workflow.id, context={
-            "realm_code": self.workflow.space.realm_code,
-            "space_code": self.workflow.space.space_code,
-        }).set(queue=self.queue))
+        self.canvas.insert(
+            0,
+            start.si(
+                self.workflow.id,
+                context={
+                    "realm_code": self.workflow.space.realm_code,
+                    "space_code": self.workflow.space.space_code,
+                },
+            ).set(queue=self.queue),
+        )
 
         # Add Workflow End
-        self.canvas.append(end.si(self.workflow.id, context={
-            "realm_code": self.workflow.space.realm_code,
-            "space_code": self.workflow.space.space_code,
-        }).set(queue=self.queue))
+        self.canvas.append(
+            end.si(
+                self.workflow.id,
+                context={
+                    "realm_code": self.workflow.space.realm_code,
+                    "space_code": self.workflow.space.space_code,
+                },
+            ).set(queue=self.queue)
+        )
 
     def build_hooks(self):
         initial_previous = self.previous
@@ -166,18 +189,20 @@ class WorkflowBuilder(object):
                     context={
                         "realm_code": self.workflow.space.realm_code,
                         "space_code": self.workflow.space.space_code,
-                    }
+                    },
                 ).set(queue=self.queue),
             ]
 
         # Success Hook
         if self.success_hook and not self.success_hook_canvas:
-            self.success_hook_canvas = [self.parse_flat_tasks([self.success_hook], True)[0]]
+            self.success_hook_canvas = [
+                self.parse_flat_tasks([self.success_hook], True)[0]
+            ]
 
         self.previous = initial_previous
 
     def run(self):
-        _l.info(f'Celery app backend: {celery_app.backend}')
+        _l.info(f"Celery app backend: {celery_app.backend}")
 
         if not self.canvas:
             self.build()
@@ -192,7 +217,7 @@ class WorkflowBuilder(object):
                 link_error=self.failure_hook_canvas,
             )
         except Exception as e:
-            _l.error(f'Error running workflow: {e}')
+            _l.error(f"Error running workflow: {e}")
             self.workflow.status = Workflow.STATUS_ERROR
             self.workflow.save()
             raise e
