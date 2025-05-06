@@ -8,8 +8,6 @@ services:
     volumes:
       - ./workflow:/var/app/workflow
     depends_on:
-      - db
-      - rabbitmq
       - migration
     ports:
       - "8080:8080"
@@ -19,21 +17,17 @@ services:
     env_file:
       - .env
     environment:
+      - DJANGO_SETTINGS_MODULE=workflow_app.settings # remove after change manage.py location
       - INSTANCE_TYPE=worker
       - QUEUES=workflow
-    depends_on:
-      - db
-      - rabbitmq
 
   scheduler:
     build: .
     env_file:
       - .env
     environment:
+      - DJANGO_SETTINGS_MODULE=workflow_app.settings # remove after change manage.py location
       - INSTANCE_TYPE=beat
-    depends_on:
-      - db
-      - rabbitmq
 
   migration:
     build: .
@@ -41,28 +35,6 @@ services:
       - .env
     environment:
       - INSTANCE_TYPE=job
-    depends_on:
-      - db
-
-  db:
-    image: postgres:13-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: workflow
-    stdin_open: true
-    tty: true
-    ports:
-      - "5441:5432"
-    volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-
-  rabbitmq:
-    image: rabbitmq
-    ports:
-      - "5672:5672"
-    stdin_open: true
-    tty: true
 
 volumes:
   postgres_data:

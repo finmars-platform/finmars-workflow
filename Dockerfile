@@ -1,7 +1,13 @@
 FROM python:3.10-bullseye
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    vim htop wget supervisor nfs-common npm && \
+    htop \
+    nfs-common \ 
+    postgresql-client \
+    npm \
+    supervisor \
+    vim \
+    wget && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/app
@@ -19,7 +25,8 @@ COPY package.json .
 RUN npm install
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 COPY finmars_standardized_errors ./finmars_standardized_errors
 COPY healthcheck ./healthcheck
