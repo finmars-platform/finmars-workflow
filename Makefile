@@ -48,8 +48,16 @@ test:
 lint:
 	$(COMPOSE) exec -i $(SERVICE) ruff format --exclude '**/migrations/*.py'
 
+migrate:
+	./migrate.sh
+
+import-sql: 
+	./import-sql.sh
+
 up:
-	$(COMPOSE) up --build
+	$(COMPOSE) up --build \
+	--remove-orphans \
+	--scale migration=0 \
 
 down:
 	$(COMPOSE) down

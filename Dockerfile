@@ -28,9 +28,11 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+COPY docs ./docs
 COPY finmars_standardized_errors ./finmars_standardized_errors
 COPY healthcheck ./healthcheck
 COPY logstash ./logstash
+COPY node_modules ./node_modules
 COPY workflow_app ./workflow_app
 COPY workflow ./workflow
 COPY manage.py ./
