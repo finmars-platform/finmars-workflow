@@ -24,9 +24,9 @@ celery_worker = os.getenv("WORKER_NAME", "worker1")
 def on_starting(server):
     if INSTANCE_TYPE == "web":
         print("I'm web_instance")
-        os.system("python /var/app/manage.py collectstatic -c --noinput")
         os.system("python /var/app/manage.py copy_css_libs")
         os.system("python /var/app/manage.py copy_js_libs")
+        os.system("python /var/app/manage.py collectstatic -c --noinput")
     elif INSTANCE_TYPE == "worker":
         print("I'm celery_instance")
         cmd = (
