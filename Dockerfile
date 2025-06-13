@@ -37,6 +37,9 @@ COPY workflow_app ./workflow_app
 COPY workflow ./workflow
 COPY manage.py ./
 
+RUN mkdir ./workflow/static/documentation
+RUN mkdocs build --config-file docs/mkdocs.yml --site-dir /var/app/workflow/static/documentation
+
 ENV LC_ALL=C.UTF-8 \
     LANG=C.UTF-8
 

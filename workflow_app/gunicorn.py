@@ -18,7 +18,7 @@ loglevel = os.getenv("GUNICORN_LOG_LEVEL", "info")
 reload = bool(os.getenv("LOCAL"))
 
 INSTANCE_TYPE = os.getenv("INSTANCE_TYPE", "web")
-celery_queue = os.getenv("QUEUES", "backend-general-queue,backend-background-queue")
+celery_queue = os.getenv("QUEUES", "workflow")
 celery_worker = os.getenv("WORKER_NAME", "worker1")
 
 def on_starting(server):
