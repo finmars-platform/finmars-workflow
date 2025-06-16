@@ -28,7 +28,7 @@ def call_export_backend_historical_records(self, *args, **kwargs):
 
     data = {"date_to": (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")}
 
-    if space.realm_code and space.realm_code != "realm00000":
+    if space.realm_code:
         url = (
             "https://"
             + settings.DOMAIN_NAME

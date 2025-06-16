@@ -153,7 +153,7 @@ def execute_expression(expression):
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != "realm00000":
+    if space.realm_code:
         url = (
             "https://"
             + settings.DOMAIN_NAME
@@ -197,7 +197,7 @@ def execute_expression_procedure(payload):
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != "realm00000":
+    if space.realm_code:
         url = (
             "https://"
             + settings.DOMAIN_NAME
@@ -241,7 +241,7 @@ def execute_data_procedure(payload):
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != "realm00000":
+    if space.realm_code:
         url = (
             "https://"
             + settings.DOMAIN_NAME
@@ -283,7 +283,7 @@ def get_data_procedure_instance(id):
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != "realm00000":
+    if space.realm_code:
         url = (
             "https://"
             + settings.DOMAIN_NAME
@@ -325,7 +325,7 @@ def execute_pricing_procedure(payload):
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != "realm00000":
+    if space.realm_code:
         url = (
             "https://"
             + settings.DOMAIN_NAME
@@ -369,7 +369,7 @@ def execute_task(task_name, payload={}):
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != "realm00000":
+    if space.realm_code:
         url = (
             "https://"
             + settings.DOMAIN_NAME
@@ -436,7 +436,7 @@ def get_task(id):
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != "realm00000":
+    if space.realm_code:
         url = (
             "https://"
             + settings.DOMAIN_NAME
@@ -572,7 +572,7 @@ def execute_transaction_import(payload):
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != "realm00000":
+    if space.realm_code:
         url = (
             "https://"
             + settings.DOMAIN_NAME
@@ -616,7 +616,7 @@ def execute_simple_import(payload):
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != "realm00000":
+    if space.realm_code:
         url = (
             "https://"
             + settings.DOMAIN_NAME
@@ -656,7 +656,7 @@ def request_api(path, method="get", data=None):
 
     space = get_space()
 
-    if space.realm_code and space.realm_code != "realm00000":
+    if space.realm_code:
         url = (
             "https://"
             + settings.DOMAIN_NAME
@@ -1054,7 +1054,7 @@ class Vault:
 
             space = get_space()
 
-            if space.realm_code and space.realm_code != "realm00000":
+            if space.realm_code:
                 url = (
                     "https://"
                     + settings.DOMAIN_NAME
