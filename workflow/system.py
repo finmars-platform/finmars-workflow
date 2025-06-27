@@ -46,7 +46,8 @@ class SystemWorkflowManager:
 
                 _l.info(f"Loading workflows for schema: {schema}")
 
-                self.sync_remote_storage_to_local_storage(schema)
+                # Do not sync files here
+                # self.sync_remote_storage_to_local_storage(schema)
                 self.load_workflows_for_schema(schema)
             else:
                 _l.info("[register_workflows] Skip public schema")
