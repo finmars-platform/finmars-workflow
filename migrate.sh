@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Starting Redis container..."
-docker compose up -d redis
-
 echo "🚀 Starting PostgreSQL container..."
 docker compose up -d db
 

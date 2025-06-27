@@ -40,6 +40,7 @@ from workflow.user_sessions import create_session, execute_code, sessions, execu
 from workflow.workflows import execute_workflow
 
 _l = logging.getLogger("workflow")
+from workflow_app import celery_app
 
 from workflow.system import get_system_workflow_manager
 
@@ -206,10 +207,19 @@ class WorkflowViewSet(ModelViewSet):
 
     @action(detail=True, methods=("POST",), url_path="cancel")
     def cancel(self, request, pk=None, *args, **kwargs):
-        workflow = Workflow.objects.get(id=pk)
-        workflow.cancel()
 
-        return Response(workflow.to_dict())
+
+
+        workflow = Workflow.objects.get(id=pk)
+
+        if workflow.status == Workflow.STATUS_INIT or workflow.status == Workflow.STATUS_PROGRESS or workflow.status == Workflow.STATUS_WAIT:
+
+            workflow.cancel()
+
+            return Response(workflow.to_dict())
+
+        else:
+            return Response({"message": "Could not Cancel finished task"})
 
     @action(
         detail=False,
@@ -587,3 +597,19 @@ class ScheduleViewSet(ModelViewSet):
             return Response(
                 {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class CeleryStatusViewSet(ViewSet):
+    """
+    A simple ViewSet that returns Celery queue and worker status.
+    """
+    def list(self, request, *args, **kwargs):
+        insp = celery_app.control.inspect()
+        data = {
+            "workers": insp.stats() or {},
+            "active": insp.active() or {},
+            "reserved": insp.reserved() or {},
+            "scheduled": insp.scheduled() or {},
+        }
+
+        return Response(data)

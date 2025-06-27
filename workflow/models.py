@@ -320,10 +320,10 @@ class Workflow(TimeStampedModel):
                 _l.warning("update_task_status %s" % ex)
 
     def cancel(self):
-        status_to_cancel = [Task.STATUS_PROGRESS]
+        status_to_cancel = [Task.STATUS_PROGRESS, Task.STATUS_INIT, Task.STATUS_NESTED_PROGRESS]
         for task in self.tasks.all():
             if task.status in status_to_cancel:
-                celery_app.control.revoke(task.celery_task_id, terminate=True)
+                celery_app.control.revoke(task.celery_task_id, terminate=True, signal='SIGKILL')
                 task.status = Task.STATUS_CANCELED
                 task.mark_task_as_finished()
                 task.save()
