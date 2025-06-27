@@ -39,12 +39,17 @@ class SystemWorkflowManager:
             schemas = [space_code]
 
         for schema in schemas:
-            with connection.cursor() as cursor:
-                cursor.execute(f"SET search_path TO {schema};")
 
-            _l.info(f"Loading workflows for schema: {schema}")
+            if schema != 'public':
+                with connection.cursor() as cursor:
+                    cursor.execute(f"SET search_path TO {schema};")
 
-            self.load_workflows_for_schema(schema)
+                _l.info(f"Loading workflows for schema: {schema}")
+
+                self.sync_remote_storage_to_local_storage(schema)
+                self.load_workflows_for_schema(schema)
+            else:
+                _l.info("[register_workflows] Skip public schema")
 
         if not space_code:
             with connection.cursor() as cursor:
@@ -386,14 +391,14 @@ class SystemWorkflowManager:
 
         # now find tasks without workflows
         tasks = Task.objects.filter(
-            status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT], worker_name=worker_name
+            status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT, Task.STATUS_NESTED_PROGRESS], worker_name=worker_name
         )
         for task in tasks:
             task.status = Task.STATUS_CANCELED
 
             try:  # just in case if rabbitmq still holds a task
                 if task.celery_task_id:
-                    celery_app.control.revoke(task.celery_task_id, terminate=True)
+                    celery_app.control.revoke(task.celery_task_id, terminate=True, signal='SIGKILL')
 
             except Exception as e:
                 _l.error("Something went wrong %s" % e)
