@@ -35,6 +35,19 @@ services:
       - db
       - rabbitmq
 
+  flower:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=workflow_app.settings # remove after change manage.py location
+      - INSTANCE_TYPE=flower
+    depends_on:
+      - db
+      - rabbitmq
+    ports:
+      - "5555:5555"
+
   migration:
     build: .
     env_file:

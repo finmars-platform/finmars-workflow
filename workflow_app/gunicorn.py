@@ -21,6 +21,19 @@ INSTANCE_TYPE = os.getenv("INSTANCE_TYPE", "web")
 celery_queue = os.getenv("QUEUES", "workflow")
 celery_worker = os.getenv("WORKER_NAME", "worker1")
 
+
+ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', None)
+
+RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
+RABBITMQ_PORT = os.getenv('RABBITMQ_PORT', 5672)
+RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'guest')
+RABBITMQ_PASSWORD = os.getenv('RABBITMQ_PASSWORD', 'guest')
+RABBITMQ_VHOST = os.getenv('RABBITMQ_VHOST', '')
+
+CELERY_BROKER_URL = 'amqp://%s:%s@%s:%s/%s' % (
+    RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_HOST, RABBITMQ_PORT, RABBITMQ_VHOST)
+
 def on_starting(server):
     if INSTANCE_TYPE == "web":
         print("I'm web_instance")
@@ -44,11 +57,26 @@ def on_starting(server):
         )
         server.log.info(f"Starting: {cmd}")
         os.system(cmd)
+    elif INSTANCE_TYPE == "flower":
+        print("I'm flower!")
+
+        if not ADMIN_PASSWORD:
+            print("I'm flower! Admin Password is not set, exit")
+            exit(0)
+
+        cmd = (
+            f"celery --app {project_name}  "
+            f"--broker={CELERY_BROKER_URL} "
+            f"flower --basic-auth={ADMIN_USERNAME}:{ADMIN_PASSWORD} "
+        )
+        server.log.info(f"Starting: {cmd}")
+        os.system(cmd)
     elif INSTANCE_TYPE == "job":
         print("I'm job_instance")
         server.log.info("Starting job instance")
         os.system("python /var/app/manage.py migrate_all_schemes")
         exit(0)
+
     else:
         print("I'm unknown_instance")
         server.log.info("Unknown instance type")
