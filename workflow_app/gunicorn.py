@@ -25,6 +25,8 @@ celery_worker = os.getenv("WORKER_NAME", "worker1")
 ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', None)
 
+FLOWER_URL_PREFIX = os.getenv('FLOWER_URL_PREFIX', '')
+
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 RABBITMQ_PORT = os.getenv('RABBITMQ_PORT', 5672)
 RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'guest')
@@ -67,7 +69,7 @@ def on_starting(server):
         cmd = (
             f"celery --app {project_name}  "
             f"--broker={CELERY_BROKER_URL} "
-            f"flower --basic-auth={ADMIN_USERNAME}:{ADMIN_PASSWORD} "
+            f"flower --basic-auth={ADMIN_USERNAME}:{ADMIN_PASSWORD} --url_prefix={FLOWER_URL_PREFIX}"
         )
         server.log.info(f"Starting: {cmd}")
         os.system(cmd)
