@@ -1,4 +1,4 @@
-FROM python:3.10-bullseye
+FROM python:3.13.5-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     htop \
@@ -42,6 +42,15 @@ RUN mkdocs build --config-file docs/mkdocs.yml --site-dir /var/app/workflow/stat
 
 ENV LC_ALL=C.UTF-8 \
     LANG=C.UTF-8
+
+EXPOSE 8080
+
+# Node and npm use a non-root user provided by the base Node image
+# Creating a new user "finmars" for running the application
+RUN adduser -D finmars
+
+# Change to non-root privilege
+USER finmars
 
 EXPOSE 8080
 
