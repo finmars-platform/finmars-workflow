@@ -1,14 +1,13 @@
 FROM python:3.13.5-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    htop \
-    nfs-common \ 
-    postgresql-client \
+    build-essential \
+    python3-dev \
+    libpq-dev \
+    libssl-dev \
     npm \
-    supervisor \
-    vim \
-    wget && \
-    rm -rf /var/lib/apt/lists/*
+    # (and cargo rustc if you see a Rust error) \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/app
 
@@ -47,7 +46,11 @@ EXPOSE 8080
 
 # Node and npm use a non-root user provided by the base Node image
 # Creating a new user "finmars" for running the application
-RUN adduser -D finmars
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    finmars
+
 
 # Change to non-root privilege
 USER finmars

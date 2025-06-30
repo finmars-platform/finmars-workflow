@@ -83,7 +83,7 @@ numpy==2.2.0
 oauthlib==3.2.2
 openpyxl==3.1.2
 packaging==24.2
-pandas==2.2.2
+pandas==2.2.3
 paramiko==2.11.0
 pathspec==0.12.1
 pexpect==4.8.0
