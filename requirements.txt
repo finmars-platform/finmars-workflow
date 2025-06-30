@@ -128,7 +128,7 @@ ruamel.yaml.clib==0.2.12
 ruff==0.11.6
 s3transfer==0.6.2
 sentry-sdk==1.28.1
-six==1.14.0
+six==1.16.0
 SQLAlchemy==1.4.46
 sqlparse==0.3.0
 suds==1.1.2
