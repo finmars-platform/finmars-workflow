@@ -1,10 +1,17 @@
-FROM python:3.13.5-bookworm
+FROM python:3.12-alpine
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
+RUN apk update && apk add --no-cache \
+    build-base \
     python3-dev \
-    libpq-dev \
-    libssl-dev \
+    postgresql-dev \
+    musl-dev \
+    openssl-dev \
+    nodejs \
+    libffi-dev \
+    gcc \
+    libc-dev \
+    linux-headers \
+    openssl-dev \
     npm \
     # (and cargo rustc if you see a Rust error) \
     && rm -rf /var/lib/apt/lists/*
@@ -15,6 +22,7 @@ RUN mkdir -p \
     /var/app/app-data/import/configs/ \
     /var/app/app-data/import/files/ \
     /var/app/finmars_data \
+    /var/app/static \
     /var/app/app-data/media/ \
     /var/log/finmars/workflow/ \
     /var/log/celery/ && \
@@ -25,7 +33,7 @@ RUN npm install
 
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir --timeout 120 --retries 10 -r requirements.txt
 
 COPY docs ./docs
 COPY finmars_standardized_errors ./finmars_standardized_errors
@@ -51,6 +59,8 @@ RUN adduser \
     --gecos "" \
     finmars
 
+RUN chown -R finmars:finmars /var/log/finmars
+RUN chown -R finmars:finmars /var/app/static
 
 # Change to non-root privilege
 USER finmars
