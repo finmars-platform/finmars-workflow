@@ -516,9 +516,9 @@ REDOC_SETTINGS = {
 }
 
 # SENTRY
-SENTRY_DSN = ENV_STR("SENTRY_DSN", "https://bbc302cc7bd5bbb2719b030ace26222a@sentry.finmars.com/2")
+SENTRY_DSN = ENV_STR("SENTRY_DSN", None)
 
-if SERVER_TYPE != "local":
+if SERVER_TYPE != "local" and SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration()],
