@@ -39,7 +39,6 @@ COPY docs ./docs
 COPY finmars_standardized_errors ./finmars_standardized_errors
 COPY healthcheck ./healthcheck
 COPY logstash ./logstash
-COPY node_modules ./node_modules
 COPY workflow_app ./workflow_app
 COPY workflow ./workflow
 COPY manage.py ./
