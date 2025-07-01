@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     # 'rest_framework.authtoken'
 
     'finmars_standardized_errors',
+    'debug_toolbar',
 ]
 
 # this settings MUST be before MIDDLEWARE prop
@@ -103,7 +104,8 @@ MIDDLEWARE = [
 
     'corsheaders.middleware.CorsMiddleware',
 
-    'finmars_standardized_errors.middleware.ExceptionMiddleware'
+    'finmars_standardized_errors.middleware.ExceptionMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware'
 ]
 
 ROOT_URLCONF = 'workflow_app.urls'

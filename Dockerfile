@@ -6,13 +6,11 @@ RUN apk update && apk add --no-cache \
     postgresql-dev \
     musl-dev \
     openssl-dev \
-    nodejs \
     libffi-dev \
     gcc \
     libc-dev \
     linux-headers \
     openssl-dev \
-    npm \
     # (and cargo rustc if you see a Rust error) \
     && rm -rf /var/lib/apt/lists/*
 
