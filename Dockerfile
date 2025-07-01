@@ -28,8 +28,8 @@ RUN mkdir -p \
     /var/log/celery/ && \
     chmod 777 /var/app/finmars_data
 
-COPY package.json .
-RUN npm install
+#COPY package.json .
+#RUN npm install
 
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
