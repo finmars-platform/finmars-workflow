@@ -54,8 +54,7 @@ RUN adduser \
     --gecos "" \
     finmars
 
-RUN chown -R finmars:finmars /var/log/finmars
-RUN chown -R finmars:finmars /var/app/static
+RUN chown -R finmars:finmars /var/log/finmars && chown -R finmars:finmars /var/app/
 
 # Change to non-root privilege
 USER finmars
