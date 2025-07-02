@@ -414,12 +414,12 @@ class RefreshStorageViewSet(ViewSet):
             # c = pexpect.spawn("supervisorctl stop celery", timeout=240)
             # result = c.read()
             # _l.info('RefreshStorageViewSet.stop celery result %s' % result)
-            c = pexpect.spawn("supervisorctl stop celerybeat", timeout=240)
-            result = c.read()
-            _l.info("RefreshStorageViewSet.stop celerybeat result %s" % result)
-            c = pexpect.spawn("supervisorctl stop flower", timeout=240)
-            result = c.read()
-            _l.info("RefreshStorageViewSet.stop flower result %s" % result)
+            # c = pexpect.spawn("supervisorctl stop celerybeat", timeout=240)
+            # result = c.read()
+            # _l.info("RefreshStorageViewSet.stop celerybeat result %s" % result)
+            # c = pexpect.spawn("supervisorctl stop flower", timeout=240)
+            # result = c.read()
+            # _l.info("RefreshStorageViewSet.stop flower result %s" % result)
 
             # c = pexpect.spawn("python /var/app/manage.py sync_remote_storage_to_local_storage", timeout=240)
             system_workflow_manager.sync_remote_storage_to_local_storage(
@@ -429,14 +429,14 @@ class RefreshStorageViewSet(ViewSet):
             # c = pexpect.spawn("supervisorctl start celery", timeout=240)
             # result = c.read()
             # _l.info('RefreshStorageViewSet.celery result %s' % result)
-            c = pexpect.spawn("supervisorctl start celerybeat", timeout=240)
-
-            result = c.read()
-            _l.info("RefreshStorageViewSet.celerybeat result %s" % result)
-
-            c = pexpect.spawn("supervisorctl start flower", timeout=240)
-            result = c.read()
-            _l.info("RefreshStorageViewSet.flower result %s" % result)
+            # c = pexpect.spawn("supervisorctl start celerybeat", timeout=240)
+            #
+            # result = c.read()
+            # _l.info("RefreshStorageViewSet.celerybeat result %s" % result)
+            #
+            # c = pexpect.spawn("supervisorctl start flower", timeout=240)
+            # result = c.read()
+            # _l.info("RefreshStorageViewSet.flower result %s" % result)
 
             system_workflow_manager.register_workflows(request.space_code)
         except Exception as e:
