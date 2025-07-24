@@ -46,7 +46,7 @@ def on_starting(server):
         print("I'm celery_instance")
         cmd = (
             f"celery --app {project_name} worker --concurrency=1 --loglevel=INFO "
-            f"--soft-time-limit=3000 -n workflow-{celery_worker} -Q {celery_queue} --max-tasks-per-child=1"
+            f"-n workflow-{celery_worker} -Q {celery_queue} --max-tasks-per-child=1"
         )
         server.log.info(f"Starting: {cmd}")
         os.system(cmd)
