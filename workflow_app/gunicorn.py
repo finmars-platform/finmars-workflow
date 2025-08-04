@@ -18,68 +18,12 @@ loglevel = os.getenv("GUNICORN_LOG_LEVEL", "info")
 reload = bool(os.getenv("LOCAL"))
 
 INSTANCE_TYPE = os.getenv("INSTANCE_TYPE", "web")
-celery_queue = os.getenv("QUEUES", "workflow")
-celery_worker = os.getenv("WORKER_NAME", "worker1")
-
-
-ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', None)
-
-FLOWER_URL_PREFIX = os.getenv('FLOWER_URL_PREFIX', '')
-
-RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
-RABBITMQ_PORT = os.getenv('RABBITMQ_PORT', 5672)
-RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'guest')
-RABBITMQ_PASSWORD = os.getenv('RABBITMQ_PASSWORD', 'guest')
-RABBITMQ_VHOST = os.getenv('RABBITMQ_VHOST', '')
-
-CELERY_BROKER_URL = 'amqp://%s:%s@%s:%s/%s' % (
-    RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_HOST, RABBITMQ_PORT, RABBITMQ_VHOST)
 
 def on_starting(server):
     if INSTANCE_TYPE == "web":
         print("I'm web_instance")
-        # os.system("python /var/app/manage.py copy_css_libs")
-        # os.system("python /var/app/manage.py copy_js_libs")
         os.system("python /var/app/manage.py collectstatic -c --noinput")
-    elif INSTANCE_TYPE == "worker":
-        print("I'm celery_instance")
-        cmd = (
-            f"celery --app {project_name} worker --concurrency=1 --loglevel=INFO "
-            f"-n workflow-{celery_worker} -Q {celery_queue} --max-tasks-per-child=1"
-        )
-        server.log.info(f"Starting: {cmd}")
-        os.system(cmd)
-    elif INSTANCE_TYPE == "beat":
-        print("I'm celery_beat_instance")
-        cmd = (
-            f"celery --app {project_name} beat -l INFO "
-            "--scheduler workflow.schedulers:DatabaseScheduler "
-            "--pidfile=/tmp/celerybeat.pid"
-        )
-        server.log.info(f"Starting: {cmd}")
-        os.system(cmd)
-    elif INSTANCE_TYPE == "flower":
-        print("I'm flower!")
-
-        if not ADMIN_PASSWORD:
-            print("I'm flower! Admin Password is not set, exit")
-            exit(0)
-
-        cmd = (
-            f"celery --app {project_name}  "
-            f"--broker={CELERY_BROKER_URL} "
-            f"flower --basic-auth={ADMIN_USERNAME}:{ADMIN_PASSWORD} --url_prefix={FLOWER_URL_PREFIX}"
-        )
-        server.log.info(f"Starting: {cmd}")
-        os.system(cmd)
-    elif INSTANCE_TYPE == "job":
-        print("I'm job_instance")
-        server.log.info("Starting job instance")
-        os.system("python /var/app/manage.py migrate_all_schemes")
-        exit(0)
-
     else:
-        print("I'm unknown_instance")
-        server.log.info("Unknown instance type")
-        exit(1)
+        print("Gunicorn should not start for INSTANCE_TYPE:", INSTANCE_TYPE)
+        server.log.info("Exiting because this pod is not a web instance")
+        exit(0)

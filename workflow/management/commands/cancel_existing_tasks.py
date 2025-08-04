@@ -24,7 +24,7 @@ class Command(BaseCommand):
                 with connection.cursor() as cursor:
                     cursor.execute(f"SET search_path TO {schema};")
 
-                worker_name = default_nodename(os.getenv("WORKER_NAME"))
+                worker_name = default_nodename(os.getenv("WORKFLOW_WORKER_NAME"))
 
                 self.stdout.write(f"Going to cancel tasks in {schema}")
                 system_workflow_manager.cancel_all_existing_tasks(worker_name)
