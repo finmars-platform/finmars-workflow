@@ -1,6 +1,6 @@
 version: '2'
 services:
-  web:
+  web: &base
     build: .
     env_file:
       - .env
@@ -13,51 +13,24 @@ services:
       - "8001:8080"
 
   worker:
-    build: .
-    env_file:
-      - .env
+    <<: *base
     environment:
       - DJANGO_SETTINGS_MODULE=workflow_app.settings # remove after change manage.py location
-      - INSTANCE_TYPE=worker
-      - QUEUES=workflow
-    depends_on:
-      - db
-      - rabbitmq
+    command: >
+      sh -c "celery --app workflow_app worker --concurrency=1 --loglevel=INFO -n $WORKFLOW_WORKER_NAME -Q $WORKFLOW_QUEUES --max-tasks-per-child=1"
 
   scheduler:
-    build: .
-    env_file:
-      - .env
+    <<: *base
     environment:
       - DJANGO_SETTINGS_MODULE=workflow_app.settings # remove after change manage.py location
-      - INSTANCE_TYPE=beat
-    depends_on:
-      - db
-      - rabbitmq
-
-  flower:
-    build: .
-    env_file:
-      - .env
-    environment:
-      - DJANGO_SETTINGS_MODULE=workflow_app.settings # remove after change manage.py location
-      - INSTANCE_TYPE=flower
-    depends_on:
-      - db
-      - rabbitmq
-    ports:
-      - "5555:5555"
+    command: >
+      sh -c "celery --app workflow_app beat --loglevel=INFO --scheduler workflow.schedulers:DatabaseScheduler --pidfile=/tmp/celerybeat.pid"
 
   migration:
-    build: .
-    env_file:
-      - .env
+    <<: *base
     environment:
-      - DJANGO_SETTINGS_MODULE=workflow_app.settings
-      - INSTANCE_TYPE=job
-    depends_on:
-      - db
-      - rabbitmq
+      - DJANGO_SETTINGS_MODULE=workflow_app.settings # remove after change manage.py location
+    command: ["python", "manage.py", "migrate_all_schemes"]
 
   db:
     image: postgres:13-alpine
