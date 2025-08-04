@@ -190,7 +190,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # = Static Configuration =
 # ========================
 
-STATIC_URL = '/' + REALM_CODE + '/workflow/static/'
+STATIC_URL = f"{REALM_CODE}/workflow/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 STATICFILES_DIR = (
