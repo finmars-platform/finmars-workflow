@@ -14,7 +14,7 @@ from inflection import camelize
 from .settings import package_settings
 
 
-def postprocess_schema_enums(result, generator, **kwargs):
+def postprocess_schema_enums(result, generator, **kwargs):  # noqa: PLR0912, PLR0915
     """
     This a copy of the postprocessing hook for enums provided by drf-spectacular
     with only one change in `iter_prop_containers`. The change allows excluding
@@ -31,11 +31,11 @@ def postprocess_schema_enums(result, generator, **kwargs):
 
     def iter_prop_containers(schema, component_name=None):
         if not component_name:
-            for component_name, schema in schema.items():
+            for component_name, schema in schema.items():  # noqa: B020, PLR1704
                 if spectacular_settings.COMPONENT_SPLIT_PATCH:
-                    component_name = re.sub("^Patched(.+)", r"\1", component_name)
+                    component_name = re.sub("^Patched(.+)", r"\1", component_name)  # noqa: PLW2901
                 if spectacular_settings.COMPONENT_SPLIT_REQUEST:
-                    component_name = re.sub("(.+)Request$", r"\1", component_name)
+                    component_name = re.sub("(.+)Request$", r"\1", component_name)  # noqa: PLW2901
                 yield from iter_prop_containers(schema, component_name)
         elif isinstance(schema, list):
             for item in schema:
@@ -54,9 +54,7 @@ def postprocess_schema_enums(result, generator, **kwargs):
             yield from iter_prop_containers(schema.get("anyOf", []), component_name)
 
     def create_enum_component(name, schema):
-        component = ResolvedComponent(
-            name=name, type=ResolvedComponent.SCHEMA, schema=schema, object=name
-        )
+        component = ResolvedComponent(name=name, type=ResolvedComponent.SCHEMA, schema=schema, object=name)
         generator.registry.register_on_missing(component)
         return component
 
@@ -70,13 +68,11 @@ def postprocess_schema_enums(result, generator, **kwargs):
     for component_name, props in iter_prop_containers(schemas):
         for prop_name, prop_schema in props.items():
             if prop_schema.get("type") == "array":
-                prop_schema = prop_schema.get("items", {})
+                prop_schema = prop_schema.get("items", {})  # noqa: PLW2901
             if "enum" not in prop_schema:
                 continue
             # remove blank/null entry for hashing. will be reconstructed in the last step
-            prop_enum_cleaned_hash = list_hash(
-                [i for i in prop_schema["enum"] if i not in ["", None]]
-            )
+            prop_enum_cleaned_hash = list_hash([i for i in prop_schema["enum"] if i not in ["", None]])
             prop_hash_mapping[prop_name].add(prop_enum_cleaned_hash)
             hash_name_mapping[prop_enum_cleaned_hash].add((component_name, prop_name))
 
@@ -120,41 +116,28 @@ def postprocess_schema_enums(result, generator, **kwargs):
         for prop_name, prop_schema in props.items():
             is_array = prop_schema.get("type") == "array"
             if is_array:
-                prop_schema = prop_schema.get("items", {})
+                prop_schema = prop_schema.get("items", {})  # noqa: PLW2901
 
             if "enum" not in prop_schema:
                 continue
 
             prop_enum_original_list = prop_schema["enum"]
-            prop_schema["enum"] = [
-                i for i in prop_schema["enum"] if i not in ["", None]
-            ]
+            prop_schema["enum"] = [i for i in prop_schema["enum"] if i not in ["", None]]
             prop_hash = list_hash(prop_schema["enum"])
             # when choice sets are reused under multiple names, the generated name cannot be
             # resolved from the hash alone. fall back to prop_name and hash for resolution.
-            enum_name = (
-                enum_name_mapping.get(prop_hash)
-                or enum_name_mapping[prop_hash, prop_name]
-            )
+            enum_name = enum_name_mapping.get(prop_hash) or enum_name_mapping[prop_hash, prop_name]
 
             # split property into remaining property and enum component parts
-            enum_schema = {
-                k: v for k, v in prop_schema.items() if k in ["type", "enum"]
-            }
-            prop_schema = {
-                k: v for k, v in prop_schema.items() if k not in ["type", "enum"]
-            }
+            enum_schema = {k: v for k, v in prop_schema.items() if k in ["type", "enum"]}
+            prop_schema = {k: v for k, v in prop_schema.items() if k not in ["type", "enum"]}  # noqa: PLW2901
 
             components = [create_enum_component(enum_name, schema=enum_schema)]
             if spectacular_settings.ENUM_ADD_EXPLICIT_BLANK_NULL_CHOICE:
                 if "" in prop_enum_original_list:
-                    components.append(
-                        create_enum_component("BlankEnum", schema={"enum": [""]})
-                    )
+                    components.append(create_enum_component("BlankEnum", schema={"enum": [""]}))
                 if None in prop_enum_original_list:
-                    components.append(
-                        create_enum_component("NullEnum", schema={"enum": [None]})
-                    )
+                    components.append(create_enum_component("NullEnum", schema={"enum": [None]}))
 
             if len(components) == 1:
                 prop_schema.update(components[0].ref)
@@ -167,7 +150,5 @@ def postprocess_schema_enums(result, generator, **kwargs):
                 props[prop_name] = safe_ref(prop_schema)
 
     # sort again with additional components
-    result["components"] = generator.registry.build(
-        spectacular_settings.APPEND_COMPONENTS
-    )
+    result["components"] = generator.registry.build(spectacular_settings.APPEND_COMPONENTS)
     return result

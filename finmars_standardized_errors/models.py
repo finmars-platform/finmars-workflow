@@ -3,27 +3,23 @@ import json
 from django.db import models
 from django.utils.translation import gettext_lazy
 
+
 class ErrorRecord(models.Model):
+    url = models.CharField(max_length=255, null=True, blank=True, verbose_name=gettext_lazy("url"))
 
-    url = models.CharField(max_length=255, null=True, blank=True,
-                           verbose_name=gettext_lazy('url'))
+    username = models.CharField(max_length=255, null=True, blank=True, verbose_name=gettext_lazy("username"))
 
-    username = models.CharField(max_length=255, null=True, blank=True,
-                           verbose_name=gettext_lazy('username'))
+    message = models.TextField(blank=True, default="", verbose_name=gettext_lazy("message"))
+    status_code = models.IntegerField(verbose_name=gettext_lazy("integer"))
 
-    message = models.TextField(blank=True, default='', verbose_name=gettext_lazy('message'))
-    status_code = models.IntegerField(verbose_name=gettext_lazy('integer'))
+    notes = models.TextField(blank=True, default="", verbose_name=gettext_lazy("notes"))
 
-    notes = models.TextField(blank=True, default='', verbose_name=gettext_lazy('notes'))
-
-    details_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy('details data'))
+    details_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("details data"))
 
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-
-        ordering = ['-created']
-
+        ordering = ["-created"]
 
     @property
     def details(self):

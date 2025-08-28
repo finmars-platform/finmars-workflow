@@ -9,7 +9,7 @@ class Command(BaseCommand):
     help = "Generate super user"
 
     def handle(self, *args, **options):
-        from workflow.models import User
+        from workflow.models import User  # noqa: PLC0415
 
         username = os.environ.get("ADMIN_USERNAME", None)
         password = os.environ.get("ADMIN_PASSWORD", None)
@@ -19,19 +19,13 @@ class Command(BaseCommand):
             try:
                 superuser = User.objects.get(username=username)
 
-                self.stdout.write(
-                    "Skip. Super user '%s' already exists." % superuser.username
-                )
+                self.stdout.write("Skip. Super user '%s' already exists.", superuser.username)
 
             except User.DoesNotExist:
-                superuser = User.objects.create_superuser(
-                    username=username, email=email, password=password
-                )
+                superuser = User.objects.create_superuser(username=username, email=email, password=password)
 
                 superuser.save()
-                self.stdout.write("Super user '%s' created." % superuser.username)
+                self.stdout.write("Super user '%s' created.", superuser.username)
 
         else:
-            self.stdout.write(
-                "Skip. Super user username and password are not provided."
-            )
+            self.stdout.write("Skip. Super user username and password are not provided.")

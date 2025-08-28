@@ -1,10 +1,8 @@
-import json
 import logging
 import os
 import traceback
 
 import django_filters
-import pexpect
 from django.core.management import call_command
 from django.http import HttpResponse
 from django.utils import timezone
@@ -12,7 +10,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django_filters.rest_framework import FilterSet
 from rest_framework import status
-from rest_framework.authentication import get_authorization_header
+from rest_framework.authentication import BaseAuthentication, get_authorization_header
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny
@@ -20,29 +18,28 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet
 
 from workflow.filters import (
-    WorkflowQueryFilter,
     WholeWordsSearchFilter,
+    WorkflowQueryFilter,
     WorkflowSearchParamFilter,
 )
-from workflow.models import Workflow, Task, Schedule, WorkflowTemplate
+from workflow.models import Schedule, Task, Workflow, WorkflowTemplate
 from workflow.serializers import (
-    WorkflowSerializer,
-    TaskSerializer,
-    PingSerializer,
-    WorkflowLightSerializer,
     BulkSerializer,
+    PingSerializer,
+    ResumeWorkflowSerializer,
     RunWorkflowSerializer,
     ScheduleSerializer,
+    TaskSerializer,
+    WorkflowLightSerializer,
+    WorkflowSerializer,
     WorkflowTemplateSerializer,
-    ResumeWorkflowSerializer,
 )
-from workflow.user_sessions import create_session, execute_code, sessions, execute_file
+from workflow.system import get_system_workflow_manager
+from workflow.user_sessions import create_session, execute_code, execute_file, sessions
 from workflow.workflows import execute_workflow
-
-_l = logging.getLogger("workflow")
 from workflow_app import celery_app
 
-from workflow.system import get_system_workflow_manager
+_l = logging.getLogger("workflow")
 
 system_workflow_manager = get_system_workflow_manager()
 
@@ -54,7 +51,7 @@ class WorkflowTemplateFilterSet(FilterSet):
 
     class Meta:
         model = WorkflowTemplate
-        fields = []
+        fields: list[str] = []
 
 
 class WorkflowTemplateViewSet(ModelViewSet):
@@ -106,7 +103,7 @@ class WorkflowTemplateViewSet(ModelViewSet):
             platform_task_id,
         )
 
-        _l.info("data %s" % data)
+        _l.info("data %s", data)
 
         return Response(data)
 
@@ -114,14 +111,12 @@ class WorkflowTemplateViewSet(ModelViewSet):
 class WorkflowFilterSet(FilterSet):
     name = django_filters.CharFilter()
     user_code = django_filters.CharFilter()
-    status = django_filters.MultipleChoiceFilter(
-        field_name="status", choices=Workflow.STATUS_CHOICES
-    )
+    status = django_filters.MultipleChoiceFilter(field_name="status", choices=Workflow.STATUS_CHOICES)
     created_at = django_filters.DateFromToRangeFilter()
 
     class Meta:
         model = Workflow
-        fields = []
+        fields: list[str] = []
 
 
 class WorkflowViewSet(ModelViewSet):
@@ -175,7 +170,7 @@ class WorkflowViewSet(ModelViewSet):
         if request.space_code not in user_code:
             user_code = f"{request.space_code}.{user_code}"
 
-        _l.info("user_code %s" % user_code)
+        _l.info("user_code %s", user_code)
 
         system_workflow_manager.get_by_user_code(user_code, sync_remote=True)
 
@@ -188,7 +183,7 @@ class WorkflowViewSet(ModelViewSet):
             platform_task_id,
         )
 
-        _l.info("data %s" % data)
+        _l.info("data %s", data)
 
         return Response(data)
 
@@ -207,13 +202,9 @@ class WorkflowViewSet(ModelViewSet):
 
     @action(detail=True, methods=("POST",), url_path="cancel")
     def cancel(self, request, pk=None, *args, **kwargs):
-
-
-
         workflow = Workflow.objects.get(id=pk)
 
-        if workflow.status == Workflow.STATUS_INIT or workflow.status == Workflow.STATUS_PROGRESS or workflow.status == Workflow.STATUS_WAIT:
-
+        if workflow.status in [Workflow.STATUS_INIT, Workflow.STATUS_PROGRESS, Workflow.STATUS_WAIT]:
             workflow.cancel()
 
             return Response(workflow.to_dict())
@@ -229,12 +220,10 @@ class WorkflowViewSet(ModelViewSet):
     )
     def bulk_cancel(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        valid = serializer.is_valid(raise_exception=False)
+        serializer.is_valid(raise_exception=False)
 
         data = serializer.validated_data
-        workflows = Workflow.objects.filter(
-            id__in=data["ids"], status=Workflow.STATUS_PROGRESS
-        )
+        workflows = Workflow.objects.filter(id__in=data["ids"], status=Workflow.STATUS_PROGRESS)
         for workflow in workflows:
             workflow.cancel()
 
@@ -278,9 +267,7 @@ class WorkflowViewSet(ModelViewSet):
             )
 
         except Workflow.DoesNotExist:
-            return Response(
-                {"message": "Workflow not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"message": "Workflow not found."}, status=status.HTTP_404_NOT_FOUND)
 
     # Resume Workflow Action
     @action(
@@ -310,9 +297,7 @@ class WorkflowViewSet(ModelViewSet):
 
             if active_tasks.exists():
                 return Response(
-                    {
-                        "message": "Cannot resume workflow while there are active tasks running."
-                    },
+                    {"message": "Cannot resume workflow while there are active tasks running."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -325,14 +310,11 @@ class WorkflowViewSet(ModelViewSet):
             workflow.status = Workflow.STATUS_PROGRESS
             workflow.save()
 
-            from workflow.tasks.workflows import process_next_node
+            from workflow.tasks.workflows import process_next_node  # noqa: PLC0415
 
             # Trigger the next task from the stored `current_node_id`
             if workflow.current_node_id:
-                nodes = {
-                    node["id"]: node
-                    for node in workflow.workflow_template.data["workflow"]["nodes"]
-                }
+                nodes = {node["id"]: node for node in workflow.workflow_template.data["workflow"]["nodes"]}
                 connections = workflow.workflow_template.data["workflow"]["connections"]
                 adjacency_list = {node_id: [] for node_id in nodes}
                 for connection in connections:
@@ -365,9 +347,7 @@ class WorkflowViewSet(ModelViewSet):
                 )
 
         except Workflow.DoesNotExist:
-            return Response(
-                {"message": "Workflow not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"message": "Workflow not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
 class TaskViewSet(ModelViewSet):
@@ -381,7 +361,7 @@ class PingViewSet(ViewSet):
     permission_classes = [
         AllowAny,
     ]
-    authentication_classes = []
+    authentication_classes: list[BaseAuthentication] = []
 
     def get_bearer_token(self, request):
         auth = get_authorization_header(request).split()
@@ -422,9 +402,7 @@ class RefreshStorageViewSet(ViewSet):
             # _l.info("RefreshStorageViewSet.stop flower result %s" % result)
 
             # c = pexpect.spawn("python /var/app/manage.py sync_remote_storage_to_local_storage", timeout=240)
-            system_workflow_manager.sync_remote_storage_to_local_storage(
-                request.space_code
-            )
+            system_workflow_manager.sync_remote_storage_to_local_storage(request.space_code)
 
             # c = pexpect.spawn("supervisorctl start celery", timeout=240)
             # result = c.read()
@@ -440,8 +418,8 @@ class RefreshStorageViewSet(ViewSet):
 
             system_workflow_manager.register_workflows(request.space_code)
         except Exception as e:
-            _l.info("Could not restart celery.exception %s" % e)
-            _l.info("Could not restart celery.traceback %s" % traceback.format_exc())
+            _l.info("Could not restart celery.exception %s", e)
+            _l.info("Could not restart celery.traceback %s", traceback.format_exc())
 
         return Response({"status": "ok"})
 
@@ -454,9 +432,7 @@ class DefinitionViewSet(ViewSet):
             # _l.info('DefinitionViewSet.definition %s' % definition)
 
             if definition["workflow"]["space_code"] == request.space_code:
-                workflow_definitions.append(
-                    {"user_code": user_code, **definition["workflow"]}
-                )
+                workflow_definitions.append({"user_code": user_code, **definition["workflow"]})
 
         return Response(workflow_definitions)
 
@@ -471,7 +447,7 @@ class LogFileViewSet(ViewSet):
         # Read the last 2MB of your log file
         bytes_to_read = 2 * 1024 * 1024  # 2MB in bytes
 
-        with open(log_file_path, "r") as log_file:
+        with open(log_file_path) as log_file:
             log_file.seek(max(0, log_file.tell() - bytes_to_read), 0)
 
             log_content = log_file.read()
@@ -532,7 +508,7 @@ class RealmMigrateSchemeView(ViewSet):
     permission_classes = [
         AllowAny,
     ]
-    authentication_classes = []
+    authentication_classes: list[BaseAuthentication] = []
 
     def create(self, request, *args, **kwargs):
         try:
@@ -564,7 +540,7 @@ class ScheduleViewSet(ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            from workflow.tasks.workflows import execute
+            from workflow.tasks.workflows import execute  # noqa: PLC0415
 
             # Trigger the Celery task to run the workflow manually
             execute.apply_async(
@@ -590,19 +566,16 @@ class ScheduleViewSet(ModelViewSet):
             )
 
         except Schedule.DoesNotExist:
-            return Response(
-                {"error": "Schedule not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Schedule not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class CeleryStatusViewSet(ViewSet):
     """
     A simple ViewSet that returns Celery queue and worker status.
     """
+
     def list(self, request, *args, **kwargs):
         insp = celery_app.control.inspect()
         data = {
