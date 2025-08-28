@@ -1,5 +1,5 @@
 import os
-
+import sys
 
 chdir = "/var/app/"
 project_name = os.getenv("PROJECT_NAME", "workflow_app")
@@ -7,7 +7,7 @@ project_name = os.getenv("PROJECT_NAME", "workflow_app")
 bind = os.getenv("GUNICORN_BIND", "0.0.0.0:8080")
 
 workers = int(os.getenv("GUNICORN_WORKERS", "1"))
-threads = int(os.getenv("GUNICORN_THREADS", os.cpu_count()))
+threads = int(os.getenv("GUNICORN_THREADS", str(os.cpu_count() or 1)))
 
 timeout = int(os.getenv("GUNICORN_TIMEOUT", "180"))
 
@@ -19,6 +19,7 @@ reload = bool(os.getenv("LOCAL"))
 
 INSTANCE_TYPE = os.getenv("INSTANCE_TYPE", "web")
 
+
 def on_starting(server):
     if INSTANCE_TYPE == "web":
         print("I'm web_instance")
@@ -26,4 +27,4 @@ def on_starting(server):
     else:
         print("Gunicorn should not start for INSTANCE_TYPE:", INSTANCE_TYPE)
         server.log.info("Exiting because this pod is not a web instance")
-        exit(0)
+        sys.exit(1)

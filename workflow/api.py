@@ -1,5 +1,6 @@
+from functools import partial, wraps
 from threading import local
-from functools import wraps, partial
+
 from workflow.tasks.base import BaseTask
 
 _registered_task = local()
@@ -16,7 +17,7 @@ def clear_registered_task():
 
 def task(*task_args, **task_kwargs):
     def decorator(func):
-        from workflow.models import Space
+        from workflow.models import Space  # noqa: PLC0415
 
         space = Space.objects.all().first()
 
@@ -28,9 +29,7 @@ def task(*task_args, **task_kwargs):
         _registered_task.func.__name__ = func.__name__
 
         task_kwargs["name"] = prefixed_name
-        task_kwargs["base"] = (
-            BaseTask  # Extremely important, never forget to replace BaseTask
-        )
+        task_kwargs["base"] = BaseTask  # Extremely important, never forget to replace BaseTask
 
         # Register the function as a Celery task with the updated name
         # task = celery_app.task(*task_args, **task_kwargs)(execute_workflow_step)

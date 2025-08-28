@@ -1,7 +1,7 @@
-from datetime import datetime, timedelta
 import json
-import requests
+from datetime import datetime, timedelta
 
+import requests
 from celery.utils.log import get_task_logger
 from django.conf import settings
 
@@ -39,17 +39,9 @@ def call_export_backend_historical_records(self, *args, **kwargs):
             + "/api/v1/history/historical-record/export/"
         )
     else:
-        url = (
-            "https://"
-            + settings.DOMAIN_NAME
-            + "/"
-            + space.space_code
-            + "/api/v1/history/historical-record/export/"
-        )
+        url = "https://" + settings.DOMAIN_NAME + "/" + space.space_code + "/api/v1/history/historical-record/export/"
 
-    response = requests.post(
-        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
-    )
+    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
         logger.error(response.text)

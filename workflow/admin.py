@@ -1,8 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from workflow.models import User, Task, Workflow, Space, Schedule
-from workflow_app import settings
+from workflow.models import Schedule, Space, Task, User, Workflow
 
 admin.site.site_header = "Workflow Admin"
 admin.site.site_title = "Workflow Admin"

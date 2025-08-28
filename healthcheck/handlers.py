@@ -1,29 +1,31 @@
+import datetime
+import locale
 import logging
+import socket
 import time
 from timeit import default_timer as timer
 
-from healthcheck.conf import HEALTHCHECK
-from healthcheck.exceptions import HealthCheckException, ServiceReturnedUnexpectedResult, ServiceWarning, \
-    ServiceUnavailable
+import psutil
 from django.db import DatabaseError, IntegrityError
 
-import locale
-import socket
-
-import datetime
-import psutil
-
+from healthcheck.conf import HEALTHCHECK
+from healthcheck.exceptions import (
+    HealthCheckException,
+    ServiceReturnedUnexpectedResult,
+    ServiceUnavailable,
+    ServiceWarning,
+)
 from healthcheck.models import HealthcheckTestModel
 
-_l = logging.getLogger('healthcheck')
+_l = logging.getLogger("healthcheck")
 
 host = socket.gethostname()
 
-DISK_USAGE_MAX = HEALTHCHECK['DISK_USAGE_MAX']
-MEMORY_MIN = HEALTHCHECK['MEMORY_MIN']
+DISK_USAGE_MAX = HEALTHCHECK["DISK_USAGE_MAX"]
+MEMORY_MIN = HEALTHCHECK["MEMORY_MIN"]
+
 
 class BaseHealthCheck:
-
     def __init__(self):
         self.errors = []
 
@@ -60,15 +62,12 @@ class BaseHealthCheck:
 
     def pretty_status(self):
         if self.errors:
-
-            return {
-                'errors': [str(e) for e in self.errors]
-            }
+            return {"errors": [str(e) for e in self.errors]}
 
         return self.get_info()
 
     def get_info(self):
-        return 'working'
+        return "working"
 
     @property
     def status(self):
@@ -81,36 +80,32 @@ class BaseHealthCheck:
 class DiskUsagePlugin(BaseHealthCheck):
     def check_status(self):
         try:
-            du = psutil.disk_usage('/')
+            du = psutil.disk_usage("/")
             if DISK_USAGE_MAX and du.percent >= DISK_USAGE_MAX:
-                raise ServiceWarning(
-                    "{host} {percent}% disk usage exceeds {disk_usage}%".format(
-                        host=host, percent=du.percent, disk_usage=DISK_USAGE_MAX)
-                )
+                raise ServiceWarning(f"{host} {du.percent}% disk usage exceeds {DISK_USAGE_MAX}%")
         except ValueError as e:
             self.add_error(ServiceReturnedUnexpectedResult("ValueError"), e)
 
     def get_info(self):
-
         data = []
 
         item = {}
 
-        du = psutil.disk_usage('/')
+        du = psutil.disk_usage("/")
 
-        item['componentType'] = 'system'
-        item['observedValue'] = du.percent
-        item['observedUnit'] = 'percent'
-        item['time'] = datetime.datetime.now().isoformat()
-        item['status'] = 'pass'
-        item['output'] = ''
+        item["componentType"] = "system"
+        item["observedValue"] = du.percent
+        item["observedUnit"] = "percent"
+        item["time"] = datetime.datetime.now().isoformat()
+        item["status"] = "pass"
+        item["output"] = ""
 
         data.append(item)
 
         return data
 
     def identifier(self):
-        return 'disk:utilization'
+        return "disk:utilization"
 
 
 class MemoryUsagePlugin(BaseHealthCheck):
@@ -118,18 +113,14 @@ class MemoryUsagePlugin(BaseHealthCheck):
         try:
             memory = psutil.virtual_memory()
             if MEMORY_MIN and memory.available < (MEMORY_MIN * 1024 * 1024):
-                locale.setlocale(locale.LC_ALL, '')
-                avail = '{:n}'.format(int(memory.available / 1024 / 1024))
-                threshold = '{:n}'.format(MEMORY_MIN)
-                raise ServiceWarning(
-                    "{host} {avail} MB available RAM below {threshold} MB".format(
-                        host=host, avail=avail, threshold=threshold)
-                )
+                locale.setlocale(locale.LC_ALL, "")
+                avail = f"{int(memory.available / 1024 / 1024):n}"
+                threshold = f"{MEMORY_MIN:n}"
+                raise ServiceWarning(f"{host} {avail} MB available RAM below {threshold} MB")
         except ValueError as e:
             self.add_error(ServiceReturnedUnexpectedResult("ValueError"), e)
 
     def get_info(self):
-
         data = []
 
         item = {}
@@ -137,23 +128,22 @@ class MemoryUsagePlugin(BaseHealthCheck):
         memory = psutil.virtual_memory()
 
         available_memory_mb = int(memory.used / 1024 / 1024)
-        item['componentType'] = 'system'
-        item['observedValue'] = available_memory_mb
-        item['observedUnit'] = 'MiB'
-        item['time'] = datetime.datetime.now().isoformat()
-        item['status'] = 'pass'
-        item['output'] = ''
+        item["componentType"] = "system"
+        item["observedValue"] = available_memory_mb
+        item["observedUnit"] = "MiB"
+        item["time"] = datetime.datetime.now().isoformat()
+        item["status"] = "pass"
+        item["output"] = ""
 
         data.append(item)
 
         return data
 
     def identifier(self):
-        return 'memory:utilization'
+        return "memory:utilization"
 
 
 class DatabasePlugin(BaseHealthCheck):
-
     response_time = None
 
     def check_status(self):
@@ -166,57 +156,54 @@ class DatabasePlugin(BaseHealthCheck):
             obj.name = "Second"
             obj.save()
             obj.delete()
-        except IntegrityError:
-            raise ServiceReturnedUnexpectedResult("Integrity Error")
-        except DatabaseError:
-            raise ServiceUnavailable("Database error")
+        except IntegrityError as err:
+            raise ServiceReturnedUnexpectedResult("Integrity Error") from err
+        except DatabaseError as err:
+            raise ServiceUnavailable("Database error") from err
 
     def get_info(self):
-
         data = []
 
         item = {}
 
         response_time_ms = int(round(self.response_time * 1000))
 
-        item['componentType'] = 'datastore'
-        item['observedValue'] = response_time_ms
-        item['observedUnit'] = 'ms'
-        item['time'] = datetime.datetime.now().isoformat()
-        item['status'] = 'pass'
-        item['output'] = ''
+        item["componentType"] = "datastore"
+        item["observedValue"] = response_time_ms
+        item["observedUnit"] = "ms"
+        item["time"] = datetime.datetime.now().isoformat()
+        item["status"] = "pass"
+        item["output"] = ""
 
         data.append(item)
 
         return data
 
     def identifier(self):
-        return 'database:responseTime'
+        return "database:responseTime"
 
 
 class UptimePlugin(BaseHealthCheck):
-
     def check_status(self):
         pass
 
     def get_info(self):
-
         data = []
 
         item = {}
 
         uptime = datetime.datetime.now() - datetime.datetime.fromtimestamp(psutil.boot_time())
 
-        item['componentType'] = 'system'
-        item['observedValue'] = uptime.total_seconds()
-        item['observedUnit'] = 's'
-        item['time'] = datetime.datetime.now().isoformat()
-        item['status'] = 'pass'
-        item['output'] = ''
+        item["componentType"] = "system"
+        item["observedValue"] = uptime.total_seconds()
+        item["observedUnit"] = "s"
+        item["time"] = datetime.datetime.now().isoformat()
+        item["status"] = "pass"
+        item["output"] = ""
 
         data.append(item)
 
         return data
 
     def identifier(self):
-        return 'uptime'
+        return "uptime"

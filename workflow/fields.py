@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from workflow.models import Space, User
+from workflow.models import Space
 
 
 class CurrentSpaceDefault:
