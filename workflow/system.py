@@ -1,24 +1,27 @@
-import fnmatch
 import importlib
 import json
-import logging
 import os
 import shutil
 import sys
 from pathlib import Path
+import fnmatch
 
 import yaml
-from django.db import connection
+
 from pluginbase import PluginBase
 
 from workflow.exceptions import WorkflowNotFound
 from workflow.models import Space
 from workflow.storage import get_storage
 from workflow.utils import build_celery_schedule, construct_path, get_all_tenant_schemas
-from workflow_app import celery_app, settings
+from workflow_app import celery_app
+from workflow_app import settings
+from django.db import connection
+
 
 storage = get_storage()
 
+import logging
 
 _l = logging.getLogger("workflow")
 
@@ -36,7 +39,8 @@ class SystemWorkflowManager:
             schemas = [space_code]
 
         for schema in schemas:
-            if schema != "public":
+
+            if schema != 'public':
                 with connection.cursor() as cursor:
                     cursor.execute(f"SET search_path TO {schema};")
 
@@ -82,15 +86,15 @@ class SystemWorkflowManager:
             # Use Pathlib to simplify path manipulations
             root_path = Path(local_workflows_folder_path)
 
-            _l.info("local_workflows_folder_path %s", local_workflows_folder_path)
+            _l.info("local_workflows_folder_path %s" % local_workflows_folder_path)
 
             # Iterate through all files in the /workflows directory and subdirectories
             for workflow_file in root_path.glob("**/workflow.*"):
-                _l.debug("workflow_file %s", workflow_file)
+                _l.debug("workflow_file %s" % workflow_file)
 
                 if workflow_file.suffix in [".yaml", ".yml", ".json"]:
                     try:
-                        with open(str(workflow_file)) as f:
+                        with open(str(workflow_file), "r") as f:
                             if workflow_file.suffix in [".yaml", ".yml"]:
                                 config = yaml.load(f, Loader=yaml.SafeLoader)
                             elif workflow_file.suffix == ".json":
@@ -105,10 +109,14 @@ class SystemWorkflowManager:
                         config["workflow"]["space_code"] = space.space_code
 
                         self.workflows[space.space_code + "." + user_code] = config
-                        _l.debug(f"Loaded workflow for user code: {space.space_code}.{user_code}")
+                        _l.debug(
+                            f"Loaded workflow for user code: {space.space_code}.{user_code}"
+                        )
 
                     except Exception as e:
-                        _l.warning(f"Could not load workflow config file: {workflow_file} - {e}")
+                        _l.warning(
+                            f"Could not load workflow config file: {workflow_file} - {e}"
+                        )
                 else:
                     _l.debug(f"Skipped unsupported file format: {workflow_file}")
 
@@ -116,7 +124,7 @@ class SystemWorkflowManager:
             _l.error(f"Error loading workflows for schema {schema}: {e}")
 
     def get_by_user_code(self, user_code, sync_remote=False):
-        _l.info("get_by_user_code %s", user_code)
+        _l.info("get_by_user_code %s" % user_code)
 
         workflow = self.workflows.get(user_code)
 
@@ -178,16 +186,25 @@ class SystemWorkflowManager:
 
         # Check if the local workflows directory exists before attempting to remove it
         if os.path.exists(local_workflows_folder_path):
-            _l.info(f"Removing local workflows directory: {local_workflows_folder_path}")
+            _l.info(
+                f"Removing local workflows directory: {local_workflows_folder_path}"
+            )
             try:
                 shutil.rmtree(local_workflows_folder_path)
-                _l.info("====[CLEAR DIRECTORY]==== Successfully removed local workflows directory.")
+                _l.info(
+                    "====[CLEAR DIRECTORY]==== Successfully removed local workflows directory."
+                )
             except Exception as e:
                 _l.error(f"Failed to remove local workflows directory: {e}")
         else:
-            _l.info(f"Local workflows directory does not exist, no need to remove: {local_workflows_folder_path}")
+            _l.info(
+                f"Local workflows directory does not exist, no need to remove: {local_workflows_folder_path}"
+            )
 
-        _l.info("remote_workflows_folder_path %s", construct_path(remote_workflows_folder_path, module_path))
+        _l.info(
+            "remote_workflows_folder_path %s"
+            % construct_path(remote_workflows_folder_path, module_path)
+        )
 
         module_path_components = []
         if module_path:
@@ -197,27 +214,47 @@ class SystemWorkflowManager:
         count = 0
 
         for configuration_directory in configuration_directories:
-            if len(module_path_components) > 0 and configuration_directory != module_path_components[0]:
+            if (
+                len(module_path_components) > 0
+                and configuration_directory != module_path_components[0]
+            ):
                 continue
-            organization_folder_path = construct_path(remote_workflows_folder_path, configuration_directory)
+            organization_folder_path = construct_path(
+                remote_workflows_folder_path, configuration_directory
+            )
             organization_directories, _ = storage.listdir(organization_folder_path)
 
             for organization_directory in organization_directories:
-                if len(module_path_components) > 1 and organization_directory != module_path_components[1]:
+                if (
+                    len(module_path_components) > 1
+                    and organization_directory != module_path_components[1]
+                ):
                     continue
-                module_folder_path = construct_path(organization_folder_path, organization_directory)
+                module_folder_path = construct_path(
+                    organization_folder_path, organization_directory
+                )
                 modules_directories, _ = storage.listdir(module_folder_path)
 
                 for module_directory in modules_directories:
-                    if len(module_path_components) > 2 and module_directory != module_path_components[2]:
+                    if (
+                        len(module_path_components) > 2
+                        and module_directory != module_path_components[2]
+                    ):
                         continue
-                    workflow_folder_path = construct_path(module_folder_path, module_directory)
+                    workflow_folder_path = construct_path(
+                        module_folder_path, module_directory
+                    )
                     workflow_directories, _ = storage.listdir(workflow_folder_path)
 
                     for workflow_directory in workflow_directories:
-                        if len(module_path_components) > 3 and workflow_directory != module_path_components[3]:
+                        if (
+                            len(module_path_components) > 3
+                            and workflow_directory != module_path_components[3]
+                        ):
                             continue
-                        file_folder_path = construct_path(workflow_folder_path, workflow_directory)
+                        file_folder_path = construct_path(
+                            workflow_folder_path, workflow_directory
+                        )
                         _, files = storage.listdir(file_folder_path)
 
                         # _l.info("sync_remote_storage_to_local_storage_for_schema.files %s" % files)
@@ -241,7 +278,10 @@ class SystemWorkflowManager:
                                 # Log the file syncing
                                 # _l.info(f"Syncing file: {filepath}")
 
-                                if any(fnmatch.fnmatch(filename, pattern) for pattern in patterns):
+                                if any(
+                                    fnmatch.fnmatch(filename, pattern)
+                                    for pattern in patterns
+                                ):
                                     with storage.open(filepath) as f:
                                         f_content = f.read()
 
@@ -252,7 +292,9 @@ class SystemWorkflowManager:
                                             "local",
                                             filepath.lstrip("/"),
                                         )
-                                        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                                        os.makedirs(
+                                            os.path.dirname(local_path), exist_ok=True
+                                        )
 
                                         with open(local_path, "wb") as new_file:
                                             new_file.write(f_content)
@@ -261,8 +303,12 @@ class SystemWorkflowManager:
 
                             except Exception as e:
                                 _l.error(f"Could not sync file: {filename} - {e}")
+                                # _l.info("load_user_tasks_from_storage_to_local_filesystem.Going to sync file %s DONE " % filepath)
 
-        _l.info("sync_remote_storage_to_local_storage_for_schema.Done syncing %s files", count)
+        _l.info(
+            "sync_remote_storage_to_local_storage_for_schema.Done syncing %s files"
+            % count
+        )
 
     def import_user_tasks(self, workflow_path="**", raise_exception=False):
         self.plugin_base = PluginBase(package="workflow.foobar")
@@ -275,9 +321,11 @@ class SystemWorkflowManager:
 
         folder = Path(local_workflows_folder_path).resolve()
 
-        _l.info("import_user_tasks %s", local_workflows_folder_path)
+        _l.info("import_user_tasks %s" % local_workflows_folder_path)
 
-        self.plugin_source = self.plugin_base.make_plugin_source(searchpath=[str(folder)])
+        self.plugin_source = self.plugin_base.make_plugin_source(
+            searchpath=[str(folder)]
+        )
 
         tasks = Path(folder).glob(f"{workflow_path}/*.py")
 
@@ -286,13 +334,17 @@ class SystemWorkflowManager:
         for task in tasks:
             if task.stem == "__init__":
                 continue
-            module_name = str(task.relative_to(folder)).replace("/", ".").rsplit(".", 1)[0]
+            module_name = (
+                str(task.relative_to(folder)).replace("/", ".").rsplit(".", 1)[0]
+            )
 
             try:
                 # Load the module with a specific and isolated namespace
                 spec = importlib.util.spec_from_file_location(module_name, task)
                 module = importlib.util.module_from_spec(spec)
-                sys.modules[module_name] = module  # Optional: register to sys.modules if needed globally
+                sys.modules[module_name] = (
+                    module  # Optional: register to sys.modules if needed globally
+                )
                 spec.loader.exec_module(module)
             except Exception as e:
                 _l.info(f"Could not load user script {task}. Error {e}")
@@ -323,10 +375,13 @@ class SystemWorkflowManager:
         _l.info("Tasks are loaded")
 
     def cancel_all_existing_tasks(self, worker_name):
-        from workflow.models import Task, Workflow  # noqa: PLC0415
+        from workflow.models import Task
+        from workflow.models import Workflow
 
         # find workflows through tasks
-        tasks = Task.objects.filter(status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT], worker_name=worker_name)
+        tasks = Task.objects.filter(
+            status__in=[Task.STATUS_PROGRESS, Task.STATUS_INIT], worker_name=worker_name
+        )
         workflow_ids = [task.workflow_id for task in tasks]
         workflows = Workflow.objects.filter(
             status__in=[Workflow.STATUS_PROGRESS, Workflow.STATUS_INIT],
@@ -344,16 +399,16 @@ class SystemWorkflowManager:
 
             try:  # just in case if rabbitmq still holds a task
                 if task.celery_task_id:
-                    celery_app.control.revoke(task.celery_task_id, terminate=True, signal="SIGKILL")
+                    celery_app.control.revoke(task.celery_task_id, terminate=True, signal='SIGKILL')
 
             except Exception as e:
-                _l.error("Something went wrong %s", e)
+                _l.error("Something went wrong %s" % e)
 
             task.mark_task_as_finished()
 
             task.save()
 
-        _l.info("Canceled %s tasks ", len(tasks))
+        _l.info("Canceled %s tasks " % len(tasks))
 
     def init_periodic_tasks(self):
         for user_code, config in self.workflows.items():
@@ -366,7 +421,9 @@ class SystemWorkflowManager:
             if "periodic" in workflow:
                 periodic_conf = workflow.get("periodic")
                 periodic_payload = periodic_conf.get("payload", "{}")
-                schedule_str, schedule_value = build_celery_schedule(user_code, periodic_conf)
+                schedule_str, schedule_value = build_celery_schedule(
+                    user_code, periodic_conf
+                )
 
                 celery_app.conf.beat_schedule.update(
                     {
@@ -389,14 +446,14 @@ class SystemWorkflowManager:
                     }
                 )
 
-        _l.info("Schedule %s", celery_app.conf.beat_schedule)
+        _l.info("Schedule %s" % celery_app.conf.beat_schedule)
 
 
 system_workflow_manager = None
 
 
 def get_system_workflow_manager():
-    global system_workflow_manager  # noqa: PLW0603
+    global system_workflow_manager
 
     if "makemigrations" in sys.argv or "migrate" in sys.argv:
         _l.info("system_workflow_manager ignored - TEST MODE")

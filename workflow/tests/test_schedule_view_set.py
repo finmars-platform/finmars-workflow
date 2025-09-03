@@ -1,7 +1,6 @@
 from rest_framework import status
 from rest_framework.test import APIClient
-
-from workflow.models import Schedule, Space, User
+from workflow.models import Schedule, User, Space
 from workflow.system import get_system_workflow_manager
 
 from .base import BaseTestCase
@@ -13,7 +12,9 @@ class ScheduleViewSetTestCase(BaseTestCase):
         self.realm_code = f"realm{self.random_string(5)}"
         self.space_code = f"space{self.random_string(5)}"
         self.url_prefix = f"/{self.realm_code}/{self.space_code}/workflow/api/schedule/"
-        self.space = Space.objects.create(realm_code=self.realm_code, space_code=self.space_code)
+        self.space = Space.objects.create(
+            realm_code=self.realm_code, space_code=self.space_code
+        )
         self.user = User.objects.create(
             username=self.random_string(5),
             is_staff=True,
@@ -64,7 +65,9 @@ class ScheduleViewSetTestCase(BaseTestCase):
             "crontab_line": "30 * * * *",
             "payload": {"updated": "data"},
         }
-        response = self.client.patch(self.url_prefix + f"{self.schedule.pk}/", data, format="json")
+        response = self.client.patch(
+            self.url_prefix + f"{self.schedule.pk}/", data, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.schedule.refresh_from_db()
         self.assertEqual(self.schedule.user_code, data["user_code"])

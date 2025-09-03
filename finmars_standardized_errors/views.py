@@ -10,24 +10,24 @@ from finmars_standardized_errors.serializers import ErrorRecordSerializer
 class ErrorRecordViewSet(ModelViewSet):
     queryset = ErrorRecord.objects.all()
     serializer_class = ErrorRecordSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated
+    ]
     filter_backends = []
-    ordering_fields = ["created"]
+    ordering_fields = ['created']
 
     def list(self, request, *args, **kwargs):
+
         queryset = self.filter_queryset(self.get_queryset())
 
-        query = request.GET.get("query", None)
+        query = request.GET.get('query', None)
 
         if query:
             queryset = queryset.filter(
-                Q(username__icontains=query)
-                | Q(message__icontains=query)
-                | Q(details_data__icontains=query)
-                | Q(url__icontains=query)
-                | Q(status_code__icontains=query)
-                | Q(created__icontains=query)
-            )
+                Q(username__icontains=query) | Q(message__icontains=query) | Q(details_data__icontains=query) | Q(
+                    url__icontains=query) | Q(
+                    status_code__icontains=query) | Q(
+                    created__icontains=query))
 
         page = self.paginate_queryset(queryset)
 

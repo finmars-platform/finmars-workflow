@@ -8,7 +8,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import os
-from typing import Any
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
@@ -230,8 +229,8 @@ CSRF_TRUSTED_ORIGINS = [
     f"https://{DOMAIN_NAME}",
 ]
 
-if csrf_trusted_origins := os.environ.get("CSRF_TRUSTED_ORIGINS", ""):
-    CSRF_TRUSTED_ORIGINS += csrf_trusted_origins.split(",")
+if os.environ.get("CSRF_TRUSTED_ORIGINS", ""):
+    CSRF_TRUSTED_ORIGINS += os.environ.get("CSRF_TRUSTED_ORIGINS").split(",")
 
 # =================
 # = CSRF SETTINGS =
@@ -282,11 +281,9 @@ REST_FRAMEWORK = {
     # 'DEFAULT_PERMISSION_CLASSES': (
     #     'rest_framework.permissions.IsAuthenticated',
     # ),
-    'DEFAULT_RENDERER_CLASSES': [
+    'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',
-        'rest_framework.renderers.AdminRenderer',
-    ],
+    ),
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning',
     # 'DEFAULT_PARSER_CLASSES': (
     # 'rest_framework.parsers.JSONParser',
@@ -305,6 +302,11 @@ REST_FRAMEWORK = {
     # 'DATETIME_INPUT_FORMATS': (ISO_8601, '%c', '%Y-%m-%d %H:%M:%S %Z'),
 }
 
+REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] += (
+    'rest_framework.renderers.BrowsableAPIRenderer',
+    'rest_framework.renderers.AdminRenderer',
+)
+
 # ===========
 # = LOGGING =
 # ===========
@@ -313,7 +315,7 @@ SEND_LOGS_TO_FINMARS = ENV_BOOL('SEND_LOGS_TO_FINMARS', False)
 FINMARS_LOGSTASH_HOST = ENV_STR('FINMARS_LOGSTASH_HOST', '3.123.159.169')
 FINMARS_LOGSTASH_PORT = ENV_INT('FINMARS_LOGSTASH_PORT', 5044)
 
-LOGGING: dict[str, Any] = {
+LOGGING = {
     'version': 1,
     'formatters': {
         'verbose': {

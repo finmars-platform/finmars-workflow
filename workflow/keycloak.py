@@ -54,11 +54,24 @@ class KeycloakConnect:
         self.client_secret_key = client_secret_key
 
         # Keycloak useful Urls
-        self.well_known_endpoint = self.server_url + "/realms/" + self.realm_name + "/.well-known/openid-configuration"
-        self.token_introspection_endpoint = (
-            self.server_url + "/realms/" + self.realm_name + "/protocol/openid-connect/token/introspect"
+        self.well_known_endpoint = (
+            self.server_url
+            + "/realms/"
+            + self.realm_name
+            + "/.well-known/openid-configuration"
         )
-        self.userinfo_endpoint = self.server_url + "/realms/" + self.realm_name + "/protocol/openid-connect/userinfo"
+        self.token_introspection_endpoint = (
+            self.server_url
+            + "/realms/"
+            + self.realm_name
+            + "/protocol/openid-connect/token/introspect"
+        )
+        self.userinfo_endpoint = (
+            self.server_url
+            + "/realms/"
+            + self.realm_name
+            + "/protocol/openid-connect/userinfo"
+        )
 
     def well_known(self):
         """Lists endpoints and other configuration options
@@ -67,11 +80,14 @@ class KeycloakConnect:
         Returns:
             [type]: [list of keycloak endpoints]
         """
-        response = requests.request("GET", self.well_known_endpoint, verify=settings.VERIFY_SSL)
+        response = requests.request(
+            "GET", self.well_known_endpoint, verify=settings.VERIFY_SSL
+        )
         error = response.raise_for_status()
         if error:
             LOGGER.error(
-                f"Error obtaining list of endpoints from endpoint: {self.well_known_endpoint}, response error {error}"
+                "Error obtaining list of endpoints from endpoint: "
+                f"{self.well_known_endpoint}, response error {error}"
             )
             return {}
         return response.json()
@@ -140,7 +156,7 @@ class KeycloakConnect:
         """
         introspect_token = self.introspect(token)
         is_active = introspect_token.get("active", None)
-        return True if is_active else False  # noqa: SIM210
+        return True if is_active else False
 
     def roles_from_token(self, token):
         """
@@ -156,10 +172,18 @@ class KeycloakConnect:
 
         realm_access = token_decoded.get("realm_access", None)
         resource_access = token_decoded.get("resource_access", None)
-        client_access = resource_access.get(self.client_id, None) if resource_access is not None else None
+        client_access = (
+            resource_access.get(self.client_id, None)
+            if resource_access is not None
+            else None
+        )
 
-        client_roles = client_access.get("roles", None) if client_access is not None else None
-        realm_roles = realm_access.get("roles", None) if realm_access is not None else None
+        client_roles = (
+            client_access.get("roles", None) if client_access is not None else None
+        )
+        realm_roles = (
+            realm_access.get("roles", None) if realm_access is not None else None
+        )
 
         if client_roles is None:
             return realm_roles
@@ -177,7 +201,9 @@ class KeycloakConnect:
             json: user info data
         """
         headers = {"authorization": "Bearer " + token}
-        response = requests.request("GET", self.userinfo_endpoint, headers=headers, verify=settings.VERIFY_SSL)
+        response = requests.request(
+            "GET", self.userinfo_endpoint, headers=headers, verify=settings.VERIFY_SSL
+        )
         error = response.raise_for_status()
         if error:
             LOGGER.error(

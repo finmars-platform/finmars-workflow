@@ -6,8 +6,10 @@ from django.db import connection
 
 __author__ = "szhitenev"
 
-from workflow.system import get_system_workflow_manager
 from workflow.utils import get_all_tenant_schemas
+
+
+from workflow.system import get_system_workflow_manager
 
 system_workflow_manager = get_system_workflow_manager()
 
@@ -32,4 +34,4 @@ class Command(BaseCommand):
                 cursor.execute("SET search_path TO public;")
 
         except Exception as e:
-            print("cancel_existing_tasks error e %s ", e)
+            print("cancel_existing_tasks error e %s " % e)

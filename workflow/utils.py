@@ -1,14 +1,16 @@
 import logging
 import os
+import sys
 import random
 import string
-import sys
 
 from celery.schedules import crontab
-from django.db import connection
 from jsonschema.validators import validator_for
+from django.db import connection
+from django.db import transaction
 
 from workflow.exceptions import WorkflowSyntaxError
+
 
 _l = logging.getLogger("workflow")
 
@@ -33,7 +35,7 @@ def format_schema_errors(e):
 def build_celery_schedule(workflow_name, data):
     """A celery schedule can accept seconds or crontab"""
 
-    _l.info("build_celery_schedule %s", workflow_name)
+    _l.info("build_celery_schedule %s" % workflow_name)
 
     def _handle_schedule(schedule):
         try:
@@ -60,7 +62,7 @@ def build_celery_schedule(workflow_name, data):
         )
 
     excluded_keys = ["payload"]
-    keys = [k for k in data.keys() if k not in excluded_keys]  # noqa: SIM118
+    keys = [k for k in data.keys() if k not in excluded_keys]
 
     schedule_functions = {
         # Legacy syntax for backward compatibility
@@ -70,7 +72,7 @@ def build_celery_schedule(workflow_name, data):
         "interval": float,
     }
 
-    if len(keys) != 1 or keys[0] not in schedule_functions:
+    if len(keys) != 1 or keys[0] not in schedule_functions.keys():
         # When there is no key (schedule, interval, crontab) in the periodic configuration
         raise WorkflowSyntaxError(workflow_name)
 
@@ -80,19 +82,19 @@ def build_celery_schedule(workflow_name, data):
         # Apply the function mapped to the schedule type
         return str(schedule_input), schedule_functions[schedule_key](schedule_input)
     except Exception as e:
-        _l.error("build_celery_schedule.e %s", e)
+        _l.error("build_celery_schedule.e %s" % e)
 
-        raise WorkflowSyntaxError(workflow_name) from e
+        raise WorkflowSyntaxError(workflow_name)
 
 
 def send_alert(workflow):
-    import json  # noqa: PLC0415
-
-    import requests  # noqa: PLC0415
-    from rest_framework_simplejwt.tokens import RefreshToken  # noqa: PLC0415
-
-    from workflow.models import Task, User, Workflow  # noqa: PLC0415
-    from workflow_app import settings  # noqa: PLC0415
+    from workflow.models import Workflow
+    from workflow.models import User
+    from workflow.models import Task
+    from workflow_app import settings
+    from rest_framework_simplejwt.tokens import RefreshToken
+    import requests
+    import json
 
     if workflow.status == Workflow.STATUS_ERROR:
         # _l.info("Going to report Error to Finmars")
@@ -107,7 +109,7 @@ def send_alert(workflow):
             headers = {
                 "Content-type": "application/json",
                 "Accept": "application/json",
-                "Authorization": f"Bearer {refresh.access_token}",
+                "Authorization": "Bearer %s" % refresh.access_token,
             }
 
             error_task = workflow.tasks.filter(status=Task.STATUS_ERROR).first()
@@ -115,7 +117,7 @@ def send_alert(workflow):
             error_description = "Unknown"
 
             if error_task:
-                error_description = str(error_task.error_message)  # noqa: F841
+                error_description = str(error_task.error_message)
 
             _l.info("Going to report Error to Finmars")
 
@@ -129,19 +131,35 @@ def send_alert(workflow):
             }
 
             if workflow.space.realm_code:
-                url = f"https://{settings.DOMAIN_NAME}/{workflow.space.realm_code}/{workflow.space.space_code}/api/v1/utils/expression/"
+                url = (
+                    "https://"
+                    + settings.DOMAIN_NAME
+                    + "/"
+                    + workflow.space.realm_code
+                    + "/"
+                    + workflow.space.space_code
+                    + "/api/v1/utils/expression/"
+                )
             else:
-                url = f"https://{settings.DOMAIN_NAME}/{workflow.space.space_code}/api/v1/utils/expression/"
+                url = (
+                    "https://"
+                    + settings.DOMAIN_NAME
+                    + "/"
+                    + workflow.space.space_code
+                    + "/api/v1/utils/expression/"
+                )
 
-            requests.post(
+            response = requests.post(
                 url=url,
                 data=json.dumps(data),
                 headers=headers,
                 verify=settings.VERIFY_SSL,
             )
 
+            # _l.info('response %s' % response.text)
+
         except Exception as e:
-            _l.error("Could not send system message to finmars. Error %s", e)
+            _l.error("Could not send system message to finmars. Error %s" % e)
 
 
 def construct_path(*args):
@@ -213,13 +231,15 @@ def set_schema_from_context(context):
 
 
 def generate_random_string(N):
-    return "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(N))
+    return "".join(
+        random.choice(string.ascii_lowercase + string.digits) for _ in range(N)
+    )
 
 
 def are_inputs_ready(workflow, node_id, connections):
     # Get all nodes feeding into the current node
 
-    from workflow.models import Task  # noqa: PLC0415
+    from workflow.models import Task
 
     input_nodes = [conn["source"] for conn in connections if conn["target"] == node_id]
 
@@ -253,7 +273,9 @@ def get_next_node_by_condition(current_node_id, condition_result, connections):
     Returns:
     - The ID of the next node to execute.
     """
-    _l.info(f"Evaluating condition for node {current_node_id}, result: {condition_result}")
+    _l.info(
+        f"Evaluating condition for node {current_node_id}, result: {condition_result}"
+    )
 
     # Define which output to follow based on condition result
 
@@ -266,12 +288,19 @@ def get_next_node_by_condition(current_node_id, condition_result, connections):
         raise Exception("Wrong condition_result")
 
     # Iterate through connections to find the target node
-    for connection in connections:  # noqa: F402
-        if connection["source"] == current_node_id and connection["sourceOutput"] == output_to_follow:
+    for connection in connections:
+        if (
+            connection["source"] == current_node_id
+            and connection["sourceOutput"] == output_to_follow
+        ):
             next_node_id = connection["target"]
-            _l.info(f"Following output '{output_to_follow}' to next node {next_node_id}")
+            _l.info(
+                f"Following output '{output_to_follow}' to next node {next_node_id}"
+            )
             return next_node_id
 
     # If no matching connection is found, return None and log a warning
-    _l.warning(f"No matching connection found for node {current_node_id} with output '{output_to_follow}'")
+    _l.warning(
+        f"No matching connection found for node {current_node_id} with output '{output_to_follow}'"
+    )
     return None

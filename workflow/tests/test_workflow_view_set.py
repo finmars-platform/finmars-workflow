@@ -1,8 +1,6 @@
 from datetime import date
-
 from rest_framework.test import APIClient
-
-from workflow.models import Space, User, Workflow
+from workflow.models import Workflow, User, Space
 from workflow.tests.factories import WorkflowTemplateFactory
 
 from .base import BaseTestCase
@@ -14,7 +12,9 @@ class WorkflowViewSetFilterTestCase(BaseTestCase):
         self.realm_code = f"realm{self.random_string(5)}"
         self.space_code = f"space{self.random_string(5)}"
         self.url_prefix = f"/{self.realm_code}/{self.space_code}/workflow/api/workflow/"
-        self.space = Space.objects.create(realm_code=self.realm_code, space_code=self.space_code)
+        self.space = Space.objects.create(
+            realm_code=self.realm_code, space_code=self.space_code
+        )
         self.user = User.objects.create(
             username=self.random_string(5),
             is_staff=True,
@@ -62,7 +62,9 @@ class WorkflowViewSetFilterTestCase(BaseTestCase):
         ids = [w["id"] for w in response.data["results"]]
         self.assertIn(self.workflow1.id, ids)
         self.assertNotIn(self.workflow2.id, ids)
-        self.assertTrue(all([w for w in response.data["results"] if "another" in w["payload"]]))
+        self.assertTrue(
+            all([w for w in response.data["results"] if "another" in w["payload"]])
+        )
 
     def test_filter_queryset_payload_partial_not_found(self):
         response = self.client.get(self.url_prefix, {"payload": "test"})

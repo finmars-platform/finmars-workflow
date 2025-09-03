@@ -1,5 +1,5 @@
-from django.apps import apps
 from django.core.management.base import BaseCommand
+from django.apps import apps
 from django.db import connection
 from django.db.models import AutoField
 
@@ -27,7 +27,9 @@ class Command(BaseCommand):
                         continue
 
                     primary_key_column = primary_key_field.column
-                    cursor.execute(f"SELECT MAX({primary_key_column}) FROM {table_name}")
+                    cursor.execute(
+                        f"SELECT MAX({primary_key_column}) FROM {table_name}"
+                    )
                     max_id = cursor.fetchone()[0] or 0
 
                     cursor.execute(f"""SELECT distinct seq.relname AS sequence_name
@@ -40,14 +42,16 @@ class Command(BaseCommand):
                                           AND tab.relname = '{table_name}' and ns.nspname = '{schema}'""")
                     sequence_name = cursor.fetchone()[0]
                     cursor.execute(
-                        """SELECT COUNT(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+                        f"""SELECT COUNT(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
                                         WHERE c.relkind = 'S' AND c.relname = %s AND n.nspname = %s""",
                         [sequence_name, schema],
                     )
                     sequence_exists = cursor.fetchone()[0]
                     if not sequence_exists:
                         self.stdout.write(
-                            self.style.WARNING(f"Sequence {sequence_name} does not exist for {schema}.{table_name}")
+                            self.style.WARNING(
+                                f"Sequence {sequence_name} does not exist for {schema}.{table_name}"
+                            )
                         )
                         continue
 
@@ -55,7 +59,13 @@ class Command(BaseCommand):
                     last_id = cursor.fetchone()[0]
 
                     if max_id >= last_id:
-                        cursor.execute(f"SELECT setval('{sequence_name}', {max_id + 1}, false)")
-                        self.stdout.write(f"Updated sequence {schema}.{sequence_name} to {max_id + 1}")
+                        cursor.execute(
+                            f"SELECT setval('{sequence_name}', {max_id + 1}, false)"
+                        )
+                        self.stdout.write(
+                            f"Updated sequence {schema}.{sequence_name} to {max_id + 1}"
+                        )
 
-        self.stdout.write(self.style.SUCCESS("Successfully updated sequences where necessary"))
+        self.stdout.write(
+            self.style.SUCCESS("Successfully updated sequences where necessary")
+        )

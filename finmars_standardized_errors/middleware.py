@@ -16,10 +16,11 @@ except ImportError:
 
 import logging
 
-_l = logging.getLogger("finmars")
+_l = logging.getLogger('finmars')
 
 
 class ExceptionMiddleware(MiddlewareMixin):
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -30,7 +31,7 @@ class ExceptionMiddleware(MiddlewareMixin):
     def process_exception(self, request, exception):
         # print('exception %s' % exception)
 
-        _l.error("ExceptionMiddleware process error %s", request.build_absolute_uri())
+        _l.error("ExceptionMiddleware process error %s" % request.build_absolute_uri())
         _l.error(traceback.format_exc())
 
         lines = traceback.format_exc().splitlines()[-6:]
@@ -46,29 +47,23 @@ class ExceptionMiddleware(MiddlewareMixin):
         message = http_code_to_message[500]
 
         data = {
-            "error": {
-                "url": url,
-                "username": username,
-                "details": {
-                    "traceback": "\n".join(traceback_lines),
-                    "error_message": repr(exception),
+            'error': {
+                'url': url,
+                'username': username,
+                'details': {
+                    'traceback': '\n'.join(traceback_lines),
+                    'error_message': repr(exception),
                 },
-                "message": message,
-                "status_code": 500,
-                "datetime": str(datetime.datetime.strftime(now(), "%Y-%m-%d %H:%M:%S")),
+                'message': message,
+                'status_code': 500,
+                'datetime': str(datetime.datetime.strftime(now(), '%Y-%m-%d %H:%M:%S'))
             }
         }
 
-        ErrorRecord.objects.create(
-            url=url,
-            username=username,
-            status_code=500,
-            message=message,
-            details={
-                "traceback": "\n".join(traceback_lines),
-                "error_message": repr(exception),
-            },
-        )
+        ErrorRecord.objects.create(url=url, username=username, status_code=500, message=message, details={
+            'traceback': '\n'.join(traceback_lines),
+            'error_message': repr(exception),
+        })
 
         response_json = json.dumps(data, indent=2, sort_keys=True)
 

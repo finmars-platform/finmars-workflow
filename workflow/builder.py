@@ -4,26 +4,29 @@ from celery import chain, group
 from celery.utils import uuid
 
 from workflow.exceptions import WorkflowSyntaxError
-from workflow.models import Task, Workflow
-from workflow.system import get_system_workflow_manager
+from workflow.models import Workflow, Task
 from workflow.tasks.workflows import (
-    end,
-    execute_workflow_step,
-    failure_hooks_launcher,
     start,
+    end,
+    failure_hooks_launcher,
+    execute_workflow_step,
 )
 from workflow_app import celery_app
 
 _l = logging.getLogger("workflow")
 
+from workflow.system import get_system_workflow_manager
+
 system_workflow_manager = get_system_workflow_manager()
 
 
-class WorkflowBuilder:
+class WorkflowBuilder(object):
     def __init__(self, workflow_id, workflow_data):
         self.workflow_id = workflow_id
         self._workflow = None
-        self.workflow_data = workflow_data  # Pass in the workflow data (which might have a version)
+        self.workflow_data = (
+            workflow_data  # Pass in the workflow data (which might have a version)
+        )
 
     @property
     def workflow(self):
@@ -90,7 +93,9 @@ class WorkflowBuilder:
                 if "type" not in task[name] and task[name]["type"] != "group":
                     raise WorkflowSyntaxError()
 
-                sub_canvas_tasks = [self.new_task(t, is_hook, single=False) for t in task[name]["tasks"]]
+                sub_canvas_tasks = [
+                    self.new_task(t, is_hook, single=False) for t in task[name]["tasks"]
+                ]
 
                 sub_canvas = group(*sub_canvas_tasks, task_id=uuid())
                 canvas.append(sub_canvas)
@@ -111,13 +116,19 @@ class WorkflowBuilder:
         self.tasks = system_workflow_manager.get_tasks(str(self.workflow))
 
         # Initialize hooks
-        self.failure_hook = system_workflow_manager.get_failure_hook_task(str(self.workflow))
+        self.failure_hook = system_workflow_manager.get_failure_hook_task(
+            str(self.workflow)
+        )
         self.failure_hook_canvas = []
 
-        self.success_hook = system_workflow_manager.get_success_hook_task(str(self.workflow))
+        self.success_hook = system_workflow_manager.get_success_hook_task(
+            str(self.workflow)
+        )
         self.success_hook_canvas = []
 
-        self.before_start_hook = system_workflow_manager.get_before_start_hook_task(str(self.workflow))
+        self.before_start_hook = system_workflow_manager.get_before_start_hook_task(
+            str(self.workflow)
+        )
 
         self.parse_queues()
 
@@ -131,7 +142,9 @@ class WorkflowBuilder:
         if self.before_start_hook:
             initial_previous = self.previous
             self.previous = None
-            self.before_start_hook_canvas = self.parse_flat_tasks([self.before_start_hook], True)[0]
+            self.before_start_hook_canvas = self.parse_flat_tasks(
+                [self.before_start_hook], True
+            )[0]
 
             _l.info(f"Before start hook canvas: {self.before_start_hook_canvas}")
 
@@ -182,7 +195,9 @@ class WorkflowBuilder:
 
         # Success Hook
         if self.success_hook and not self.success_hook_canvas:
-            self.success_hook_canvas = [self.parse_flat_tasks([self.success_hook], True)[0]]
+            self.success_hook_canvas = [
+                self.parse_flat_tasks([self.success_hook], True)[0]
+            ]
 
         self.previous = initial_previous
 
@@ -211,7 +226,7 @@ class WorkflowBuilder:
         status_to_cancel = [Task.STATUS_PROGRESS, Task.STATUS_INIT, Task.STATUS_NESTED_PROGRESS]
         for task in self.workflow.tasks:
             if task.status in status_to_cancel:
-                celery_app.control.revoke(task.celery_task_id, terminate=True, signal="SIGKILL")
+                celery_app.control.revoke(task.celery_task_id, terminate=True, signal='SIGKILL')
                 task.mark_task_as_finished()
                 task.status = Task.STATUS_CANCELED
                 task.save()
