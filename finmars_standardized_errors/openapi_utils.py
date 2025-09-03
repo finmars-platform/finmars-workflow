@@ -1,6 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
+from typing import List, Optional, Set, Type, Union
 
 from django import forms
 from django.core.validators import (
@@ -34,9 +35,9 @@ from .openapi_serializers import ValidationErrorEnum
 from .settings import package_settings
 
 
-def get_flat_serializer_fields(  # noqa: PLR0911
-    field: serializers.Field | list[serializers.Field], prefix: str = None
-) -> "list[InputDataField]":
+def get_flat_serializer_fields(
+    field: Union[serializers.Field, List[serializers.Field]], prefix: str = None
+) -> "List[InputDataField]":
     """
     return a flat list of serializer fields. The fields list will later be used
     to identify error codes that can be raised by each field. So, it contains
@@ -64,9 +65,11 @@ def get_flat_serializer_fields(  # noqa: PLR0911
         non_field_errors_name = get_prefix(prefix, drf_settings.NON_FIELD_ERRORS_KEY)
         f = InputDataField(non_field_errors_name, field)
         return [f] + get_flat_serializer_fields(list(field.fields.values()), prefix)
-    elif isinstance(field, list | tuple):
+    elif isinstance(field, (list, tuple)):
         first, *remaining = field
-        return get_flat_serializer_fields(first, prefix) + get_flat_serializer_fields(remaining, prefix)
+        return get_flat_serializer_fields(first, prefix) + get_flat_serializer_fields(
+            remaining, prefix
+        )
     elif hasattr(field, "child"):
         # composite field (List or Dict fields)
         prefix = get_prefix(prefix, field.field_name)
@@ -81,7 +84,7 @@ def get_flat_serializer_fields(  # noqa: PLR0911
         return [InputDataField(name, field)]
 
 
-def get_prefix(prefix: str | None, name: str) -> str:
+def get_prefix(prefix: Optional[str], name: str) -> str:
     if prefix and name:
         return f"{prefix}{package_settings.NESTED_FIELD_SEPARATOR}{name}"
     elif prefix:
@@ -91,8 +94,8 @@ def get_prefix(prefix: str | None, name: str) -> str:
 
 
 def get_serializer_fields_with_error_codes(
-    serializer_fields: "list[InputDataField]",
-) -> "list[InputDataField]":
+    serializer_fields: "List[InputDataField]",
+) -> "List[InputDataField]":
     fields_with_error_codes = []
     for sfield in serializer_fields:
         if error_codes := get_serializer_field_error_codes(sfield.field, sfield.name):
@@ -103,21 +106,27 @@ def get_serializer_fields_with_error_codes(
     sfields_with_unique_together_validators = [
         sfield
         for sfield in fields_with_error_codes
-        if is_basic_serializer(sfield.field) and has_validator(sfield.field, UniqueTogetherValidator)
+        if is_basic_serializer(sfield.field)
+        and has_validator(sfield.field, UniqueTogetherValidator)
     ]
-    add_unique_together_error_codes(sfields_with_unique_together_validators, fields_with_error_codes)
+    add_unique_together_error_codes(
+        sfields_with_unique_together_validators, fields_with_error_codes
+    )
 
     sfields_with_unique_for_validators = [
         sfield
         for sfield in fields_with_error_codes
-        if is_basic_serializer(sfield.field) and has_validator(sfield.field, BaseUniqueForValidator)
+        if is_basic_serializer(sfield.field)
+        and has_validator(sfield.field, BaseUniqueForValidator)
     ]
-    add_unique_for_error_codes(sfields_with_unique_for_validators, fields_with_error_codes)
+    add_unique_for_error_codes(
+        sfields_with_unique_for_validators, fields_with_error_codes
+    )
 
     return fields_with_error_codes
 
 
-def get_serializer_field_error_codes(field: serializers.Field, attr: str) -> set[str]:  # noqa: PLR0912
+def get_serializer_field_error_codes(field: serializers.Field, attr: str) -> Set[str]:
     if field.read_only or isinstance(field, serializers.HiddenField):
         return set()
 
@@ -126,7 +135,11 @@ def get_serializer_field_error_codes(field: serializers.Field, attr: str) -> set
         error_codes.add("required")
     if not field.allow_null:
         error_codes.add("null")
-    if hasattr(field, "allow_blank") and not field.allow_blank and not isinstance(field, serializers.ChoiceField):
+    if (
+        hasattr(field, "allow_blank")
+        and not field.allow_blank
+        and not isinstance(field, serializers.ChoiceField)
+    ):
         error_codes.add("blank")
     if getattr(field, "max_digits", None) is not None:
         error_codes.add("max_digits")
@@ -185,7 +198,9 @@ def get_serializer_field_error_codes(field: serializers.Field, attr: str) -> set
         # to error messages, so it should not be added automatically to error codes
         error_codes_with_specific_conditions.append("invalid")
 
-    remaining_error_codes = set(field.error_messages).difference(error_codes_with_specific_conditions)
+    remaining_error_codes = set(field.error_messages).difference(
+        error_codes_with_specific_conditions
+    )
     error_codes.update(remaining_error_codes)
 
     # for top-level (as opposed to nested) serializer non_field_errors,
@@ -203,17 +218,23 @@ def get_serializer_field_error_codes(field: serializers.Field, attr: str) -> set
     # {'zones': {0: [ErrorDetail(string='A valid integer is required.', code='invalid')]}}
     if isinstance(field, serializers.ManyRelatedField):
         # required and null are added depending on the ManyRelatedField definition
-        child_error_codes = set(field.child_relation.error_messages).difference(["required", "null"])
+        child_error_codes = set(field.child_relation.error_messages).difference(
+            ["required", "null"]
+        )
         error_codes.update(child_error_codes)
 
     return error_codes
 
 
-def add_unique_together_error_codes(sfields_with_unique_together_validators, sfields_with_error_codes):
+def add_unique_together_error_codes(
+    sfields_with_unique_together_validators, sfields_with_error_codes
+):
     for sfield in sfields_with_unique_together_validators:
         sfield.error_codes.add("unique")
         unique_together_validators = [
-            validator for validator in sfield.field.validators if isinstance(validator, UniqueTogetherValidator)
+            validator
+            for validator in sfield.field.validators
+            if isinstance(validator, UniqueTogetherValidator)
         ]
         # fields involved in a unique together constraint have an implied
         # "required" state, so we're adding the "required" error code to them
@@ -224,13 +245,19 @@ def add_unique_together_error_codes(sfields_with_unique_together_validators, sfi
             add_error_code(sfield.name, field, "required", sfields_with_error_codes)
 
 
-def add_unique_for_error_codes(sfields_with_unique_for_validators, sfields_with_error_codes):
+def add_unique_for_error_codes(
+    sfields_with_unique_for_validators, sfields_with_error_codes
+):
     for sfield in sfields_with_unique_for_validators:
         unique_for_validators = [
-            validator for validator in sfield.field.validators if isinstance(validator, BaseUniqueForValidator)
+            validator
+            for validator in sfield.field.validators
+            if isinstance(validator, BaseUniqueForValidator)
         ]
         for v in unique_for_validators:
-            add_error_code(sfield.name, v.date_field, "required", sfields_with_error_codes)
+            add_error_code(
+                sfield.name, v.date_field, "required", sfields_with_error_codes
+            )
             add_error_code(sfield.name, v.field, "required", sfields_with_error_codes)
             add_error_code(sfield.name, v.field, "unique", sfields_with_error_codes)
 
@@ -252,7 +279,7 @@ def add_error_code(attr, field_name, error_code, sfields):
             break
 
 
-def get_filter_forms(view: APIView, filter_backends: list) -> list[forms.Form]:
+def get_filter_forms(view: APIView, filter_backends: list) -> List[forms.Form]:
     filter_forms = []
     for backend in filter_backends:
         model = get_view_model(view)
@@ -264,7 +291,7 @@ def get_filter_forms(view: APIView, filter_backends: list) -> list[forms.Form]:
     return filter_forms
 
 
-def get_form_fields_with_error_codes(form: forms.Form) -> "list[InputDataField]":
+def get_form_fields_with_error_codes(form: forms.Form) -> "List[InputDataField]":
     data_fields = []
     for field_name, field in form.fields.items():
         error_codes = set()
@@ -276,20 +303,20 @@ def get_form_fields_with_error_codes(form: forms.Form) -> "list[InputDataField]"
     return data_fields
 
 
-def get_form_fields(field: forms.Field | list[forms.Field]) -> list[forms.Field]:
+def get_form_fields(field: Union[forms.Field, List[forms.Field]]) -> List[forms.Field]:
     if not field:
         return []
 
-    if isinstance(field, list | tuple):
+    if isinstance(field, (list, tuple)):
         first, *rest = field
         return get_form_fields(first) + get_form_fields(rest)
-    elif isinstance(field, forms.ComboField | forms.MultiValueField):
+    elif isinstance(field, (forms.ComboField, forms.MultiValueField)):
         return [field] + get_form_fields(field.fields)
     else:
         return [field]
 
 
-def get_form_field_error_codes(field: forms.Field) -> set[str]:
+def get_form_field_error_codes(field: forms.Field) -> Set[str]:
     if field.disabled:
         return set()
 
@@ -311,7 +338,9 @@ def get_form_field_error_codes(field: forms.Field) -> set[str]:
     # add the error codes defined in error_messages after excluding the ones
     # that are conditionally raised
     error_codes_with_specific_conditions = ["required", "max_length", "empty"]
-    remaining_error_codes = set(field.error_messages).difference(error_codes_with_specific_conditions)
+    remaining_error_codes = set(field.error_messages).difference(
+        error_codes_with_specific_conditions
+    )
     error_codes.update(remaining_error_codes)
 
     # the "missing" error code is defined but never used by FileField
@@ -320,11 +349,13 @@ def get_form_field_error_codes(field: forms.Field) -> set[str]:
     return error_codes.difference(["missing", "incomplete"])
 
 
-def has_validator(field: serializers.Field | forms.Field, validator):
+def has_validator(field: Union[serializers.Field, forms.Field], validator):
     return any(isinstance(v, validator) for v in field.validators)
 
 
-def get_error_codes_from_validators(field: serializers.Field | forms.Field) -> set[str]:
+def get_error_codes_from_validators(
+    field: Union[serializers.Field, forms.Field]
+) -> Set[str]:
     error_codes = set()
 
     for validator in field.validators:
@@ -354,7 +385,9 @@ def get_error_codes_from_validators(field: serializers.Field | forms.Field) -> s
     return error_codes
 
 
-def get_validation_error_serializer(operation_id: str, data_fields: "list[InputDataField]"):
+def get_validation_error_serializer(
+    operation_id: str, data_fields: "List[InputDataField]"
+):
     validation_error_component_name = f"{camelize(operation_id)}ValidationError"
     errors_component_name = f"{camelize(operation_id)}Error"
 
@@ -384,9 +417,11 @@ def get_validation_error_serializer(operation_id: str, data_fields: "list[InputD
     return ValidationErrorSerializer
 
 
-def get_error_serializer(operation_id: str, attr: str, error_codes: set[str]) -> type[serializers.Serializer]:
+def get_error_serializer(
+    operation_id: str, attr: str, error_codes: Set[str]
+) -> Type[serializers.Serializer]:
     attr_choices = [(attr, attr)]
-    error_code_choices = sorted(zip(error_codes, error_codes, strict=False))
+    error_code_choices = sorted(zip(error_codes, error_codes))
 
     camelcase_operation_id = camelize(operation_id)
     attr_with_underscores = attr.replace(package_settings.NESTED_FIELD_SEPARATOR, "_")
@@ -408,20 +443,22 @@ def get_error_serializer(operation_id: str, attr: str, error_codes: set[str]) ->
 @dataclass
 class InputDataField:
     name: str
-    field: serializers.Field | forms.Field
-    error_codes: set[str] = dataclass_field(default_factory=set)
+    field: Union[serializers.Field, forms.Field]
+    error_codes: Set[str] = dataclass_field(default_factory=set)
 
 
 def get_django_filter_backends(backends):
     """determine django filter backends that raise validation errors"""
     try:
-        from django_filters.rest_framework import DjangoFilterBackend  # noqa: PLC0415
+        from django_filters.rest_framework import DjangoFilterBackend
     except ImportError:
         return []
 
     filter_backends = [filter_backend() for filter_backend in backends]
     return [
-        backend for backend in filter_backends if isinstance(backend, DjangoFilterBackend) and backend.raise_exception
+        backend
+        for backend in filter_backends
+        if isinstance(backend, DjangoFilterBackend) and backend.raise_exception
     ]
 
 

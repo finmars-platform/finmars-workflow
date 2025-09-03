@@ -1,21 +1,23 @@
 import time
-
+from django.test import TransactionTestCase, override_settings
 from celery.contrib.testing.worker import start_worker
 from celery.exceptions import SoftTimeLimitExceeded
 from celery.utils import uuid
-from django.test import TransactionTestCase, override_settings
-
-from workflow.models import Space, Task, User, Workflow
-from workflow.tasks.base import BaseTask
+from workflow.models import Space, Workflow, Task, User
 from workflow_app import celery_app
+from workflow.tasks.base import BaseTask
 
 
-@override_settings(CELERY_BROKER_URL="memory://", CELERY_RESULT_BACKEND="cache+memory://")
+@override_settings(
+    CELERY_BROKER_URL="memory://", CELERY_RESULT_BACKEND="cache+memory://"
+)
 class SignalsTest(TransactionTestCase):
     def setUp(self):
         space = Space.objects.first()
         task_id = uuid()
-        self.workflow = Workflow.objects.create(space=space, owner=User.objects.first(), status=Workflow.STATUS_INIT)
+        self.workflow = Workflow.objects.create(
+            space=space, owner=User.objects.first(), status=Workflow.STATUS_INIT
+        )
         self.task = Task.objects.create(
             workflow=self.workflow,
             space=space,

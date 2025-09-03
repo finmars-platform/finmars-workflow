@@ -1,4 +1,5 @@
 import sys
+from typing import Optional
 
 import django
 from django.conf import settings
@@ -16,7 +17,9 @@ from .settings import package_settings
 from .types import ExceptionHandlerContext
 
 
-def exception_handler(exc: Exception, context: ExceptionHandlerContext) -> Response | None:
+def exception_handler(
+    exc: Exception, context: ExceptionHandlerContext
+) -> Optional[Response]:
     exception_handler_class = package_settings.EXCEPTION_HANDLER_CLASS
     msg = "`EXCEPTION_HANDLER_CLASS` should be a subclass of ExceptionHandler."
     assert issubclass(exception_handler_class, ExceptionHandler), msg
@@ -28,7 +31,7 @@ class ExceptionHandler:
         self.exc = exc
         self.context = context
 
-    def run(self) -> Response | None:
+    def run(self) -> Optional[Response]:
         """entrypoint for handling an exception"""
         exc = self.convert_known_exceptions(self.exc)
         if self.should_not_handle(exc):
@@ -93,7 +96,7 @@ class ExceptionHandler:
         if getattr(exc, "auth_header", None):
             headers["WWW-Authenticate"] = exc.auth_header
         if getattr(exc, "wait", None):
-            headers["Retry-After"] = f"{exc.wait}"
+            headers["Retry-After"] = "%d" % exc.wait
         return headers
 
     def report_exception(self, exc: exceptions.APIException, response):

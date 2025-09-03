@@ -1,7 +1,8 @@
 import logging
 
 from workflow.builder import WorkflowBuilder
-from workflow.models import Space, User, Workflow, WorkflowTemplate
+
+from workflow.models import Workflow, User, Space, WorkflowTemplate
 from workflow.tasks.workflows import execute_workflow_v2
 
 _l = logging.getLogger("workflow")
@@ -10,18 +11,15 @@ _l = logging.getLogger("workflow")
 def execute_workflow(
     username,
     user_code,
-    payload=None,
+    payload={},
     realm_code=None,
     space_code=None,
     platform_task_id=None,
     crontab_id=None,
 ):
-    if payload is None:
-        payload = {}
-
     user = User.objects.get(username=username)
 
-    from workflow.system import get_system_workflow_manager  # noqa: PLC0415
+    from workflow.system import get_system_workflow_manager
 
     system_workflow_manager = get_system_workflow_manager()
 
@@ -30,12 +28,14 @@ def execute_workflow(
 
     workflow_template = None
 
-    _l.info("Looking for worklow template %s", user_code)
+    _l.info("Looking for worklow template %s" % user_code)
 
     space_less_user_code = ".".join(user_code.split(".")[1:])
 
-    try:  # noqa: SIM105
-        workflow_template = WorkflowTemplate.objects.get(user_code=space_less_user_code, space=space)
+    try:
+        workflow_template = WorkflowTemplate.objects.get(
+            user_code=space_less_user_code, space=space
+        )
     except WorkflowTemplate.DoesNotExist:
         pass
 
@@ -67,6 +67,7 @@ def execute_workflow(
 
     else:
         _l.info("Execute old version")
+        data = obj.to_dict()
         workflow = WorkflowBuilder(obj.id, wf)
         workflow.build()  # Build the workflow execution plan
         workflow.run()  # Run the workflow

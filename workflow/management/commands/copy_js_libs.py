@@ -1,6 +1,5 @@
-import os
 import shutil
-
+import os
 from django.core.management.base import BaseCommand
 
 
@@ -29,4 +28,8 @@ class Command(BaseCommand):
             dst = f"workflow/static/scripts/{lib.split('/')[-1]}"
             shutil.copy(src, dst)
 
-        self.stdout.write(self.style.SUCCESS("Successfully copied JavaScript libraries to static directory"))
+        self.stdout.write(
+            self.style.SUCCESS(
+                "Successfully copied JavaScript libraries to static directory"
+            )
+        )

@@ -1,22 +1,24 @@
-import datetime
 from dataclasses import asdict
 from http import HTTPStatus
+from typing import List, Union
 
+import datetime
 from django.utils.timezone import now
+
 from rest_framework import exceptions
 from rest_framework.status import is_client_error
 
 from .models import ErrorRecord
 from .settings import package_settings
-from .types import Error, ErrorResponse, ErrorResponseDetails, ErrorType, ExceptionHandlerContext
+from .types import Error, ErrorResponse, ErrorType, ExceptionHandlerContext, ErrorResponseDetails
 
 
 class ExceptionFormatter:
     def __init__(
-        self,
-        exc: exceptions.APIException,
-        context: ExceptionHandlerContext,
-        original_exc: Exception,
+            self,
+            exc: exceptions.APIException,
+            context: ExceptionHandlerContext,
+            original_exc: Exception,
     ):
         self.exc = exc
         self.context = context
@@ -41,24 +43,16 @@ class ExceptionFormatter:
         error_type = self.get_error_type()
         errors = self.get_errors()
 
-        url = str(self.context["request"].build_absolute_uri())
-        username = str(self.context["request"].user.username)
+        url = str(self.context['request'].build_absolute_uri())
+        username = str(self.context['request'].user.username)
         status_code = self.exc.status_code
         http_code_to_message = {v.value: v.description for v in HTTPStatus}
         message = http_code_to_message[status_code]
         error_datetime = str(datetime.datetime.strftime(now(), "%Y-%m-%d %H:%M:%S"))
 
-        ErrorRecord.objects.create(
-            url=url,
-            username=username,
-            status_code=self.exc.status_code,
-            message=message,
-            details=asdict(ErrorResponseDetails(error_type, errors)),
-        )
+        ErrorRecord.objects.create(url=url, username=username, status_code=self.exc.status_code, message=message, details=asdict(ErrorResponseDetails(error_type, errors)))
 
-        error_response = self.get_error_response(
-            url, username, status_code, message, error_datetime, error_type, errors
-        )
+        error_response = self.get_error_response(url, username, status_code, message, error_datetime, error_type, errors)
 
         return self.format_error_response(error_response)
 
@@ -70,32 +64,26 @@ class ExceptionFormatter:
         else:
             return ErrorType.SERVER_ERROR
 
-    def get_errors(self) -> list[Error]:
+    def get_errors(self) -> List[Error]:
         """
         Account for validation errors in nested serializers by returning a list
         of errors instead of a nested dict
         """
         return flatten_errors(self.exc.detail)
 
-    def get_error_response(
-        self,
-        url: str,
-        username: str,
-        status_code: int,
-        message,
-        error_datetime,
-        error_type: ErrorType,
-        errors: list[Error],
-    ):
+    def get_error_response(self, url: str, username: str, status_code: int, message, error_datetime, error_type: ErrorType, errors: List[Error]):
+
         error_response_details = ErrorResponseDetails(error_type, errors)
 
         return ErrorResponse(url, username, status_code, message, error_datetime, error_response_details)
 
     def format_error_response(self, error_response: ErrorResponse):
-        return {"error": asdict(error_response)}
+        return {'error': asdict(error_response)}
 
 
-def flatten_errors(detail: list | dict | exceptions.ErrorDetail, attr=None, index=None) -> list[Error]:
+def flatten_errors(
+        detail: Union[list, dict, exceptions.ErrorDetail], attr=None, index=None
+) -> List[Error]:
     """
     convert this:
     {
@@ -141,9 +129,13 @@ def flatten_errors(detail: list | dict | exceptions.ErrorDetail, attr=None, inde
                 new_attr = f"{attr}{package_settings.NESTED_FIELD_SEPARATOR}{index}"
             else:
                 new_attr = str(index)
-            return flatten_errors(first_item, new_attr, index) + flatten_errors(rest, attr, index)
+            return flatten_errors(first_item, new_attr, index) + flatten_errors(
+                rest, attr, index
+            )
         else:
-            return flatten_errors(first_item, attr, index) + flatten_errors(rest, attr, index)
+            return flatten_errors(first_item, attr, index) + flatten_errors(
+                rest, attr, index
+            )
     elif isinstance(detail, dict):
         (key, value), *rest = list(detail.items())
         if attr:

@@ -1,6 +1,6 @@
 [project]
 name = "finmars-workflow"
-version = "1.22.0"
+version = "1.17.0"
 
 [tool.ruff]
   line-length = 119
@@ -39,7 +39,7 @@ version = "1.22.0"
 [tool.coverage.run]
 branch = true
 concurrency = ["multiprocessing"]
-source = ["workflow"]
+source = ["poms"]
 
 [tool.coverage.report]
 ignore_errors = true
@@ -47,38 +47,3 @@ ignore_errors = true
 [tool.coverage.html]
 directory = "coverage_html_report"
 title = "Finmars Backend Coverage Report"
-
-[tool.mypy]
-exclude = '(?x)(tests.+\.py$)'
-python_version = "3.12"
-mypy_path = "workflow"    # set base folder for mypy to look for modules
-packages = ["workflow", "workflow_app"]   # specify which packages to check
-warn_no_return = true         # disallow functions without return statement
-warn_redundant_casts = true   # disallow redundant type casts
-warn_unreachable = true       # disallow unreachable code (e.g. code after return statement)
-warn_unused_configs = true    # disallow per-module sections that does not match any file
-warn_unused_ignores = true    # disallow redundant type ignores
-disallow_untyped_defs = false # allow untyped functions for now
-no_implicit_optional = true   # optional must be specified explicitly
-show_error_codes = true       # show type error code in mypy output
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = [
-  "celery.*",
-  "rest_framework.*",
-  "django_filters.*",
-  "django.*",
-  "requests.*",
-  "pandas.*",
-  "flatten_json.*",
-  "django_celery_beat.*",
-  "storages.*",
-  "pluginbase.*",
-  "jsonschema.*",
-  "pytz.*",
-  "croniter.*",
-  "yaml.*",
-  "debug_toolbar.*",
-  "drf_yasg.*",
-]

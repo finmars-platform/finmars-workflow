@@ -14,10 +14,6 @@ help:
 	@echo "  make freeze   		- Freeze dependencies"
 	@echo "  make test     		- Run tests"
 	@echo "  make lint     		- Lint the code"
-	@echo "  make linters  		- Run ruff formatter and linter"
-	@echo "  make mypy     		- Run mypy type checker"
-	@echo "  make mypy-baseline	- Generate mypy baseline file"
-	@echo "  make mypy-check-baseline	- Check for new type errors against baseline"
 	@echo "  make up       		- Run project"
 	@echo "  make down	   		- Stop project"
 	@echo "  make manage   		- Run manage.py command"
@@ -49,10 +45,8 @@ freeze: venv
 test:
 	$(COMPOSE) exec -i $(SERVICE) python manage.py test --keepdb
 
-linters:
-	ruff format; \
-	ruff check --fix; \
-	mypy
+lint:
+	$(COMPOSE) exec -i $(SERVICE) ruff format --exclude '**/migrations/*.py'
 
 migrate:
 	./migrate.sh

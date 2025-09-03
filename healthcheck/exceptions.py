@@ -8,7 +8,7 @@ class HealthCheckException(Exception):
         self.message = message
 
     def __str__(self):
-        return f"{self.message_type}: {self.message}"
+        return "%s: %s" % (self.message_type, self.message)
 
 
 class ServiceWarning(HealthCheckException):

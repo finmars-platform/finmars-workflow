@@ -1,6 +1,9 @@
 import logging
+import sys
 import time
 
+from django.core.paginator import InvalidPage
+from rest_framework.exceptions import NotFound
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.settings import api_settings
 
@@ -12,13 +15,13 @@ class PageNumberPaginationExt(PageNumberPagination):
     max_page_size = api_settings.PAGE_SIZE * 10
 
     def post_paginate_queryset(self, queryset, request, view=None):
-        start_time = time.time()  # noqa: F841
+        start_time = time.time()
 
         qs = super().paginate_queryset(queryset, request, view)
 
         # _l.debug('post_paginate_queryset before list page')
 
-        list_page_st = time.perf_counter()  # noqa: F841
+        list_page_st = time.perf_counter()
 
         # _l.debug('res %s' % len(qs))
 

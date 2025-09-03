@@ -14,7 +14,7 @@ from django.core.files.base import ContentFile
 from flatten_json import flatten
 
 from workflow.authentication import FinmarsRefreshToken
-from workflow.models import Space, User
+from workflow.models import User, Space
 from workflow_app import settings
 
 _l = logging.getLogger("workflow")
@@ -41,7 +41,9 @@ def get_access_token(ttl_minutes=60 * 8, *args, **kwargs):
     bot = User.objects.get(username="finmars_bot")
 
     # Define the expiration time +1 hour from now
-    expiration_time = datetime.datetime.utcnow() + datetime.timedelta(minutes=ttl_minutes)
+    expiration_time = datetime.datetime.utcnow() + datetime.timedelta(
+        minutes=ttl_minutes
+    )
 
     space = Space.objects.all().first()
 
@@ -67,7 +69,9 @@ def get_refresh_token(ttl_minutes=60 * 8, *args, **kwargs):
     bot = User.objects.get(username="finmars_bot")
 
     # Define the expiration time +1 hour from now
-    expiration_time = datetime.datetime.utcnow() + datetime.timedelta(minutes=ttl_minutes)
+    expiration_time = datetime.datetime.utcnow() + datetime.timedelta(
+        minutes=ttl_minutes
+    )
 
     space = Space.objects.all().first()
 
@@ -160,9 +164,17 @@ def execute_expression(expression):
             + "/api/v1/utils/expression/"
         )
     else:
-        url = "https://" + settings.DOMAIN_NAME + "/" + space.space_code + "/api/v1/utils/expression/"
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/utils/expression/"
+        )
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -204,7 +216,9 @@ def execute_expression_procedure(payload):
             + "/api/v1/procedures/expression-procedure/execute/"
         )
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -238,9 +252,17 @@ def execute_data_procedure(payload):
             + "/api/v1/procedures/data-procedure/execute/"
         )
     else:
-        url = "https://" + settings.DOMAIN_NAME + "/" + space.space_code + "/api/v1/procedures/data-procedure/execute/"
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/procedures/data-procedure/execute/"
+        )
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -262,9 +284,23 @@ def get_data_procedure_instance(id):
     space = get_space()
 
     if space.realm_code:
-        url = f"https://{settings.DOMAIN_NAME}/{space.realm_code}/{space.space_code}/api/v1/procedures/data-procedure-instance/{id}/"
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/procedures/data-procedure-instance/%s/" % id
+        )
     else:
-        url = f"https://{settings.DOMAIN_NAME}/{space.space_code}/api/v1/procedures/data-procedure-instance/{id}/"
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/procedures/data-procedure-instance/%s/" % id
+        )
 
     response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
@@ -308,7 +344,9 @@ def execute_pricing_procedure(payload):
             + "/api/v1/procedures/pricing-procedure/execute/"
         )
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -316,10 +354,7 @@ def execute_pricing_procedure(payload):
     return response.json()
 
 
-def execute_task(task_name, payload=None):
-    if payload is None:
-        payload = {}
-
+def execute_task(task_name, payload={}):
     refresh = get_refresh_token()
 
     # _l.info('refresh %s' % refresh.access_token)
@@ -345,9 +380,17 @@ def execute_task(task_name, payload=None):
             + "/api/v1/tasks/task/execute/"
         )
     else:
-        url = "https://" + settings.DOMAIN_NAME + "/" + space.space_code + "/api/v1/tasks/task/execute/"
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/tasks/task/execute/"
+        )
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -370,12 +413,14 @@ def update_task_status(platform_task_id, status, result=None, error=None):
     }
 
     url = f"{get_base_path()}/api/v1/tasks/task/{platform_task_id}/update-status/"
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
     try:
         response.raise_for_status()
         return response.json()
     except Exception as e:
-        _l.error("update_task_status error: %s", e)
+        _l.error("update_task_status error: %s" % e)
 
 
 def get_task(id):
@@ -392,9 +437,23 @@ def get_task(id):
     space = get_space()
 
     if space.realm_code:
-        url = f"https://{settings.DOMAIN_NAME}/{space.realm_code}/{space.space_code}/api/v1/tasks/task/{id}/"
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/tasks/task/%s/" % id
+        )
     else:
-        url = f"https://{settings.DOMAIN_NAME}/{space.space_code}/api/v1/tasks/task/{id}/"
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/tasks/task/%s/" % id
+        )
 
     response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
@@ -404,9 +463,11 @@ def get_task(id):
     return response.json()
 
 
-def _wait_task_to_complete_recursive(task_id=None, retries=5, retry_interval=60, counter=None):
+def _wait_task_to_complete_recursive(
+    task_id=None, retries=5, retry_interval=60, counter=None
+):
     if counter == retries:
-        raise Exception(f"Task exceeded retries {retries} count")
+        raise Exception("Task exceeded retries %s count" % retries)
 
     try:
         result = get_task(task_id)
@@ -414,7 +475,7 @@ def _wait_task_to_complete_recursive(task_id=None, retries=5, retry_interval=60,
         if result["status"] not in ["progress", "P", "I"]:
             return result
     except Exception as e:
-        _l.error("_wait_task_to_complete_recursive %s", e)
+        _l.error("_wait_task_to_complete_recursive %s" % e)
 
     counter = counter + 1
 
@@ -450,7 +511,7 @@ def poll_workflow_status(workflow_id, max_retries=100, wait_time=5):
                 return status  # Return the status when it's success or error
 
         else:
-            _l.error("Error fetching status")
+            _l.error(f"Error fetching status")
 
         time.sleep(wait_time)  # Wait before the next attempt
 
@@ -458,9 +519,11 @@ def poll_workflow_status(workflow_id, max_retries=100, wait_time=5):
     return None  # Indicate that the status was not found
 
 
-def _wait_procedure_to_complete_recursive(procedure_instance_id=None, retries=5, retry_interval=60, counter=None):
+def _wait_procedure_to_complete_recursive(
+    procedure_instance_id=None, retries=5, retry_interval=60, counter=None
+):
     if counter == retries:
-        raise Exception("Task exceeded retries %s count", retries)
+        raise Exception("Task exceeded retries %s count" % retries)
 
     result = get_data_procedure_instance(procedure_instance_id)
 
@@ -479,7 +542,9 @@ def _wait_procedure_to_complete_recursive(procedure_instance_id=None, retries=5,
     )
 
 
-def wait_procedure_to_complete(procedure_instance_id=None, retries=5, retry_interval=60):
+def wait_procedure_to_complete(
+    procedure_instance_id=None, retries=5, retry_interval=60
+):
     counter = 0
     result = None
 
@@ -508,11 +573,27 @@ def execute_transaction_import(payload):
     space = get_space()
 
     if space.realm_code:
-        url = f"https://{settings.DOMAIN_NAME}/{space.realm_code}/{space.space_code}/api/v1/import/transaction-import/execute/"
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/import/transaction-import/execute/"
+        )
     else:
-        url = f"https://{settings.DOMAIN_NAME}/{space.space_code}/api/v1/import/transaction-import/execute/"
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/import/transaction-import/execute/"
+        )
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -536,11 +617,27 @@ def execute_simple_import(payload):
     space = get_space()
 
     if space.realm_code:
-        url = f"https://{settings.DOMAIN_NAME}/{space.realm_code}/{space.space_code}/api/v1/import/simple-import/execute/"
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/import/simple-import/execute/"
+        )
     else:
-        url = f"https://{settings.DOMAIN_NAME}/{space.space_code}/api/v1/import/simple-import/execute/"
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.space_code
+            + "/api/v1/import/simple-import/execute/"
+        )
 
-    response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+    response = requests.post(
+        url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+    )
 
     if response.status_code != 200:
         raise Exception(response.text)
@@ -560,9 +657,17 @@ def request_api(path, method="get", data=None):
     space = get_space()
 
     if space.realm_code:
-        url = f"https://{settings.DOMAIN_NAME}/{space.realm_code}/{space.space_code}{path}"
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + path
+        )
     else:
-        url = f"https://{settings.DOMAIN_NAME}/{space.space_code}{path}"
+        url = "https://" + settings.DOMAIN_NAME + "/" + space.space_code + path
 
     response = None
 
@@ -570,18 +675,28 @@ def request_api(path, method="get", data=None):
         response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
     elif method.lower() == "post":
-        response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+        response = requests.post(
+            url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+        )
 
     elif method.lower() == "put":
-        response = requests.put(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+        response = requests.put(
+            url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+        )
 
     elif method.lower() == "patch":
-        response = requests.patch(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
+        response = requests.patch(
+            url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
+        )
 
     elif method.lower() == "delete":
         response = requests.delete(url=url, headers=headers, verify=settings.VERIFY_SSL)
 
-    if response.status_code not in [200, 201, 204]:
+    if (
+        response.status_code != 200
+        and response.status_code != 201
+        and response.status_code != 204
+    ):
         raise Exception(response.text)
 
     if response.status_code != 204:
@@ -592,7 +707,7 @@ def request_api(path, method="get", data=None):
 
 class Storage:
     def __init__(self):
-        from workflow.storage import get_storage  # noqa: PLC0415
+        from workflow.storage import get_storage
 
         self.storage = get_storage()
 
@@ -718,7 +833,9 @@ class Utils:
         yesterday = today - timedelta(days=1)
         return yesterday
 
-    def get_list_of_business_days_between_two_dates(self, date_from, date_to, to_string=False):
+    def get_list_of_business_days_between_two_dates(
+        self, date_from, date_to, to_string=False
+    ):
         result = []
         format = "%Y-%m-%d"
 
@@ -747,17 +864,28 @@ class Utils:
         space = get_space()
 
         if file_path[0] == "/":
-            file_path = os.path.join(settings.WORKFLOW_STORAGE_ROOT + "/tasks/" + space.space_code + file_path)
+            file_path = os.path.join(
+                settings.WORKFLOW_STORAGE_ROOT
+                + "/tasks/"
+                + space.space_code
+                + file_path
+            )
         else:
-            file_path = os.path.join(settings.WORKFLOW_STORAGE_ROOT + "/tasks/" + space.space_code + "/" + file_path)
+            file_path = os.path.join(
+                settings.WORKFLOW_STORAGE_ROOT
+                + "/tasks/"
+                + space.space_code
+                + "/"
+                + file_path
+            )
 
-        _l.info("import_from_storage.file_path %s", file_path)
+        _l.info("import_from_storage.file_path %s" % file_path)
 
         directory, filename = os.path.split(file_path)
         module_name, _ = os.path.splitext(filename)
 
-        _l.info("import_from_storage.module_name %s", module_name)
-        _l.info("import_from_storage.file_path %s", file_path)
+        _l.info("import_from_storage.module_name %s" % module_name)
+        _l.info("import_from_storage.file_path %s" % file_path)
 
         loader = importlib.machinery.SourceFileLoader(module_name, file_path)
         module = loader.load_module()
@@ -848,7 +976,9 @@ class Utils:
             try:
                 # Try to encode the character in ASCII
                 ascii_char = char.encode("ascii")
-                return ascii_char.decode()  # Return as string if it's a valid ASCII character
+                return (
+                    ascii_char.decode()
+                )  # Return as string if it's a valid ASCII character
             except UnicodeEncodeError:
                 # If it's not an ASCII character, return its Unicode code point
                 return f"U{ord(char)}"
@@ -887,11 +1017,13 @@ class Vault:
                 + space.realm_code
                 + "/"
                 + space.space_code
-                + "/api/v1/vault/vault-record/?user_code="
+                + f"/api/v1/vault/vault-record/?user_code="
                 + path
             )
 
-            response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
+            response = requests.get(
+                url=url, headers=headers, verify=settings.VERIFY_SSL
+            )
 
             if response.status_code != 200:
                 raise Exception(response.text)
@@ -941,7 +1073,9 @@ class Vault:
                     + f"/api/v1/vault/vault-secret/get/?engine_name={engine_name}&path={secret_path}"
                 )
 
-            response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
+            response = requests.get(
+                url=url, headers=headers, verify=settings.VERIFY_SSL
+            )
 
             if response.status_code != 200:
                 raise Exception(response.text)
@@ -949,7 +1083,7 @@ class Vault:
             return response.json()["data"]["data"]
 
         else:
-            raise Exception("Unknown provider %s", provider)
+            raise Exception("Unknown provider %s" % provider)
 
 
 storage = Storage()

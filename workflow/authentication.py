@@ -1,6 +1,6 @@
 import logging
-
 import jwt
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
@@ -19,9 +19,11 @@ def get_access_token(request):
 
     try:
         token = auth[1].decode()
-    except UnicodeError as e:
-        msg = _("Invalid token header. Token string should not contain invalid characters.")
-        raise exceptions.AuthenticationFailed(msg) from e
+    except UnicodeError:
+        msg = _(
+            "Invalid token header. Token string should not contain invalid characters."
+        )
+        raise exceptions.AuthenticationFailed(msg)
 
     return token
 
@@ -42,8 +44,8 @@ class KeycloakAuthentication(TokenAuthentication):
 
         if not auth:
             for key, value in request.COOKIES.items():
-                if key == "access_token":
-                    auth = [b"Token", value.encode()]
+                if "access_token" == key:
+                    auth = ["Token".encode(), value.encode()]
 
         if not auth or auth[0].lower() != self.keyword.lower().encode():
             return None
@@ -57,9 +59,11 @@ class KeycloakAuthentication(TokenAuthentication):
 
         try:
             token = auth[1].decode()
-        except UnicodeError as e:
-            msg = _("Invalid token header. Token string should not contain invalid characters.")
-            raise exceptions.AuthenticationFailed(msg) from e
+        except UnicodeError:
+            msg = _(
+                "Invalid token header. Token string should not contain invalid characters."
+            )
+            raise exceptions.AuthenticationFailed(msg)
 
         return token
 
@@ -67,7 +71,7 @@ class KeycloakAuthentication(TokenAuthentication):
         # print('KeycloakAuthentication.authenticate')
         # print('KeycloakAuthentication.request.method %s' % request.method)
 
-        user_model = get_user_model()  # noqa: F841
+        user_model = get_user_model()
 
         if request.method == "OPTIONS":
             finmars_bot = User.objects.get(username="finmars_bot")
@@ -76,7 +80,9 @@ class KeycloakAuthentication(TokenAuthentication):
 
         token = self.get_auth_token_from_request(request)
         if token is None:
-            return None  # No token or not a Bearer token, continue to next authentication
+            return (
+                None  # No token or not a Bearer token, continue to next authentication
+            )
 
         return self.authenticate_credentials(token, request)
 
@@ -103,14 +109,15 @@ class KeycloakAuthentication(TokenAuthentication):
             userinfo = self.keycloak.userinfo(key)
         except Exception as e:
             msg = _("Invalid or expired token.")
-            raise exceptions.AuthenticationFailed(msg) from e
+            raise exceptions.AuthenticationFailed(msg)
 
-        # user_model = get_user_model()
+        user_model = get_user_model()
+
         # user = user_model.objects.get(username=userinfo['preferred_username'])
 
         try:
             user = User.objects.get(username=userinfo["preferred_username"])
-        except Exception:
+        except Exception as e:
             # _l.error("User not found %s" % e)
 
             # raise exceptions.AuthenticationFailed(e)
@@ -124,7 +131,7 @@ class KeycloakAuthentication(TokenAuthentication):
                     password=generate_random_string(12),
                 )
 
-            except Exception:
+            except Exception as e:
                 try:
                     # TODO
                     # Do not remove this thing
@@ -135,7 +142,7 @@ class KeycloakAuthentication(TokenAuthentication):
 
                 except Exception as e:
                     # _l.error("Error create new user %s" % e)
-                    raise exceptions.AuthenticationFailed(e) from e
+                    raise exceptions.AuthenticationFailed(e)
 
         return user, key
 
@@ -167,9 +174,11 @@ class JWTAuthentication(TokenAuthentication):
 
         try:
             token = auth[1].decode()
-        except UnicodeError as e:
-            msg = _("Invalid token header. Token string should not contain invalid characters.")
-            raise exceptions.AuthenticationFailed(msg) from e
+        except UnicodeError:
+            msg = _(
+                "Invalid token header. Token string should not contain invalid characters."
+            )
+            raise exceptions.AuthenticationFailed(msg)
 
         return token
 
@@ -181,31 +190,34 @@ class JWTAuthentication(TokenAuthentication):
 
         token = self.get_auth_token_from_request(request)
         if token is None:
-            return None  # No token or not a Bearer token, continue to next authentication
+            return (
+                None  # No token or not a Bearer token, continue to next authentication
+            )
 
         return self.authenticate_credentials(token, request)
 
     def authenticate_credentials(self, key, request=None):
-        # user_model = get_user_model()
+        user_model = get_user_model()
+
         # user = user_model.objects.get(username=userinfo['preferred_username'])
 
         try:
             # Decode the JWT token
             payload = jwt.decode(key, settings.SECRET_KEY, algorithms=["HS256"])
 
-        except jwt.ExpiredSignatureError as e:
-            raise exceptions.AuthenticationFailed("Token has expired") from e
-        except jwt.InvalidTokenError as e:
-            raise exceptions.AuthenticationFailed("Invalid token") from e
+        except jwt.ExpiredSignatureError:
+            raise exceptions.AuthenticationFailed("Token has expired")
+        except jwt.InvalidTokenError:
+            raise exceptions.AuthenticationFailed("Invalid token")
         except Exception as e:
-            raise exceptions.AuthenticationFailed(str(e)) from e
+            raise exceptions.AuthenticationFailed(str(e))
 
         try:
             user = User.objects.get(username=payload["username"])
         except Exception as e:
             # _l.error("User not found %s" % e)
 
-            raise exceptions.AuthenticationFailed(e) from e
+            raise exceptions.AuthenticationFailed(e)
 
         return user, key
 
