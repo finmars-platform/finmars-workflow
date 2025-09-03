@@ -508,9 +508,17 @@ def execute_transaction_import(payload):
     space = get_space()
 
     if space.realm_code:
-        url = f"https://{settings.DOMAIN_NAME}/{space.realm_code}/{space.space_code}/api/v1/import/transaction-import/execute/"
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/import/transaction-import/execute/"
+        )
     else:
-        url = f"https://{settings.DOMAIN_NAME}/{space.space_code}/api/v1/import/transaction-import/execute/"
+        url = "https://" + settings.DOMAIN_NAME + "/" + space.space_code + "/api/v1/import/transaction-import/execute/"
 
     response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
@@ -536,9 +544,17 @@ def execute_simple_import(payload):
     space = get_space()
 
     if space.realm_code:
-        url = f"https://{settings.DOMAIN_NAME}/{space.realm_code}/{space.space_code}/api/v1/import/simple-import/execute/"
+        url = (
+            "https://"
+            + settings.DOMAIN_NAME
+            + "/"
+            + space.realm_code
+            + "/"
+            + space.space_code
+            + "/api/v1/import/simple-import/execute/"
+        )
     else:
-        url = f"https://{settings.DOMAIN_NAME}/{space.space_code}/api/v1/import/simple-import/execute/"
+        url = "https://" + settings.DOMAIN_NAME + "/" + space.space_code + "/api/v1/import/simple-import/execute/"
 
     response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
 
@@ -560,9 +576,9 @@ def request_api(path, method="get", data=None):
     space = get_space()
 
     if space.realm_code:
-        url = f"https://{settings.DOMAIN_NAME}/{space.realm_code}/{space.space_code}{path}"
+        url = "https://" + settings.DOMAIN_NAME + "/" + space.realm_code + "/" + space.space_code + path
     else:
-        url = f"https://{settings.DOMAIN_NAME}/{space.space_code}{path}"
+        url = "https://" + settings.DOMAIN_NAME + "/" + space.space_code + path
 
     response = None
 
@@ -584,7 +600,7 @@ def request_api(path, method="get", data=None):
     if response.status_code not in [200, 201, 204]:
         raise Exception(response.text)
 
-    if response.status_code != 204:
+    if response.status_code == 204:
         return response.json()
 
     return {"status": "no_content"}
