@@ -145,3 +145,6 @@ watchdog==6.0.0
 wcwidth==0.2.5
 whitenoise==6.3.0
 zipp==3.19.1
+coverage==7.7.0
+factory-boy==3.3.3
+tblib==3.0.0

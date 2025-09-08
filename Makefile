@@ -12,8 +12,8 @@ help:
 	@echo "  make venv     		- Create virtual environment"
 	@echo "  make install  		- Install dependencies"
 	@echo "  make freeze   		- Freeze dependencies"
-	@echo "  make test     		- Run tests"
-	@echo "  make lint     		- Lint the code"
+	@echo "  make tests    		- Run tests"
+	@echo "  make linters 		- Run ruff formatter and linter"
 	@echo "  make up       		- Run project"
 	@echo "  make down	   		- Stop project"
 	@echo "  make manage   		- Run manage.py command"
@@ -42,11 +42,13 @@ install: venv
 freeze: venv
 	$(PIP) freeze > requirements.txt
 
-test:
+tests:
 	$(COMPOSE) exec -i $(SERVICE) python manage.py test --keepdb
 
-lint:
-	$(COMPOSE) exec -i $(SERVICE) ruff format --exclude '**/migrations/*.py'
+linters:
+	ruff format; \
+	ruff check --fix; \
+	# mypy
 
 migrate:
 	./migrate.sh

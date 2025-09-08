@@ -1,3 +1,4 @@
+import logging
 import os.path
 import time
 import traceback
@@ -7,14 +8,12 @@ from celery.utils import uuid
 from celery.utils.log import get_task_logger
 from django.utils.timezone import now
 
-from workflow.models import Task, Workflow, User, Space, Schedule, WorkflowTemplate
+from workflow.models import Schedule, Space, Task, User, Workflow, WorkflowTemplate
 from workflow.tasks.base import BaseTask
-from workflow.utils import set_schema_from_context, are_inputs_ready
+from workflow.utils import are_inputs_ready, set_schema_from_context
 from workflow_app import celery_app
 
 logger = get_task_logger(__name__)
-import logging
-
 _l = logging.getLogger("workflow")
 
 
@@ -68,10 +67,8 @@ def mark_as_canceled_init_tasks(self, workflow_id, *args, **kwargs):
 
 
 @celery_app.task(bind=True)
-def failure_hooks_launcher(
-    self, workflow_id, queue, tasks_names, payload, *args, **kwargs
-):
-    logger.info("failure_hooks_launcher %s" % workflow_id)
+def failure_hooks_launcher(self, workflow_id, queue, tasks_names, payload, *args, **kwargs):
+    logger.info("failure_hooks_launcher %s", workflow_id)
 
     context = kwargs.get("context")
     set_schema_from_context(context)
@@ -98,7 +95,7 @@ def failure_hooks_launcher(
         )
         task.save()
 
-        logger.info("failure_hooks_launcher.task %s" % task)
+        logger.info("failure_hooks_launcher.task %s", task)
 
         canvas.append(signature)
 
@@ -110,21 +107,19 @@ def failure_hooks_launcher(
         try:
             result.get()
         except Exception as e:
-            logger.error("failure_hooks_launcher.result.get e %s" % e)
+            logger.error("failure_hooks_launcher.result.get e %s", e)
             pass
 
     logger.info("Going to cancel init tasks")
 
     task_id = uuid()
-    signature_mark_as_canceled = celery_app.tasks.get(
-        "workflow.tasks.workflows.mark_as_canceled_init_tasks"
-    ).subtask(
+    signature_mark_as_canceled = celery_app.tasks.get("workflow.tasks.workflows.mark_as_canceled_init_tasks").subtask(
         kwargs={"workflow_id": workflow_id},
         queue="workflow",
         task_id=task_id,
     )
 
-    logger.info("signature_mark_as_canceled %s" % signature_mark_as_canceled)
+    logger.info("signature_mark_as_canceled %s", signature_mark_as_canceled)
 
     signature_mark_as_canceled.apply_async()
 
@@ -140,10 +135,10 @@ def failure_hooks_launcher(
 def execute(self, user_code, payload, is_manager, *args, **kwargs):
     from workflow.system import get_system_workflow_manager
 
-    manager = get_system_workflow_manager()
+    manager = get_system_workflow_manager()  # noqa: F841
 
     try:
-        logger.info("periodic.execute %s" % user_code)
+        logger.info("periodic.execute %s", user_code)
 
         context = kwargs.get("context")
 
@@ -154,7 +149,7 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
 
         schedule_id = kwargs.get("schedule_id")
 
-        logger.info("periodic.schedule_id %s" % schedule_id)
+        logger.info("periodic.schedule_id %s", schedule_id)
 
         schedule = Schedule.objects.get(id=schedule_id)
 
@@ -179,12 +174,12 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
         return data
 
     except Exception as e:
-        logger.error("periodic task error: %s" % e, exc_info=True)
+        logger.error("periodic task error: %s", e, exc_info=True)
 
 
 @celery_app.task(bind=True, base=BaseTask)
-def execute_workflow_step(self, *args, **kwargs):
-    from workflow.api import get_registered_task, clear_registered_task
+def execute_workflow_step(self, *args, **kwargs):  # noqa: PLR0912,PLR0915
+    from workflow.api import clear_registered_task, get_registered_task
     from workflow.system import get_system_workflow_manager
 
     clear_registered_task()
@@ -214,18 +209,14 @@ def execute_workflow_step(self, *args, **kwargs):
 
             # If the code has defined a `main()` function, call it
             if "main" in exec_scope:
-                # logger.info(f"Executing main() function in user-provided source code for node {self.task.source_code}")
+                # logger.info(f"Executing main() function in user-provided source code for node {self.task.source_code}") # noqa: E501
                 result = exec_scope["main"](self, *args, **kwargs)
                 return result
             else:
-                logger.warning(
-                    f"No main() function found in source code for node. Skipping execution."
-                )
+                logger.warning("No main() function found in source code for node. Skipping execution.")
 
         except Exception as e:
-            logger.error(
-                f"Error executing custom source code for node {self.task.source_code}: {e}"
-            )
+            logger.error(f"Error executing custom source code for node {self.task.source_code}: {e}")
             raise e
 
     else:
@@ -234,19 +225,13 @@ def execute_workflow_step(self, *args, **kwargs):
         if target_workflow_user_code.endswith(".task"):
             target_workflow_user_code = target_workflow_user_code[:-5]
 
-        _l.info("target_workflow_user_code %s" % target_workflow_user_code)
+        _l.info("target_workflow_user_code %s", target_workflow_user_code)
 
-        target_space_workflow_user_code = (
-            f"{context.get('space_code')}.{target_workflow_user_code}"
-        )
+        target_space_workflow_user_code = f"{context.get('space_code')}.{target_workflow_user_code}"
 
-        target_wf = manager.get_by_user_code(
-            target_space_workflow_user_code, sync_remote=True
-        )
+        target_wf = manager.get_by_user_code(target_space_workflow_user_code, sync_remote=True)
 
-        _l.info(
-            f"execute_workflow_step: Target Workflow Version {target_wf.get('version')}"
-        )
+        _l.info(f"execute_workflow_step: Target Workflow Version {target_wf.get('version')}")
 
         if int(target_wf.get("version", 1)) == 2:
             target_workflow_template = None
@@ -259,7 +244,7 @@ def execute_workflow_step(self, *args, **kwargs):
                 )
             except Exception as e:
                 _l.error("No target_workflow_template exist, abort")
-                raise Exception(e)
+                raise Exception(e) from e
 
             child_workflow = Workflow.objects.create(
                 owner=parent_workflow.owner,
@@ -308,16 +293,14 @@ def execute_workflow_step(self, *args, **kwargs):
             if isinstance(imports, list):
                 for extra_path in imports:
                     logger.info(f"importing {extra_path}")
-                    extra_path = os.path.normpath(os.path.join(module_path, extra_path))
+                    extra_path = os.path.normpath(os.path.join(module_path, extra_path))  # noqa: PLW2901
                     last_segment = extra_path.split("/")[-1]
                     if "*" in last_segment or "?" in last_segment:
                         # given a wildcard for file name
-                        extra_path, pattern = extra_path.rsplit("/", maxsplit=1)
+                        extra_path, pattern = extra_path.rsplit("/", maxsplit=1)  # noqa: PLW2901
                     else:
                         pattern = "*.*"
-                    manager.sync_remote_storage_to_local_storage_for_schema(
-                        extra_path, [pattern]
-                    )
+                    manager.sync_remote_storage_to_local_storage_for_schema(extra_path, [pattern])
 
             manager.import_user_tasks(module_path, raise_exception=True)
 
@@ -332,7 +315,7 @@ def execute_workflow_step(self, *args, **kwargs):
 
 @celery_app.task(bind=True)
 def execute_workflow_v2(self, *args, **kwargs):
-    logger.info(f"Opening the workflow with ID: {kwargs.get('workflow_id', None)}")
+    logger.info(f"Opening the workflow with ID: {kwargs.get('workflow_id')}")
 
     # Log the context passed to the workflow
     context = kwargs.get("context")
@@ -369,11 +352,7 @@ def execute_workflow_v2(self, *args, **kwargs):
     logger.info(f"Adjacency list created: {adjacency_list}")
 
     # Start from nodes without incoming edges (root nodes)
-    start_nodes = [
-        node_id
-        for node_id in nodes
-        if not any(node_id == conn["target"] for conn in connections)
-    ]
+    start_nodes = [node_id for node_id in nodes if not any(node_id == conn["target"] for conn in connections)]
     logger.info(f"Start nodes determined: {start_nodes}")
 
     # Execute tasks from start nodes
@@ -396,9 +375,7 @@ def execute_workflow_v2(self, *args, **kwargs):
 
 
 @celery_app.task(bind=True)
-def process_next_node(
-    self, current_node_id, workflow_id, nodes, adjacency_list, **kwargs
-):
+def process_next_node(self, current_node_id, workflow_id, nodes, adjacency_list, **kwargs):  # noqa: PLR0912,PLR0915
     context = kwargs.get("context")
     logger.info(f"process_next_node context received: {context}")
     set_schema_from_context(context)
@@ -411,18 +388,14 @@ def process_next_node(
         current_node = nodes[current_node_id]
 
         if workflow.status == Workflow.STATUS_WAIT:
-            logger.info(
-                f"Workflow {workflow_id} is currently waiting. Stopping execution until resumed."
-            )
+            logger.info(f"Workflow {workflow_id} is currently waiting. Stopping execution until resumed.")
             # Save the current_node_id for resuming
             workflow.current_node_id = current_node_id
             workflow.save()
             return  # Exit the task without further execution
 
         if not are_inputs_ready(workflow, current_node_id, kwargs.get("connections")):
-            logger.info(
-                f"Task for Node ID: {current_node_id}, inputs are not ready, wait"
-            )
+            logger.info(f"Task for Node ID: {current_node_id}, inputs are not ready, wait")
             return
 
         if current_node["data"]["node"]["type"] == "source_code":
@@ -432,9 +405,7 @@ def process_next_node(
         else:
             workflow_user_code = current_node["data"]["workflow"]["user_code"]
 
-        logger.info(
-            f"Executing task for Node ID: {current_node_id}, Task Name: {workflow_user_code}"
-        )
+        logger.info(f"Executing task for Node ID: {current_node_id}, Task Name: {workflow_user_code}")
 
         payload = workflow.payload  # Default to the workflow payload
         previous_output = None
@@ -443,50 +414,36 @@ def process_next_node(
             # Identify the previous node connected to "in"
             previous_node_id = None
             for connection in kwargs.get("connections"):
-                if (
-                    connection["target"] == current_node_id
-                    and connection["targetInput"] == "in"
-                ):
+                if connection["target"] == current_node_id and connection["targetInput"] == "in":
                     previous_node_id = connection["source"]
                     break
 
             if previous_node_id:
                 previous_task = (
-                    Task.objects.filter(workflow=workflow, node_id=previous_node_id)
-                    .order_by("-created_at")
-                    .first()
+                    Task.objects.filter(workflow=workflow, node_id=previous_node_id).order_by("-created_at").first()
                 )
                 if previous_task:
                     previous_output = previous_task.result
-                    logger.info(
-                        f"Using previous output from node ID {previous_node_id}: {previous_output}"
-                    )
+                    logger.info(f"Using previous output from node ID {previous_node_id}: {previous_output}")
 
         # Find the previous task that provided the payload
         if "payload_input" in current_node["inputs"]:
             # Identify the payload generator node connected to "payload_input"
             payload_generator_node_id = None
             for connection in kwargs.get("connections"):
-                if (
-                    connection["target"] == current_node_id
-                    and connection["targetInput"] == "payload_input"
-                ):
+                if connection["target"] == current_node_id and connection["targetInput"] == "payload_input":
                     payload_generator_node_id = connection["source"]
                     break
 
             if payload_generator_node_id:
                 payload_task = (
-                    Task.objects.filter(
-                        workflow=workflow, node_id=payload_generator_node_id
-                    )
+                    Task.objects.filter(workflow=workflow, node_id=payload_generator_node_id)
                     .order_by("-created_at")
                     .first()
                 )
                 if payload_task:
                     payload = payload_task.result
-                    logger.info(
-                        f"Using payload from node ID {payload_generator_node_id}: {payload}"
-                    )
+                    logger.info(f"Using payload from node ID {payload_generator_node_id}: {payload}")
 
         # Create Celery signature for the current task
         task_id = uuid()

@@ -4,7 +4,7 @@ import os
 import shutil
 import tempfile
 from io import BytesIO
-from zipfile import ZipFile, ZIP_DEFLATED
+from zipfile import ZIP_DEFLATED, ZipFile
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.core.files.base import ContentFile, File
@@ -35,7 +35,7 @@ class NamedBytesIO(BytesIO):
         self.name = name
 
 
-class EncryptedStorage(object):
+class EncryptedStorage:
     def get_symmetric_key(self):
         if settings.ENCRYPTION_KEY:
             self.symmetric_key = bytes.fromhex(settings.ENCRYPTION_KEY)
@@ -49,9 +49,7 @@ class EncryptedStorage(object):
                 self.symmetric_key = self._get_symmetric_key_from_vault()
 
             except Exception as e:
-                raise Exception(
-                    "Could not connect to Vault symmetric_key is not set. Error %s" % e
-                )
+                raise Exception("Could not connect to Vault symmetric_key is not set. Error %s", e) from e
 
     def _get_symmetric_key_from_vault(self):
         # Retrieve the symmetric key from Vault
@@ -154,13 +152,13 @@ class FinmarsStorage(EncryptedStorage):
 
         try:  # TODO maybe wrong implementation
             if not self.listdir:
-                raise NotImplemented("Listdir method not implemented")
+                raise NotImplementedError("Listdir method not implemented")
             # Check if the folder exists by listing its contents
             files, folders = self.listdir(folder_path)
 
             # Return True if there are any files in the folder
             return bool(files)
-        except Exception as e:
+        except Exception:
             return False
 
     def download_file_and_save_locally(self, storage_file_path, local_file_path):
@@ -201,19 +199,12 @@ class FinmarsStorage(EncryptedStorage):
                 if path[0] == "/":
                     self.download_directory(space.space_code + path, local_filename)
                 else:
-                    self.download_directory(
-                        space.space_code + "/" + path, local_filename
-                    )
+                    self.download_directory(space.space_code + "/" + path, local_filename)
 
+            elif path[0] == "/":
+                self.download_file_and_save_locally(space.space_code + path, local_filename)
             else:
-                if path[0] == "/":
-                    self.download_file_and_save_locally(
-                        space.space_code + path, local_filename
-                    )
-                else:
-                    self.download_file_and_save_locally(
-                        space.space_code + "/" + path, local_filename
-                    )
+                self.download_file_and_save_locally(space.space_code + "/" + path, local_filename)
 
         self.zip_directory(temp_dir_path, zip_filename)
 
@@ -236,9 +227,7 @@ class FinmarsSFTPStorage(FinmarsStorage, SFTPStorage):
         for root, _, files in self.sftp_client.walk(directory_path):
             for file in files:
                 remote_path = os.path.join(root, file)
-                local_path = os.path.join(
-                    local_destination_path, os.path.relpath(remote_path, directory_path)
-                )
+                local_path = os.path.join(local_destination_path, os.path.relpath(remote_path, directory_path))
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 self.sftp_client.get(remote_path, local_path)
 
@@ -267,9 +256,7 @@ class FinmarsAzureStorage(FinmarsStorage, AzureStorage):
         for blob in blob_list:
             # Check if the blob is inside the folder
             if blob.name.startswith(directory_path):
-                local_path = os.path.join(
-                    local_destination_path, os.path.relpath(blob.name, directory_path)
-                )
+                local_path = os.path.join(local_destination_path, os.path.relpath(blob.name, directory_path))
 
                 # Create the local directory structure
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
@@ -290,9 +277,7 @@ class FinmarsAzureStorage(FinmarsStorage, AzureStorage):
         for blob in blob_list:
             # Check if the blob is inside the folder
             if blob.name.startswith(directory_path):
-                local_path = os.path.join(
-                    temp_dir, os.path.relpath(blob.name, directory_path)
-                )
+                local_path = os.path.join(temp_dir, os.path.relpath(blob.name, directory_path))
 
                 # Create the local directory structure
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
@@ -328,16 +313,14 @@ class FinmarsS3Storage(FinmarsStorage, S3Boto3Storage):
             self.bucket.delete_objects(Delete={"Objects": objects_to_delete})
 
     def download_directory(self, directory_path, local_destination_path):
-        _l.info("directory_path %s" % directory_path)
+        _l.info("directory_path %s", directory_path)
 
         folder = os.path.dirname(local_destination_path)
         if folder:
             os.makedirs(folder, exist_ok=True)
 
         for obj in self.bucket.objects.filter(Prefix=directory_path):
-            local_path = os.path.join(
-                local_destination_path, os.path.relpath(obj.key, directory_path)
-            )
+            local_path = os.path.join(local_destination_path, os.path.relpath(obj.key, directory_path))
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
             self.bucket.download_file(obj.key, local_path)
 
@@ -348,9 +331,7 @@ class FinmarsS3Storage(FinmarsStorage, S3Boto3Storage):
 
         # Download all files from the remote folder to the temporary local directory
         for obj in self.bucket.objects.filter(Prefix=directory_path):
-            local_path = os.path.join(
-                temp_dir, os.path.relpath(obj.key, directory_path)
-            )
+            local_path = os.path.join(temp_dir, os.path.relpath(obj.key, directory_path))
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
             self.bucket.download_file(obj.key, local_path)
 

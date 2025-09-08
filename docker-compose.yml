@@ -7,8 +7,12 @@ services:
     volumes:
       - ./workflow:/var/app/workflow
     depends_on:
-      - db
-      - rabbitmq
+      migration:
+        condition: service_completed_successfully
+      db:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
     ports:
       - "8001:8080"
 
@@ -16,6 +20,7 @@ services:
     <<: *base
     environment:
       - DJANGO_SETTINGS_MODULE=workflow_app.settings # remove after change manage.py location
+    ports: []
     command: >
       sh -c "celery --app workflow_app worker --concurrency=1 --loglevel=INFO -n $WORKFLOW_WORKER_NAME -Q $WORKFLOW_QUEUES --max-tasks-per-child=1"
 
@@ -23,6 +28,7 @@ services:
     <<: *base
     environment:
       - DJANGO_SETTINGS_MODULE=workflow_app.settings # remove after change manage.py location
+    ports: []
     command: >
       sh -c "celery --app workflow_app beat --loglevel=INFO --scheduler workflow.schedulers:DatabaseScheduler --pidfile=/tmp/celerybeat.pid"
 
@@ -30,6 +36,12 @@ services:
     <<: *base
     environment:
       - DJANGO_SETTINGS_MODULE=workflow_app.settings # remove after change manage.py location
+    ports: []
+    depends_on:
+      db:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
     command: ["python", "manage.py", "migrate_all_schemes"]
 
   db:

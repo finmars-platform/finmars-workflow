@@ -1,6 +1,5 @@
 import os
 
-
 chdir = "/var/app/"
 project_name = os.getenv("PROJECT_NAME", "workflow_app")
 
@@ -19,6 +18,7 @@ reload = bool(os.getenv("LOCAL"))
 
 INSTANCE_TYPE = os.getenv("INSTANCE_TYPE", "web")
 
+
 def on_starting(server):
     if INSTANCE_TYPE == "web":
         print("I'm web_instance")
@@ -26,4 +26,4 @@ def on_starting(server):
     else:
         print("Gunicorn should not start for INSTANCE_TYPE:", INSTANCE_TYPE)
         server.log.info("Exiting because this pod is not a web instance")
-        exit(0)
+        exit(0)  # noqa: PLR1722
