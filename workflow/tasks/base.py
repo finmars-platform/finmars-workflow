@@ -1,16 +1,14 @@
 from celery import Task as _Task
-from celery.signals import task_prerun, task_postrun, task_failure, task_internal_error
-from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
+from celery.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
+from celery.signals import task_failure, task_internal_error, task_postrun, task_prerun
 from celery.utils.log import get_task_logger
 from django.db import connection
-from django.utils.timezone import now
 
 from workflow.models import Task, Workflow
 from workflow.utils import (
-    send_alert,
     schema_exists,
+    send_alert,
     set_schema_from_context,
-    get_next_node_by_condition,
 )
 from workflow_app import celery_app
 
@@ -41,14 +39,14 @@ def workflow_prerun(task_id, task, sender, *args, **kwargs):
                     logger.info(f"task_prerun.context {space_code}")
             else:  # REMOVE IN 1.9.0, PROBABLY SECURITY ISSUE
                 with connection.cursor() as cursor:
-                    cursor.execute(f"SET search_path TO public;")
+                    cursor.execute("SET search_path TO public;")
         else:
             raise Exception("No space_code in context")
     else:
         raise Exception("No context in kwargs")
 
     with celery_app.app.app_context():
-        print("task_id %s" % task_id)
+        print("task_id %s", task_id)
 
         task = Task.objects.get(celery_task_id=task_id)
         task.status = Task.STATUS_PROGRESS
@@ -66,9 +64,9 @@ def cleanup(task_id, **kwargs):
 @task_failure.connect
 @task_internal_error.connect
 def on_failure(task_id, exception, args, einfo, **kwargs):
-    logger.info("task_failure.task_id: %s" % task_id)
-    logger.info("task_failure.kwargs: %s" % kwargs["kwargs"])
-    logger.info("task_failure.exception: %s" % exception)
+    logger.info("task_failure.task_id: %s", task_id)
+    logger.info("task_failure.kwargs: %s", kwargs["kwargs"])
+    logger.info("task_failure.exception: %s", exception)
 
     context = kwargs["kwargs"].get("context")
     set_schema_from_context(context)
@@ -76,7 +74,7 @@ def on_failure(task_id, exception, args, einfo, **kwargs):
     task = Task.objects.get(celery_task_id=task_id)
     workflow = Workflow.objects.get(id=task.workflow_id)
 
-    if isinstance(exception, (TimeLimitExceeded, SoftTimeLimitExceeded)):
+    if isinstance(exception, TimeLimitExceeded | SoftTimeLimitExceeded):
         workflow.status = Workflow.STATUS_TIMEOUT
         task.status = Task.STATUS_TIMEOUT
     else:
@@ -91,9 +89,7 @@ def on_failure(task_id, exception, args, einfo, **kwargs):
     workflow.save()
 
     if task.workflow.parent:
-        logger.info(
-            f"task_failureWorkflow has a parent with ID {task.workflow.parent.id}. Triggering next task."
-        )
+        logger.info(f"task_failureWorkflow has a parent with ID {task.workflow.parent.id}. Triggering next task.")
         parent_workflow = task.workflow.parent
 
         parent_task = Task.objects.get(
@@ -172,8 +168,8 @@ class BaseTask(_Task):
         return is_running
 
     def before_start(self, task_id, args, kwargs):
-        logger.info("BaseTask.before_start.task_id %s" % task_id)
-        logger.info("BaseTask.before_start.kwargs: %s" % kwargs)
+        logger.info("BaseTask.before_start.task_id %s", task_id)
+        logger.info("BaseTask.before_start.kwargs: %s", kwargs)
 
         context = kwargs.get("context")
         set_schema_from_context(context)
@@ -189,13 +185,13 @@ class BaseTask(_Task):
         self.workflow = workflow
 
         logger.info(f"Task {task_id} is now in progress")
-        super(BaseTask, self).before_start(task_id, args, kwargs)
+        super().before_start(task_id, args, kwargs)
 
     def on_success(self, retval, task_id, args, kwargs):
-        super(BaseTask, self).on_success(retval, task_id, args, kwargs)
+        super().on_success(retval, task_id, args, kwargs)
 
-        logger.info("BaseTask.on_success.task_id %s" % task_id)
-        logger.info("BaseTask.on_success.kwargs: %s" % kwargs)
+        logger.info("BaseTask.on_success.task_id %s", task_id)
+        logger.info("BaseTask.on_success.kwargs: %s", kwargs)
 
         context = kwargs.get("context")
         set_schema_from_context(context)

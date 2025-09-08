@@ -1,5 +1,6 @@
-import shutil
 import os
+import shutil
+
 from django.core.management.base import BaseCommand
 
 
@@ -20,6 +21,4 @@ class Command(BaseCommand):
             dst = f"workflow/static/css/{lib.split('/')[-1]}"
             shutil.copy(src, dst)
 
-        self.stdout.write(
-            self.style.SUCCESS("Successfully copied CSS libraries to static directory")
-        )
+        self.stdout.write(self.style.SUCCESS("Successfully copied CSS libraries to static directory"))

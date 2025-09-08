@@ -1,31 +1,28 @@
-from __future__ import unicode_literals
-from celery import schedules
 import json
+import logging
+from datetime import datetime
 
 import pytz
+from celery import schedules
+from croniter import croniter
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import models, connection
+from django.db import connection, models
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy
-from django_celery_beat.models import PeriodicTask, CrontabSchedule
+from django.utils.translation import gettext_lazy as _
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
 from workflow.storage import get_storage
 from workflow.utils import get_all_tenant_schemas, get_next_node_by_condition
+from workflow_app import celery_app
 
 LANGUAGE_MAX_LENGTH = 5
 TIMEZONE_MAX_LENGTH = 20
 TIMEZONE_CHOICES = sorted(list((k, k) for k in pytz.all_timezones))
 TIMEZONE_COMMON_CHOICES = sorted(list((k, k) for k in pytz.common_timezones))
 
-from django.utils.translation import gettext_lazy as _
-from workflow_app import celery_app
-from django.utils.timezone import now
-from croniter import croniter
-from datetime import datetime
-import pytz
-
-import logging
 
 _l = logging.getLogger("workflow")
 
@@ -44,17 +41,11 @@ class User(AbstractUser):
         verbose_name=gettext_lazy("timezone"),
     )
 
-    two_factor_verification = models.BooleanField(
-        default=False, verbose_name=gettext_lazy("two factor verification")
-    )
+    two_factor_verification = models.BooleanField(default=False, verbose_name=gettext_lazy("two factor verification"))
 
-    json_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("json data")
-    )
+    json_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("json data"))
 
-    is_verified = models.BooleanField(
-        default=False, verbose_name=gettext_lazy("is verified")
-    )
+    is_verified = models.BooleanField(default=False, verbose_name=gettext_lazy("is verified"))
 
     password = models.CharField(_("password"), max_length=256)
 
@@ -101,27 +92,17 @@ class TimeStampedModel(models.Model):
 
 
 class Space(TimeStampedModel):
-    name = models.CharField(
-        max_length=255, null=True, blank=True, verbose_name=gettext_lazy("name")
-    )
+    name = models.CharField(max_length=255, null=True, blank=True, verbose_name=gettext_lazy("name"))
 
-    realm_code = models.CharField(
-        max_length=255, null=True, blank=True, verbose_name=gettext_lazy("realm_code")
-    )
+    realm_code = models.CharField(max_length=255, null=True, blank=True, verbose_name=gettext_lazy("realm_code"))
 
-    space_code = models.CharField(
-        max_length=255, verbose_name=gettext_lazy("space_code")
-    )
+    space_code = models.CharField(max_length=255, verbose_name=gettext_lazy("space_code"))
 
 
 class WorkflowTemplate(TimeStampedModel):
-    name = models.CharField(
-        max_length=255, null=True, blank=True, verbose_name=gettext_lazy("name")
-    )
+    name = models.CharField(max_length=255, null=True, blank=True, verbose_name=gettext_lazy("name"))
 
-    user_code = models.CharField(
-        max_length=1024, null=True, blank=True, verbose_name=gettext_lazy("user_code")
-    )
+    user_code = models.CharField(max_length=1024, null=True, blank=True, verbose_name=gettext_lazy("user_code"))
 
     notes = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("notes"))
 
@@ -164,9 +145,7 @@ class Workflow(TimeStampedModel):
         (STATUS_CANCELED, "canceled"),
     )
 
-    name = models.CharField(
-        max_length=255, null=True, blank=True, verbose_name=gettext_lazy("name")
-    )
+    name = models.CharField(max_length=255, null=True, blank=True, verbose_name=gettext_lazy("name"))
 
     workflow_template = models.ForeignKey(
         WorkflowTemplate,
@@ -176,12 +155,8 @@ class Workflow(TimeStampedModel):
         related_name="workflows",
     )
 
-    current_node_id = models.CharField(
-        max_length=255, null=True, blank=True
-    )  # Store the current node ID
-    last_task_output = models.JSONField(
-        null=True, blank=True
-    )  # New field for storing last output
+    current_node_id = models.CharField(max_length=255, null=True, blank=True)  # Store the current node ID
+    last_task_output = models.JSONField(null=True, blank=True)  # New field for storing last output
     node_id = models.CharField(
         max_length=255,
         blank=True,
@@ -189,9 +164,7 @@ class Workflow(TimeStampedModel):
         help_text="Node ID from the workflow JSON structure",
     )
 
-    user_code = models.CharField(
-        max_length=1024, null=True, blank=True, verbose_name=gettext_lazy("user_code")
-    )
+    user_code = models.CharField(max_length=1024, null=True, blank=True, verbose_name=gettext_lazy("user_code"))
 
     status = models.CharField(
         null=True,
@@ -200,14 +173,10 @@ class Workflow(TimeStampedModel):
         choices=STATUS_CHOICES,
         verbose_name="status",
     )
-    payload_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("payload data")
-    )
+    payload_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("payload data"))
     periodic = models.BooleanField(default=False, verbose_name=gettext_lazy("periodic"))
 
-    is_manager = models.BooleanField(
-        default=False, verbose_name=gettext_lazy("is manager")
-    )
+    is_manager = models.BooleanField(default=False, verbose_name=gettext_lazy("is manager"))
     platform_task_id = models.IntegerField(
         null=True,
         help_text="Platform Task ID in case if Platform initiated some pipeline",
@@ -235,9 +204,7 @@ class Workflow(TimeStampedModel):
         related_name="workflows",
     )
 
-    finished_at = models.DateTimeField(
-        null=True, db_index=True, verbose_name=gettext_lazy("finished at")
-    )
+    finished_at = models.DateTimeField(null=True, db_index=True, verbose_name=gettext_lazy("finished at"))
 
     parent = models.ForeignKey(
         "self",
@@ -313,24 +280,25 @@ class Workflow(TimeStampedModel):
 
                 last_task = self.tasks.last()
                 if last_task:
-                    update_task_status(
-                        self.platform_task_id, self.status, result=last_task.result
-                    )
+                    update_task_status(self.platform_task_id, self.status, result=last_task.result)
             except Exception as ex:
-                _l.warning("update_task_status %s" % ex)
+                _l.warning("update_task_status %s", ex)
 
     def cancel(self):
         status_to_cancel = [Task.STATUS_PROGRESS, Task.STATUS_INIT, Task.STATUS_NESTED_PROGRESS]
         for task in self.tasks.all():
             if task.status in status_to_cancel:
-                celery_app.control.revoke(task.celery_task_id, terminate=True, signal='SIGKILL')
+                celery_app.control.revoke(task.celery_task_id, terminate=True, signal="SIGKILL")
                 task.status = Task.STATUS_CANCELED
                 task.mark_task_as_finished()
                 task.save()
         self.status = Workflow.STATUS_CANCELED
         self.save()
 
-    def run_new_workflow(self, user_code, payload={}):
+    def run_new_workflow(self, user_code, payload=None):
+        if payload is None:
+            payload = {}
+
         if not user_code:
             raise Exception("User code is required.")
 
@@ -344,16 +312,12 @@ class Workflow(TimeStampedModel):
 
         user_code = f"{self.space.space_code}.{user_code}"
 
-        new_workflow = system_workflow_manager.get_by_user_code(
-            user_code, sync_remote=True
-        )
+        new_workflow = system_workflow_manager.get_by_user_code(user_code, sync_remote=True)
 
         is_manager = new_workflow["workflow"].get("is_manager", False)
 
         if is_manager:
-            raise Exception(
-                "New Workflow is manager. Manager can't execute another manager"
-            )
+            raise Exception("New Workflow is manager. Manager can't execute another manager")
 
         _l.info("run_new_workflow. Going to execute: %s", user_code)
 
@@ -403,9 +367,7 @@ class Task(TimeStampedModel):
 
     celery_task_id = models.CharField(null=True, max_length=255)
     name = models.CharField(null=True, max_length=255)
-    source_code = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("source code")
-    )
+    source_code = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("source code"))
     status = models.CharField(
         null=True,
         max_length=255,
@@ -413,43 +375,27 @@ class Task(TimeStampedModel):
         choices=STATUS_CHOICES,
         verbose_name="status",
     )
-    worker_name = models.CharField(
-        null=True, max_length=255, verbose_name="worker name"
-    )
+    worker_name = models.CharField(null=True, max_length=255, verbose_name="worker name")
     type = models.CharField(max_length=50, blank=True, null=True)
 
-    payload_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("payload data")
-    )
-    result_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("result data")
-    )
+    payload_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("payload data"))
+    result_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("result data"))
 
-    progress_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("progress data")
-    )
+    progress_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("progress data"))
 
     log = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("log"))
 
     notes = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("notes"))
-    error_message = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("error message")
-    )
+    error_message = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("error message"))
 
     verbose_name = models.CharField(null=True, max_length=255)
-    verbose_result = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("verbose result")
-    )
+    verbose_result = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("verbose result"))
 
-    previous_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("previous data")
-    )
+    previous_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("previous data"))
 
     is_hook = models.BooleanField(default=False, verbose_name=gettext_lazy("is hook"))
 
-    finished_at = models.DateTimeField(
-        null=True, db_index=True, verbose_name=gettext_lazy("finished at")
-    )
+    finished_at = models.DateTimeField(null=True, db_index=True, verbose_name=gettext_lazy("finished at"))
 
     space = models.ForeignKey(
         Space,
@@ -462,7 +408,7 @@ class Task(TimeStampedModel):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return "<Task: {0.pk} ({0.status})>".format(self)
+        return f"<Task: {self.pk} ({self.status})>"
 
     @property
     def payload(self):
@@ -532,7 +478,7 @@ class Task(TimeStampedModel):
         #   description
         # }
 
-        _l.info("update_progress %s" % progress)
+        _l.info("update_progress %s", progress)
 
         self.progress = progress
 
@@ -540,9 +486,7 @@ class Task(TimeStampedModel):
 
     def handle_task_success(self, retval):
         if self.status == Task.STATUS_NESTED_PROGRESS:
-            _l.info(
-                f"Task {self.id} is in STATUS_NESTED_PROGRESS status; waiting for nested workflow to complete."
-            )
+            _l.info(f"Task {self.id} is in STATUS_NESTED_PROGRESS status; waiting for nested workflow to complete.")
             # If the task status is STATUS_NESTED_PROGRESS, we should exit without marking it complete
             # It will be resumed by the nested workflow completion logic
             return
@@ -578,12 +522,8 @@ class Task(TimeStampedModel):
             next_node_ids = []
             if current_node["data"]["node"]["type"] == "condition":
                 # Use the condition result to determine the next path
-                _l.info(
-                    f"BaseTask.on_success.Processing conditional node {current_node_id}, result: {retval}"
-                )
-                next_node_id = get_next_node_by_condition(
-                    current_node_id, retval, connections
-                )
+                _l.info(f"BaseTask.on_success.Processing conditional node {current_node_id}, result: {retval}")
+                next_node_id = get_next_node_by_condition(current_node_id, retval, connections)
                 if next_node_id:
                     next_node_ids.append(next_node_id)
             else:
@@ -592,7 +532,8 @@ class Task(TimeStampedModel):
 
             if not next_node_ids:
                 _l.info(
-                    f"BaseTask.on_success.No next nodes found for current node ID: {current_node_id}. Marking workflow as complete."
+                    f"BaseTask.on_success.No next nodes found for current node ID: {current_node_id}. "
+                    "Marking workflow as complete."
                 )
 
                 _l.info(f"BaseTask.on_success.workflow owner {self.workflow.owner}")
@@ -600,13 +541,12 @@ class Task(TimeStampedModel):
                 self.workflow.status = Workflow.STATUS_SUCCESS
                 self.workflow.finished_at = now()
                 self.workflow.save()
-                _l.info(
-                    f"BaseTask.on_success.Workflow ID {self.workflow.id} status updated to SUCCESS."
-                )
+                _l.info(f"BaseTask.on_success.Workflow ID {self.workflow.id} status updated to SUCCESS.")
 
                 if self.workflow.parent:
                     _l.info(
-                        f"BaseTask.on_success.Workflow has a parent with ID {self.workflow.parent.id}. Triggering next task."
+                        f"BaseTask.on_success.Workflow has a parent with ID {self.workflow.parent.id}. "
+                        "Triggering next task."
                     )
                     parent_workflow = self.workflow.parent
 
@@ -631,9 +571,7 @@ class Task(TimeStampedModel):
                     )
                     continue
 
-                _l.info(
-                    f"BaseTask.on_success.Processing next node: {next_node_id}, Name: {next_node['name']}"
-                )
+                _l.info(f"BaseTask.on_success.Processing next node: {next_node_id}, Name: {next_node['name']}")
 
                 # Check if the workflow is in WAIT state
 
@@ -663,9 +601,7 @@ class ScheduleManager(models.Manager):
             with connection.cursor() as cursor:
                 cursor.execute(f"SET search_path TO {schema};")
 
-            schema_schedules = list(
-                self.filter(enabled=True).prefetch_related("crontab")
-            )
+            schema_schedules = list(self.filter(enabled=True).prefetch_related("crontab"))
             result.extend(schema_schedules)
         return result
 
@@ -677,13 +613,9 @@ class Schedule(PeriodicTask, TimeStampedModel):
 
     notes = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("notes"))
 
-    payload = models.JSONField(
-        null=True, blank=True, verbose_name=gettext_lazy("payload")
-    )
+    payload = models.JSONField(null=True, blank=True, verbose_name=gettext_lazy("payload"))
 
-    is_manager = models.BooleanField(
-        default=False, verbose_name=gettext_lazy("is manager")
-    )
+    is_manager = models.BooleanField(default=False, verbose_name=gettext_lazy("is manager"))
 
     space = models.ForeignKey(
         Space,
@@ -699,19 +631,14 @@ class Schedule(PeriodicTask, TimeStampedModel):
         related_name="schedules",
     )
 
-    workflow_user_code = models.TextField(
-        verbose_name=gettext_lazy("workflow_user_code")
-    )
+    workflow_user_code = models.TextField(verbose_name=gettext_lazy("workflow_user_code"))
 
     @property
     def crontab_line(self) -> str | None:
         if self.crontab:
-            return "{} {} {} {} {}".format(
-                self.crontab.minute,
-                self.crontab.hour,
-                self.crontab.day_of_month,
-                self.crontab.month_of_year,
-                self.crontab.day_of_week,
+            return (
+                f"{self.crontab.minute} {self.crontab.hour} {self.crontab.day_of_month} "
+                f"{self.crontab.month_of_year} {self.crontab.day_of_week}"
             )
 
     @crontab_line.setter
@@ -750,7 +677,7 @@ class Schedule(PeriodicTask, TimeStampedModel):
                 "schedule_id": self.id,
             }
         )
-        _l.info("Schedule save: %s" % self.kwargs)
+        _l.info("Schedule save: %s", self.kwargs)
         return super().save(*args, **kwargs)
 
     def __str__(self):

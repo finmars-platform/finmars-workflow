@@ -1,6 +1,6 @@
 [project]
 name = "finmars-workflow"
-version = "1.17.0"
+version = "1.22.0"
 
 [tool.ruff]
   line-length = 119
@@ -39,7 +39,7 @@ version = "1.17.0"
 [tool.coverage.run]
 branch = true
 concurrency = ["multiprocessing"]
-source = ["poms"]
+source = ["workflow"]
 
 [tool.coverage.report]
 ignore_errors = true

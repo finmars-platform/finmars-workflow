@@ -1,8 +1,8 @@
 import logging
 from datetime import datetime, timedelta
 
-from django.db.models import Q
 import django_filters
+from django.db.models import Q
 from rest_framework.filters import BaseFilterBackend, SearchFilter
 
 _l = logging.getLogger("workflow")
@@ -74,9 +74,7 @@ class WorkflowSearchParamFilter(BaseFilterBackend):
             queryset = queryset.filter(created_at__gte=date)
 
         if date_to:
-            date = datetime.strptime(date_to, "%Y-%m-%d") + timedelta(
-                days=1, microseconds=-1
-            )
+            date = datetime.strptime(date_to, "%Y-%m-%d") + timedelta(days=1, microseconds=-1)
             queryset = queryset.filter(created_at__lte=date)
 
         if status:

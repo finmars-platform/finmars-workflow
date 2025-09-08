@@ -1,5 +1,4 @@
 import inspect
-from typing import List, Optional, Type
 
 from drf_spectacular.drainage import warn
 from drf_spectacular.openapi import AutoSchema as BaseAutoSchema
@@ -65,31 +64,23 @@ class AutoSchema(BaseAutoSchema):
                         "the value is the serializer."
                     )
                     continue
-                error_responses[status_code] = self._get_response_for_code(
-                    serializer, status_code
-                )
+                error_responses[status_code] = self._get_response_for_code(serializer, status_code)
 
         return {**error_responses, **responses}
 
-    def _get_allowed_error_status_codes(self) -> List[str]:
+    def _get_allowed_error_status_codes(self) -> list[str]:
         allowed_status_codes = package_settings.ALLOWED_ERROR_STATUS_CODES or []
         return [str(status_code) for status_code in allowed_status_codes]
 
-    def _should_add_error_response(self, responses: dict, status_code: str) -> bool:
-        if (
-            self.view.get_exception_handler() is not standardized_errors_handler
-            or status_code in responses
-        ):
+    def _should_add_error_response(self, responses: dict, status_code: str) -> bool:  # noqa: PLR0911
+        if self.view.get_exception_handler() is not standardized_errors_handler or status_code in responses:
             # this means that the exception handler has been overridden for this view
             # or the error response has already been added via extend_schema, so we
             # should not override that
             return False
 
         if status_code == "400":
-            return (
-                self._should_add_parse_error_response()
-                or self._should_add_validation_error_response()
-            )
+            return self._should_add_parse_error_response() or self._should_add_validation_error_response()
         elif status_code == "401":
             return self._should_add_http401_error_response()
         elif status_code == "403":
@@ -118,9 +109,7 @@ class AutoSchema(BaseAutoSchema):
             MultiPartParser,
             FileUploadParser,
         )
-        return any(
-            isinstance(parser, parsers_that_raise_parse_errors) for parser in parsers
-        )
+        return any(isinstance(parser, parsers_that_raise_parse_errors) for parser in parsers)
 
     def _should_add_validation_error_response(self) -> bool:
         """
@@ -130,18 +119,12 @@ class AutoSchema(BaseAutoSchema):
         request_serializer = self.get_request_serializer()
         has_request_body = self.method in ("PUT", "PATCH", "POST") and (
             isinstance(request_serializer, serializers.Field)
-            or (
-                inspect.isclass(request_serializer)
-                and issubclass(request_serializer, serializers.Field)
-            )
+            or (inspect.isclass(request_serializer) and issubclass(request_serializer, serializers.Field))
         )
 
         filter_backends = get_django_filter_backends(self.get_filter_backends())
         has_filters = any(
-            [
-                filter_backend.get_schema_operation_parameters(self.view)
-                for filter_backend in filter_backends
-            ]
+            [filter_backend.get_schema_operation_parameters(self.view) for filter_backend in filter_backends]
         )
         return has_request_body or has_filters
 
@@ -159,38 +142,19 @@ class AutoSchema(BaseAutoSchema):
         # in the view, then the error raised is a 401 not a 403 (check implementation
         # of rest_framework.views.APIView.permission_denied)
         is_authenticated = (
-            len(permissions) == 1
-            and isinstance(permissions[0], IsAuthenticated)
-            and self.view.get_authenticators()
+            len(permissions) == 1 and isinstance(permissions[0], IsAuthenticated) and self.view.get_authenticators()
         )
         return bool(permissions) and not is_allow_any and not is_authenticated
 
     def _should_add_http404_error_response(self) -> bool:
         paginator = self._get_paginator()
-        paginator_can_raise_404 = isinstance(
-            paginator, (PageNumberPagination, CursorPagination)
-        )
+        paginator_can_raise_404 = isinstance(paginator, PageNumberPagination | CursorPagination)
         versioning_scheme_can_raise_404 = self.view.versioning_class and issubclass(
             self.view.versioning_class,
-            (
-                URLPathVersioning,
-                NamespaceVersioning,
-                HostNameVersioning,
-                QueryParameterVersioning,
-            ),
+            URLPathVersioning | NamespaceVersioning | HostNameVersioning | QueryParameterVersioning,
         )
-        has_path_parameters = bool(
-            [
-                parameter
-                for parameter in self._get_parameters()
-                if parameter["in"] == "path"
-            ]
-        )
-        return (
-            paginator_can_raise_404
-            or versioning_scheme_can_raise_404
-            or has_path_parameters
-        )
+        has_path_parameters = bool([parameter for parameter in self._get_parameters() if parameter["in"] == "path"])
+        return paginator_can_raise_404 or versioning_scheme_can_raise_404 or has_path_parameters
 
     def _should_add_http405_error_response(self) -> bool:
         # API consumers can at all ties use the wrong method against any endpoint
@@ -199,8 +163,7 @@ class AutoSchema(BaseAutoSchema):
     def _should_add_http406_error_response(self) -> bool:
         content_negotiator = self.view.get_content_negotiator()
         return isinstance(content_negotiator, DefaultContentNegotiation) or (
-            self.view.versioning_class
-            and issubclass(self.view.versioning_class, AcceptHeaderVersioning)
+            self.view.versioning_class and issubclass(self.view.versioning_class, AcceptHeaderVersioning)
         )
 
     def _should_add_http415_error_response(self) -> bool:
@@ -210,13 +173,8 @@ class AutoSchema(BaseAutoSchema):
         handles everything (media type "*/*"), then this error can be raised.
         """
         content_negotiator = self.view.get_content_negotiator()
-        parsers_that_handle_everything = [
-            parser for parser in self.view.get_parsers() if parser.media_type == "*/*"
-        ]
-        return (
-            isinstance(content_negotiator, DefaultContentNegotiation)
-            and not parsers_that_handle_everything
-        )
+        parsers_that_handle_everything = [parser for parser in self.view.get_parsers() if parser.media_type == "*/*"]
+        return isinstance(content_negotiator, DefaultContentNegotiation) and not parsers_that_handle_everything
 
     def _should_add_http429_error_response(self) -> bool:
         return bool(self.view.get_throttles())
@@ -227,9 +185,7 @@ class AutoSchema(BaseAutoSchema):
 
     def _get_error_response_serializer(self, status_code: str):
         error_schemas = package_settings.ERROR_SCHEMAS or {}
-        error_schemas = {
-            str(status_code): schema for status_code, schema in error_schemas.items()
-        }
+        error_schemas = {str(status_code): schema for status_code, schema in error_schemas.items()}
         if serializer := error_schemas.get(status_code):
             return serializer
 
@@ -272,13 +228,13 @@ class AutoSchema(BaseAutoSchema):
 
     def _get_serializer_for_validation_error_response(
         self,
-    ) -> Optional[Type[serializers.Serializer]]:
+    ) -> type[serializers.Serializer] | None:
         fields_with_error_codes = self._determine_fields_with_error_codes()
 
         operation_id = self.get_operation_id()
         return get_validation_error_serializer(operation_id, fields_with_error_codes)
 
-    def _determine_fields_with_error_codes(self) -> "List[InputDataField]":
+    def _determine_fields_with_error_codes(self) -> "list[InputDataField]":
         if self.method in ("PUT", "PATCH", "POST"):
             serializer = self.get_request_serializer()
             fields = get_flat_serializer_fields(serializer)

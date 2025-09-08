@@ -1,6 +1,7 @@
 from celery.utils.log import get_logger
-from django_celery_beat.schedulers import ModelEntry, DatabaseScheduler as DCBScheduler
 from django.db.utils import DatabaseError, InterfaceError
+from django_celery_beat.schedulers import DatabaseScheduler as DCBScheduler
+
 from workflow.models import Schedule
 from workflow.utils import get_all_tenant_schemas, set_schema_from_context
 
@@ -18,7 +19,7 @@ class DatabaseScheduler(DCBScheduler):
         for schema in schemas:
             set_schema_from_context({"space_code": schema})
             for model in self.Model.objects.enabled():
-                try:
+                try:  # noqa: SIM105
                     s[model.name] = self.Entry(model, app=self.app)
                 except ValueError:
                     pass
@@ -41,10 +42,7 @@ class DatabaseScheduler(DCBScheduler):
                 logger.exception("Database gave error: %r", exc)
                 return False
             except InterfaceError:
-                warning(
-                    "DatabaseScheduler: InterfaceError in schedule_changed(), "
-                    "waiting to retry in next call..."
-                )
+                warning("DatabaseScheduler: InterfaceError in schedule_changed(), waiting to retry in next call...")
                 return False
         try:
             if ts and ts > (last if last else ts):

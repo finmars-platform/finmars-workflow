@@ -19,19 +19,13 @@ class Command(BaseCommand):
             try:
                 superuser = User.objects.get(username=username)
 
-                self.stdout.write(
-                    "Skip. Super user '%s' already exists." % superuser.username
-                )
+                self.stdout.write(f"Skip. Super user '{superuser.username}' already exists.")
 
             except User.DoesNotExist:
-                superuser = User.objects.create_superuser(
-                    username=username, email=email, password=password
-                )
+                superuser = User.objects.create_superuser(username=username, email=email, password=password)
 
                 superuser.save()
-                self.stdout.write("Super user '%s' created." % superuser.username)
+                self.stdout.write(f"Super user '{superuser.username}' created.")
 
         else:
-            self.stdout.write(
-                "Skip. Super user username and password are not provided."
-            )
+            self.stdout.write("Skip. Super user username and password are not provided.")

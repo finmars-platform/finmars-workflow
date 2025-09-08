@@ -1,24 +1,24 @@
-import os
 import contextlib
+import os
 import warnings
 
-def ENV_BOOL(env_name, default):
 
+def ENV_BOOL(env_name, default):
     val = os.environ.get(env_name, default)
 
     if not val:
         return default
 
-    if val == 'True' or val == True:
+    if val == "True" or val is True:
         return True
 
-    if val == 'False' or val == False:
+    if val == "False" or val is False:
         return False
 
-    warnings.warn('Variable %s is not boolean. It is %s' % (env_name, val))
+    warnings.warn("Variable %s is not boolean. It is %s", env_name, val)
+
 
 def ENV_STR(env_name, default):
-
     val = os.environ.get(env_name, default)
 
     if not val:
@@ -26,8 +26,8 @@ def ENV_STR(env_name, default):
 
     return val
 
-def ENV_INT(env_name, default):
 
+def ENV_INT(env_name, default):
     val = os.environ.get(env_name, default)
 
     if not val:
@@ -37,14 +37,13 @@ def ENV_INT(env_name, default):
 
 
 def print_finmars():
-
     text = """
 ███████╗    ██╗    ███╗   ██╗    ███╗   ███╗     █████╗     ██████╗     ███████╗
 ██╔════╝    ██║    ████╗  ██║    ████╗ ████║    ██╔══██╗    ██╔══██╗    ██╔════╝
 █████╗      ██║    ██╔██╗ ██║    ██╔████╔██║    ███████║    ██████╔╝    ███████╗
 ██╔══╝      ██║    ██║╚██╗██║    ██║╚██╔╝██║    ██╔══██║    ██╔══██╗    ╚════██║
 ██║         ██║    ██║ ╚████║    ██║ ╚═╝ ██║    ██║  ██║    ██║  ██║    ███████║
-╚═╝         ╚═╝    ╚═╝  ╚═══╝    ╚═╝     ╚═╝    ╚═╝  ╚═╝    ╚═╝  ╚═╝    ╚══════╝                                                                      
+╚═╝         ╚═╝    ╚═╝  ╚═══╝    ╚═╝     ╚═╝    ╚═╝  ╚═╝    ╚═╝  ╚═╝    ╚══════╝
     """
 
     print(text)
@@ -52,9 +51,9 @@ def print_finmars():
 
 def filter_sentry_events(event, hint):
     with contextlib.suppress(Exception):
-        frames = event['exception']['values'][0]['stacktrace']['frames']
+        frames = event["exception"]["values"][0]["stacktrace"]["frames"]
         for i, frame in enumerate(frames):
-            if frame['function'] == 'execute_workflow_step' and len(frames) > i+1:
+            if frame["function"] == "execute_workflow_step" and len(frames) > i + 1:
                 #  do not report exceptions raised in custom modules
                 return None
     return event

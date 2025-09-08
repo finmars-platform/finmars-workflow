@@ -1,3 +1,6 @@
+import base64
+import contextlib
+import io
 import json
 import logging
 import sys
@@ -5,14 +8,9 @@ import threading
 import traceback
 import uuid
 
-_l = logging.getLogger("workflow")
-import contextlib
-import io
-
-import sys
 import matplotlib.pyplot as plt
-import base64
-import json
+
+_l = logging.getLogger("workflow")
 
 
 class UserSession:
@@ -36,10 +34,10 @@ def execute_code(user_id, file_path, code):
     session = sessions[user_id]
     context = session.get_file_context(file_path)
 
-    _l.info("execute_code.context %s" % context)
+    _l.info("execute_code.context %s", context)
 
     # Create a StringIO object to capture the standard output
-    stdout = io.StringIO()
+    stdout = io.StringIO()  # noqa: F841
 
     # Add print() to last line if it's not an assignment
     # code_lines = code.split('\n')
@@ -54,7 +52,7 @@ def execute_code(user_id, file_path, code):
     # Execute the code
     try:
         exec(code, context)
-    except Exception as e:
+    except Exception:
         # Print the traceback of the error
         traceback.print_exc(file=redirected_output)
 
@@ -125,9 +123,7 @@ def _execute_code(code, context):
 
         except Exception as e:
             # Handle any errors that occur during execution
-            traceback_str = "".join(
-                traceback.format_exception(None, e, e.__traceback__)
-            )
+            traceback_str = "".join(traceback.format_exception(None, e, e.__traceback__))
             return {"type": "error", "data": traceback_str}
 
         finally:
@@ -139,10 +135,10 @@ def _execute_code(code, context):
 
 
 def execute_file(user_id, file_path, data):
-    session = sessions[user_id]
+    session = sessions[user_id]  # noqa: F841
     context = {}
 
-    _l.info("execute_file.context %s" % context)
+    _l.info("execute_file.context %s", context)
 
     # Create a StringIO object to capture the standard output
 

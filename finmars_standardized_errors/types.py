@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
 from rest_framework.request import Request
 from rest_framework.views import APIView
@@ -10,7 +10,7 @@ class ExceptionHandlerContext(TypedDict):
     view: APIView
     args: tuple
     kwargs: dict
-    request: Optional[Request]
+    request: Request | None
 
 
 class ErrorType(str, Enum):
@@ -23,13 +23,14 @@ class ErrorType(str, Enum):
 class Error:
     code: str
     detail: str
-    attr: Optional[str]
+    attr: str | None
 
 
 @dataclass
 class ErrorResponseDetails:
     type: ErrorType
-    errors: List[Error]
+    errors: list[Error]
+
 
 @dataclass
 class ErrorResponse:

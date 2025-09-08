@@ -1,17 +1,17 @@
 import json
 import random
 import string
+
 import factory
 from faker import Faker
-from workflow.models import Space, TimeStampedModel, User, WorkflowTemplate
+
+from workflow.models import Space, User, WorkflowTemplate
 
 fake = Faker()
 
 
 def random_code(length):
-    return "".join(
-        random.choice(string.ascii_lowercase + string.digits) for _ in range(length)
-    )
+    return "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(length))
 
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -38,9 +38,7 @@ class WorkflowTemplateFactory(factory.django.DjangoModelFactory):
         model = WorkflowTemplate
 
     name = factory.Faker("word")
-    user_code = factory.LazyAttribute(
-        lambda _: f"{fake.word()}.{fake.word()}.{fake.word()}:{fake.word()}"
-    )
+    user_code = factory.LazyAttribute(lambda _: f"{fake.word()}.{fake.word()}.{fake.word()}:{fake.word()}")
     notes = factory.Faker("text")
     data = factory.LazyAttribute(lambda _: json.dumps({"version": "2", "workflow": {}}))
     space = factory.SubFactory(SpaceFactory)
