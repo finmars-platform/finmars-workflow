@@ -23,9 +23,12 @@ from workflow.filters import (
     WorkflowSearchParamFilter,
 )
 from workflow.models import Schedule, Task, Workflow, WorkflowTemplate
+from workflow.monitoring import get_celery_tasks_data, get_rabbitmq_queues_info
 from workflow.serializers import (
     BulkSerializer,
+    CeleryMonitoringSerializer,
     PingSerializer,
+    RabbitMQMonitoringSerializer,
     ResumeWorkflowSerializer,
     RunWorkflowSerializer,
     ScheduleSerializer,
@@ -37,7 +40,6 @@ from workflow.serializers import (
 from workflow.system import get_system_workflow_manager
 from workflow.user_sessions import create_session, execute_code, execute_file, sessions
 from workflow.workflows import execute_workflow
-from workflow_app import celery_app
 
 _l = logging.getLogger("workflow")
 
@@ -571,18 +573,31 @@ class ScheduleViewSet(ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class CeleryStatusViewSet(ViewSet):
-    """
-    A simple ViewSet that returns Celery queue and worker status.
-    """
+class CeleryMonitoringViewSet(ViewSet):
+    serializer_class = CeleryMonitoringSerializer
 
     def list(self, request, *args, **kwargs):
-        insp = celery_app.control.inspect()
-        data = {
-            "workers": insp.stats() or {},
-            "active": insp.active() or {},
-            "reserved": insp.reserved() or {},
-            "scheduled": insp.scheduled() or {},
-        }
+        try:
+            tasks_data = get_celery_tasks_data()
 
-        return Response(data)
+            serializer = CeleryMonitoringSerializer(tasks_data)
+            return Response(serializer.data)
+
+        except Exception as e:
+            _l.error(f"CeleryMonitoringViewSet error: {str(e)}")
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class RabbitMQMonitoringViewSet(ViewSet):
+    serializer_class = RabbitMQMonitoringSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queues_info = get_rabbitmq_queues_info()
+            _l.info(f"RabbitMQMonitoringViewSet queues_info: {queues_info}")
+            serializer = RabbitMQMonitoringSerializer(queues_info)
+            return Response(serializer.data)
+
+        except Exception as e:
+            _l.error(f"RabbitMQMonitoringViewSet error: {str(e)}")
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
