@@ -276,3 +276,93 @@ class ResumeWorkflowSerializer(serializers.Serializer):
         required=False,
         help_text="Optional payload to update the workflow before resuming.",
     )
+
+
+class CeleryTaskSerializer(serializers.Serializer):
+    acknowledged = serializers.BooleanField()
+    args = serializers.ListField()
+    delivery_info = serializers.DictField()
+    hostname = serializers.CharField()
+    id = serializers.CharField()
+    kwargs = serializers.DictField()
+    name = serializers.CharField()
+    time_start = serializers.FloatField()
+    type = serializers.CharField()
+    worker_pid = serializers.IntegerField()
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+
+        kwargs = instance.get("kwargs", {})
+        context = kwargs.get("context", {})
+        realm_code = context.get("realm_code", "")
+        space_code = context.get("space_code", "")
+
+        hostname = instance.get("hostname", "")
+        if "workflow" in hostname:
+            workflow_id = kwargs.get("workflow_id")
+            if workflow_id and realm_code and space_code:
+                data["url"] = f"/{realm_code}/{space_code}/w/workflow/{workflow_id}"
+            else:
+                data["url"] = None
+        elif "backend" in hostname:
+            task_id = kwargs.get("task_id")
+            if task_id and realm_code and space_code:
+                data["url"] = f"/{realm_code}/{space_code}/api/v1/tasks/task/{task_id}"
+            else:
+                data["url"] = None
+        else:
+            data["url"] = None
+
+        return data
+
+
+class CeleryWorkerSerializer(serializers.Serializer):
+    active_tasks = CeleryTaskSerializer(many=True)
+    scheduled_tasks = CeleryTaskSerializer(many=True)
+    pending_tasks = CeleryTaskSerializer(many=True)
+    active_tasks_count = serializers.IntegerField()
+    pending_tasks_count = serializers.IntegerField()
+    scheduled_tasks_count = serializers.IntegerField()
+    total_tasks_count = serializers.IntegerField()
+
+
+class CeleryWorkerTypeSerializer(serializers.Serializer):
+    def to_representation(self, instance):
+        result = {}
+        for worker_name, worker_data in instance.items():
+            result[worker_name] = CeleryWorkerSerializer(worker_data).data
+        return result
+
+
+class CeleryMonitoringSerializer(serializers.Serializer):
+    def to_representation(self, instance):
+        result = {}
+        for worker_type, workers in instance.items():
+            result[worker_type] = CeleryWorkerTypeSerializer(workers).data
+        return result
+
+
+class RabbitMQQueueSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    messages = serializers.IntegerField()
+    messages_ready = serializers.IntegerField()
+    messages_unacknowledged = serializers.IntegerField()
+    consumers = serializers.IntegerField()
+    consumer_utilisation = serializers.FloatField()
+
+
+class RabbitMQQueueGroupSerializer(serializers.Serializer):
+    def to_representation(self, instance):
+        result = {}
+        for queue_name, queue_data in instance.items():
+            result[queue_name] = RabbitMQQueueSerializer(queue_data).data
+        return result
+
+
+class RabbitMQMonitoringSerializer(serializers.Serializer):
+    def to_representation(self, instance):
+        result = {}
+        for group_name, queues in instance.items():
+            result[group_name] = RabbitMQQueueGroupSerializer(queues).data
+        return result

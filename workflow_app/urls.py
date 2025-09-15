@@ -21,11 +21,12 @@ from django.views.generic import TemplateView
 from rest_framework import routers
 
 from workflow.views import (
-    CeleryStatusViewSet,
+    CeleryMonitoringViewSet,
     CodeExecutionViewSet,
     DefinitionViewSet,
     FileExecutionViewSet,
     LogFileViewSet,
+    RabbitMQMonitoringViewSet,
     RealmMigrateSchemeView,
     RefreshStorageViewSet,
     ScheduleViewSet,
@@ -48,7 +49,8 @@ router.register(r"log", LogFileViewSet, "log")
 router.register(r"execute-code", CodeExecutionViewSet, basename="execute-code")
 router.register(r"execute-file", FileExecutionViewSet, basename="execute-file")
 router.register(r"authorizer/migrate", RealmMigrateSchemeView, "migrate")
-router.register(r"celery-status", CeleryStatusViewSet, basename="celery-status")
+router.register(r"monitoring/celery", CeleryMonitoringViewSet, basename="celery-monitoring")
+router.register(r"monitoring/rabbitmq", RabbitMQMonitoringViewSet, basename="rabbitmq-monitoring")
 
 urlpatterns = [
     # Old Approach (delete in 1.9.0)
