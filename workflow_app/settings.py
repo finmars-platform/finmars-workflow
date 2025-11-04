@@ -93,6 +93,7 @@ CORS_ALLOW_ALL_ORIGINS = ENV_BOOL("CORS_ALLOW_ALL_ORIGINS", True)
 
 MIDDLEWARE = [
     "workflow.middleware.RealmAndSpaceMiddleware",  # do not delete, required for all requests
+    "workflow.middleware.SentryContextMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -421,10 +422,12 @@ CELERY_RESULT_BACKEND = 'db+postgresql+psycopg2://%s:%s@%s:%s/%s' % (
     ENV_STR('DB_NAME', None))
 CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'UTC'
-CELERY_TASK_TIME_LIMIT = ENV_INT('CELERY_TASK_TIME_LIMIT', 86400)
+CELERY_TASK_TIME_LIMIT = ENV_INT('CELERY_TASK_TIME_LIMIT', 90000)
 CELERY_TASK_SOFT_TIME_LIMIT = ENV_INT('CELERY_TASK_SOFT_TIME_LIMIT', 86400)
 CELERY_BEAT_SCHEDULER = 'workflow.schedulers:DatabaseScheduler'
+
 CELERY_TASK_DEFAULT_QUEUE = ENV_STR('WORKFLOW_QUEUES', "workflow")
+
 DJANGO_CELERY_RESULTS_TASK_ID_MAX_LENGTH = 191
 
 CELERY_BROKER_TRANSPORT_OPTIONS = {
@@ -535,15 +538,13 @@ SENTRY_DSN = ENV_STR("SENTRY_DSN", None)
 if SERVER_TYPE != "local" and SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,
-        integrations=[DjangoIntegration()],
         environment=SERVER_TYPE,
-        # Set traces_sample_rate to 1.0 to capture 100%
-        # of transactions for performance monitoring.
-        # We recommend adjusting this value in production.
         traces_sample_rate=1.0,
-
-        # If you wish to associate users to errors (assuming you are using
-        # django.contrib.auth) you may enable sending PII data.
         send_default_pii=True,
         before_send=filter_sentry_events,
+        profiles_sample_rate=1.0,
     )
+
+EDITION_TYPE = ENV_STR("EDITION_TYPE", "entreprise")
+ADMIN_USERNAME = ENV_STR("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = ENV_STR("ADMIN_PASSWORD", "password")

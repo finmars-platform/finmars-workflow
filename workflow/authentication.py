@@ -120,9 +120,15 @@ class KeycloakAuthentication(TokenAuthentication):
             # Was in use when we have poor invites implementation
             # Now is not need
             try:
+                username = userinfo["preferred_username"]
+                is_admin = username == settings.ADMIN_USERNAME
+                password = settings.ADMIN_PASSWORD if is_admin else generate_random_string(12)
+
                 user = User.objects.create_user(
-                    username=userinfo["preferred_username"],
-                    password=generate_random_string(12),
+                    username=username,
+                    password=password,
+                    is_staff=is_admin,
+                    is_superuser=is_admin,
                 )
 
             except Exception:

@@ -1,6 +1,11 @@
+import logging
+
+from django.conf import settings
 from django.db import connection
 
 from workflow.utils import schema_exists
+
+logger = logging.getLogger(__name__)
 
 
 # Very Important Middleware
@@ -57,4 +62,45 @@ class RealmAndSpaceMiddleware:
         with connection.cursor() as cursor:
             cursor.execute("SET search_path TO public;")
 
+        return response
+
+
+class SentryContextMiddleware:
+    """
+    Middleware that adds realm_code, space_code and domain to Sentry scope.
+    Must be placed after RealmAndSpaceMiddleware in MIDDLEWARE list.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Set Sentry context from request attributes
+        # These attributes are set by RealmAndSpaceMiddleware
+        try:
+            import sentry_sdk
+
+            with sentry_sdk.configure_scope() as scope:
+                # Add realm_code
+                realm_code = getattr(request, "realm_code", None)
+                if realm_code:
+                    scope.set_tag("realm_code", realm_code)
+                    scope.set_context("realm", {"code": realm_code})
+
+                # Add space_code
+                space_code = getattr(request, "space_code", None)
+                if space_code:
+                    scope.set_tag("space_code", space_code)
+                    scope.set_context("space", {"code": space_code})
+
+                # Add domain
+                domain = settings.DOMAIN_NAME
+                if domain:
+                    scope.set_tag("domain", domain)
+                    scope.set_context("domain", {"name": domain})
+
+        except Exception as e:
+            logger.debug(f"Failed to set Sentry context: {e}")
+
+        response = self.get_response(request)
         return response
