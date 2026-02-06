@@ -27,7 +27,7 @@ class WorkflowViewSetFilterTestCase(BaseTestCase):
             owner=self.user,
             name="Workflow 1",
             user_code="workflow1",
-            status="init",
+            status=Workflow.STATUS_INIT,
             payload_data='{"key": "test1"}',
         )
         self.workflow1.created_at = date(2024, 6, 1)
@@ -38,7 +38,7 @@ class WorkflowViewSetFilterTestCase(BaseTestCase):
             owner=self.user,
             name="Workflow 2",
             user_code="workflow2",
-            status="pending",
+            status=Workflow.STATUS_WAIT,
             payload_data='{"key": "test2"}',
         )
         self.workflow2.created_at = date(2024, 7, 1)
@@ -50,7 +50,7 @@ class WorkflowViewSetFilterTestCase(BaseTestCase):
             owner=self.user,
             name="Workflow 3",
             user_code="workflow3",
-            status="pending",
+            status=Workflow.STATUS_WAIT,
             payload_data='{"key": "test3"}',
             workflow_template=workflow_template,
         )
@@ -95,3 +95,19 @@ class WorkflowViewSetFilterTestCase(BaseTestCase):
         response = self.client.get(f"{self.url_prefix}{self.workflow3.id}/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["workflow_version"], 2)
+
+    def test_workflow_cancel_bulk(self):
+        workflows = [self.workflow1, self.workflow2, self.workflow3]
+        workflow_ids = list([w.id for w in workflows])
+
+        response = self.client.post(
+            f"{self.url_prefix}bulk-cancel/",
+            {
+                "ids": workflow_ids,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        workflows = Workflow.objects.filter(pk__in=workflow_ids)
+        for workflow in workflows:
+            self.assertEqual(workflow.status, Workflow.STATUS_CANCELED)
