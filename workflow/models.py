@@ -8,14 +8,14 @@ from croniter import croniter
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import connection, models
+from django.db import models
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy
 from django.utils.translation import gettext_lazy as _
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
 from workflow.storage import get_storage
-from workflow.utils import get_all_tenant_schemas, get_next_node_by_condition
+from workflow.utils import get_next_node_by_condition
 from workflow_app import celery_app
 
 LANGUAGE_MAX_LENGTH = 5
