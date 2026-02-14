@@ -20,7 +20,7 @@ class DatabaseScheduler(DCBScheduler):
             set_schema_from_context({"space_code": schema})
             for model in self.Model.objects.enabled():
                 try:  # noqa: SIM105
-                    s[model.name] = self.Entry(model, app=self.app)
+                    s[f"{schema}:{model.name}"] = self.Entry(model, app=self.app)
                 except ValueError:
                     pass
         return s
