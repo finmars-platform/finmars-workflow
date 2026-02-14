@@ -594,16 +594,7 @@ class Task(TimeStampedModel):
 
 class ScheduleManager(models.Manager):
     def enabled(self):
-        result = []
-        schemas = get_all_tenant_schemas()
-
-        for schema in schemas:
-            with connection.cursor() as cursor:
-                cursor.execute(f"SET search_path TO {schema};")
-
-            schema_schedules = list(self.filter(enabled=True).prefetch_related("crontab"))
-            result.extend(schema_schedules)
-        return result
+        return self.filter(enabled=True).prefetch_related("crontab")
 
 
 class Schedule(PeriodicTask, TimeStampedModel):

@@ -151,10 +151,8 @@ def execute(self, user_code, payload, is_manager, *args, **kwargs):
 
         logger.info("periodic.schedule_id %s", schedule_id)
 
+        Schedule.objects.filter(id=schedule_id).update(last_run_at=now())
         schedule = Schedule.objects.get(id=schedule_id)
-
-        schedule.last_run_at = now()
-        schedule.save()
 
         owner = User.objects.get(username=schedule.owner.username)
         space = Space.objects.get(space_code=context.get("space_code"))
