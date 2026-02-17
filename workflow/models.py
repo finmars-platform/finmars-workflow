@@ -631,6 +631,7 @@ class Schedule(PeriodicTask, TimeStampedModel):
                 f"{self.crontab.minute} {self.crontab.hour} {self.crontab.day_of_month} "
                 f"{self.crontab.month_of_year} {self.crontab.day_of_week}"
             )
+        return None
 
     @crontab_line.setter
     def crontab_line(self, value: str):
@@ -650,7 +651,13 @@ class Schedule(PeriodicTask, TimeStampedModel):
         space_user_code = f"{self.space.space_code}.{self.workflow_user_code}"
         if not self.name:
             self.name = f"periodic-{space_user_code}-{self.crontab_line}"
-        self.args = json.dumps([space_user_code, self.payload, self.is_manager])
+        self.args = json.dumps(
+            [
+                space_user_code,
+                self.payload,
+                self.is_manager,
+            ]
+        )
         self.crontab, _ = CrontabSchedule.objects.get_or_create(
             minute=self.crontab.minute,
             hour=self.crontab.hour,
@@ -658,6 +665,12 @@ class Schedule(PeriodicTask, TimeStampedModel):
             month_of_year=self.crontab.month_of_year,
             day_of_week=self.crontab.day_of_week,
         )
+
+        creating = self.pk is None
+
+        if creating:
+            super().save(*args, **kwargs)
+
         self.kwargs = json.dumps(
             {
                 "context": {
@@ -665,10 +678,16 @@ class Schedule(PeriodicTask, TimeStampedModel):
                     "space_code": self.space.space_code,
                 },
                 "crontab_id": self.crontab.id,
-                "schedule_id": self.id,
+                "schedule_id": self.pk,
             }
         )
         _l.info("Schedule save: %s", self.kwargs)
+
+        if creating:
+            using = kwargs.get("using")
+            super().save(using=using, update_fields=["kwargs"])
+            return
+
         return super().save(*args, **kwargs)
 
     def __str__(self):
