@@ -1,4 +1,5 @@
 from celery.utils.log import get_logger
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.utils import DatabaseError, InterfaceError
 from django_celery_beat.schedulers import DatabaseScheduler as DCBScheduler
 
@@ -50,3 +51,35 @@ class DatabaseScheduler(DCBScheduler):
         finally:
             self._last_timestamp = ts
         return False
+
+    def sync(self):
+        """Persist each dirty entry UNDER ITS OWN tenant schema.
+
+        Entries are keyed ``"<schema>:<name>"`` by :meth:`all_as_schedule`. The
+        base :class:`DatabaseScheduler.sync` saves them under whatever
+        ``search_path`` happens to be active at sync time, so in this
+        multitenant setup ``last_run_at`` / ``total_run_count`` land in the
+        wrong schema (or nowhere) and never advance for the tenant. beat then
+        keeps re-sending the same scheduled task on every cycle while the due
+        window is open — observed as ``portfolio_history`` firing 3-4x/night in
+        space0uph9. ``total_run_count`` staying ``0`` in the DB is the tell-tale
+        of that bug. Setting the schema per entry before ``save()`` fixes it.
+        """
+        info("DatabaseScheduler: Writing entries (multitenant, per-schema)...")
+        _failed = set()
+        try:
+            while self._dirty:
+                name = self._dirty.pop()
+                schema = name.split(":", 1)[0]
+                try:
+                    set_schema_from_context({"space_code": schema})
+                    self.schedule[name].save()
+                except (KeyError, ObjectDoesNotExist):
+                    _failed.add(name)
+        except DatabaseError as exc:
+            logger.exception("DatabaseScheduler: Database error while sync: %r", exc)
+        except InterfaceError:
+            warning("DatabaseScheduler: InterfaceError in sync(), waiting to retry in next call...")
+        finally:
+            # Re-queue entries we could not save so the next sync retries them.
+            self._dirty |= _failed
