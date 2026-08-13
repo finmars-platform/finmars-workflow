@@ -76,6 +76,22 @@ class DatabaseScheduler(DCBScheduler):
                     self.schedule[name].save()
                 except (KeyError, ObjectDoesNotExist):
                     _failed.add(name)
+                except Exception as exc:
+                    # Never let a single bad entry (e.g. stale schema no longer
+                    # in tenant list, transient save failure) escape and crash
+                    # beat -- otherwise the pod restarts, last_run_at is not
+                    # persisted, and beat re-fires the "due" task on every tick
+                    # after restart. Observed 2026-08-11: a stale schema entry
+                    # made set_schema_from_context raise, sync() propagated the
+                    # exception into beat.tick(), the pod restarted, and beat
+                    # then dispatched portfolio_history 316 times in 89 minutes
+                    # for space0uph9. Log and re-queue instead of dying.
+                    logger.exception(
+                        "DatabaseScheduler: skipping entry %r due to error: %r",
+                        name,
+                        exc,
+                    )
+                    _failed.add(name)
         except DatabaseError as exc:
             logger.exception("DatabaseScheduler: Database error while sync: %r", exc)
         except InterfaceError:
