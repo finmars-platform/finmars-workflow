@@ -88,7 +88,8 @@ class DatabaseScheduler(DCBScheduler):
                     # for space0uph9. Log and re-queue instead of dying.
                     logger.exception(
                         "DatabaseScheduler: skipping entry %r due to error: %r",
-                        name, exc,
+                        name,
+                        exc,
                     )
                     _failed.add(name)
         except DatabaseError as exc:
